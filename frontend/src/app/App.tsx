@@ -43,15 +43,20 @@ function AppRoutes() {
   if (!token) {
     return (
       <Routes>
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
   }
 
-  return <AuthenticatedLayout />;
+  return (
+    <Routes>
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="*" element={<AuthenticatedLayout />} />
+    </Routes>
+  );
 }
 
 export function App() {

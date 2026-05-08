@@ -1,24 +1,39 @@
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { getText } from '../../shared/api';
 
 export function VerifyEmailPage() {
   const [params] = useSearchParams();
+  const [status, setStatus] = useState<'pending' | 'success' | 'error'>('pending');
+  const [message, setMessage] = useState('Verifying your email...');
 
   const token = params.get('token');
-  const summary = useMemo(() => {
+
+  useEffect(() => {
     if (!token) {
-      return 'Verification token missing. Please use the link from your email.';
+      setStatus('error');
+      setMessage('Verification token missing. Please use the link from your email.');
+      return;
     }
-    return 'Verification token received. Backend verification flow will be wired in the next slice.';
+    getText(`/auth/verify-email?token=${encodeURIComponent(token)}`)
+      .then((text) => {
+        setStatus('success');
+        setMessage(text || 'Your email has been verified. You can now log in.');
+      })
+      .catch((err) => {
+        setStatus('error');
+        setMessage(err instanceof Error ? err.message : 'Verification failed.');
+      });
   }, [token]);
 
   return (
     <main className="auth-shell">
       <section className="auth-card">
         <h1>Email Verification</h1>
-        <p>{summary}</p>
+        <p>{message}</p>
         <p className="auth-links">
-          Return to <Link to="/login">login</Link>
+          {status === 'success' ? 'Continue to ' : 'Return to '}
+          <Link to="/login">login</Link>
         </p>
       </section>
     </main>
