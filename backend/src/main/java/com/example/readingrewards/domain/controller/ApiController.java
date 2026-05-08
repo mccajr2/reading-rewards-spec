@@ -199,10 +199,16 @@ public class ApiController {
     // ---- Chapter Reads (mark/unmark) ----
 
     @PostMapping("/bookreads/{bookReadId}/chapters/{chapterId}/read")
-    public ChapterRead markChapterRead(@PathVariable UUID bookReadId,
-                                       @PathVariable UUID chapterId,
-                                       @AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<?> markChapterRead(@PathVariable UUID bookReadId,
+                                             @PathVariable UUID chapterId,
+                                             @AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
+
+        Optional<ChapterRead> existing = chapterReadRepo.findByBookReadIdAndChapterIdAndUserId(bookReadId, chapterId, user.getId());
+        if (existing.isPresent()) {
+            return ResponseEntity.ok().build();
+        }
+
         ChapterRead cr = new ChapterRead();
         cr.setBookReadId(bookReadId);
         cr.setChapterId(chapterId);
@@ -217,7 +223,7 @@ public class ApiController {
         reward.setAmount(1.0);
         rewardRepo.save(reward);
 
-        return saved;
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/books/{googleBookId}/chapters/{chapterId}/read")
@@ -339,6 +345,20 @@ public class ApiController {
         reward.setUserId(user.getId());
         reward.setAmount(amount);
         reward.setNote(note);
+        rewardRepo.save(reward);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/rewards/payout")
+    public ResponseEntity<?> payoutReward(@RequestParam double amount,
+                                          @AuthenticationPrincipal UserDetails userDetails) {
+        if (amount <= 0) return ResponseEntity.badRequest().body("Amount must be positive");
+        User user = getCurrentUser(userDetails);
+        Reward reward = new Reward();
+        reward.setType(RewardType.PAYOUT);
+        reward.setUserId(user.getId());
+        reward.setAmount(amount);
+        reward.setNote("Payout");
         rewardRepo.save(reward);
         return ResponseEntity.ok().build();
     }

@@ -149,6 +149,40 @@ class ApiControllerIntegrationTests {
     }
 
     @Test
+    void duplicateMarkReadIsIdempotentAndDoesNotCreateDuplicateReward() throws Exception {
+        mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"googleBookId":"gbk-idem","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    """))
+            .andExpect(status().isOk());
+
+        String bookReadId = bookReadRepository.findAll().get(0).getId().toString();
+
+        mockMvc.perform(post("/api/books/gbk-idem/chapters")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    [{"name":"Chapter 1","chapterIndex":0}]
+                    """))
+            .andExpect(status().isOk());
+
+        String chapterId = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk-idem").get(0).getId().toString();
+
+        mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        assertThat(chapterReadRepository.findAll()).hasSize(1);
+        assertThat(rewardRepository.findAll()).hasSize(1);
+    }
+
+    @Test
     void creditsReflectEarnedRewards() throws Exception {
         // Add book + chapter + mark read twice
         mockMvc.perform(post("/api/books")
@@ -190,6 +224,45 @@ class ApiControllerIntegrationTests {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalEarned").value(0.0))
             .andExpect(jsonPath("$.currentBalance").value(0.0));
+    }
+
+    @Test
+    void payoutReducesCurrentBalanceInSummary() throws Exception {
+        mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"googleBookId":"gbk-pay","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    """))
+            .andExpect(status().isOk());
+
+        String bookReadId = bookReadRepository.findAll().get(0).getId().toString();
+
+        mockMvc.perform(post("/api/books/gbk-pay/chapters")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    [{"name":"Chapter 1","chapterIndex":0}]
+                    """))
+            .andExpect(status().isOk());
+
+        String chapterId = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk-pay").get(0).getId().toString();
+
+        mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/rewards/payout")
+                .header("Authorization", "Bearer " + jwt)
+                .param("amount", "0.50"))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/rewards/summary")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalEarned").value(1.0))
+            .andExpect(jsonPath("$.totalPaidOut").value(0.5))
+            .andExpect(jsonPath("$.currentBalance").value(0.5));
     }
 
     @Test

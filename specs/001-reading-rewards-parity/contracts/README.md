@@ -34,6 +34,7 @@ Implemented endpoints summary:
 	- `GET /api/rewards/summary`
 	- `GET /api/rewards`
 	- `POST /api/rewards/spend`
+	- `POST /api/rewards/payout`
 
 Notes:
 

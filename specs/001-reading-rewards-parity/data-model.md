@@ -70,7 +70,7 @@
   - `userId`
   - `completionDate`
 - **Rules**:
-  - Current implementation allows multiple reads for the same chapter/book-read pair unless clients prevent duplicates.
+  - A chapter can be marked read at most once per book-read lifecycle for a given user.
   - Removing a chapter-read entry must reverse its dependent reward side effect.
 
 ## Reward
