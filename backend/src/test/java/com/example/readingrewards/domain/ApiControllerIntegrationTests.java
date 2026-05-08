@@ -391,6 +391,69 @@ class ApiControllerIntegrationTests {
         assertThat(rewardRepository.findAll()).isEmpty();
     }
 
+        @Test
+        void chaptersSeededByFirstReaderAreReusedBySecondReader() throws Exception {
+        MvcResult addFirst = mockMvc.perform(post("/api/books")
+            .header("Authorization", "Bearer " + jwt)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"googleBookId":"works/OL82563W","title":"Shared Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String firstBookReadId = objectMapper.readValue(addFirst.getResponse().getContentAsString(), Map.class)
+            .get("id").toString();
+
+        mockMvc.perform(post("/api/bookreads/" + firstBookReadId + "/chapters")
+            .header("Authorization", "Bearer " + jwt)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                [{"name":"Chapter 1","chapterIndex":1},{"name":"Chapter 2","chapterIndex":2},{"name":"Chapter 3","chapterIndex":3}]
+                """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(3));
+
+        User secondReader = new User();
+        secondReader.setEmail("second-reader@example.com");
+        secondReader.setPassword(passwordEncoder.encode("pass123"));
+        secondReader.setRole(User.UserRole.PARENT);
+        secondReader.setFirstName("Second");
+        secondReader.setStatus("VERIFIED");
+        userRepository.save(secondReader);
+
+        MvcResult secondLogin = mockMvc.perform(post("/api/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"username":"second-reader@example.com","password":"pass123"}
+                """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String secondJwt = objectMapper.readValue(secondLogin.getResponse().getContentAsString(), Map.class)
+            .get("token").toString();
+
+        MvcResult addSecond = mockMvc.perform(post("/api/books")
+            .header("Authorization", "Bearer " + secondJwt)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"googleBookId":"works/OL82563W","title":"Shared Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String secondBookReadId = objectMapper.readValue(addSecond.getResponse().getContentAsString(), Map.class)
+            .get("id").toString();
+
+        mockMvc.perform(get("/api/bookreads/" + secondBookReadId + "/chapters")
+            .header("Authorization", "Bearer " + secondJwt))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0].name").value("Chapter 1"))
+            .andExpect(jsonPath("$[1].name").value("Chapter 2"))
+            .andExpect(jsonPath("$[2].name").value("Chapter 3"));
+        }
+
     @Test
     void spendReducesCurrentBalanceInSummary() throws Exception {
         // Earn $1 by reading a chapter

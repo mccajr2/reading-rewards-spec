@@ -13,6 +13,11 @@ type BookResult = {
   thumbnailUrl: string;
 };
 
+type AddBookResponse = {
+  id: string;
+  googleBookId: string;
+};
+
 export function SearchPage() {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -44,7 +49,7 @@ export function SearchPage() {
       setResults(books);
       if (books.length === 0) setError('No results found. Try a different title or author.');
     } catch {
-      setError('Search unavailable. Google Books may be temporarily down — try again in a moment.');
+      setError('Search unavailable. Open Library may be temporarily unavailable — try again in a moment.');
     } finally {
       setLoading(false);
     }
@@ -57,9 +62,42 @@ export function SearchPage() {
         method: 'POST',
         body: JSON.stringify(book),
       });
-      if (res.ok) {
-        navigate('/reading-list', { state: { newGoogleBookId: book.googleBookId } });
+      if (!res.ok) return;
+
+      const added: AddBookResponse = await res.json();
+
+      // Shared chapter definitions are global per book. If chapters already exist,
+      // reuse them; otherwise seed a default list from the user's chapter count.
+      const existingChaptersRes = await fetchWithAuth(
+        `/bookreads/${added.id}/chapters`,
+        token
+      );
+
+      let shouldSeedChapters = true;
+      if (existingChaptersRes.ok) {
+        const existing = await existingChaptersRes.json();
+        shouldSeedChapters = !Array.isArray(existing) || existing.length === 0;
       }
+
+      if (shouldSeedChapters) {
+        const chapterCountStr = window.prompt('How many chapters are in this book?');
+        const chapterCount = chapterCountStr ? parseInt(chapterCountStr, 10) : 0;
+
+        if (Number.isNaN(chapterCount) || chapterCount < 1) {
+          window.alert('Book added. Add chapters from My Reading List when ready.');
+        } else {
+          const chapters = Array.from({ length: chapterCount }, (_, idx) => ({
+            chapterIndex: idx + 1,
+            name: `Chapter ${idx + 1}`,
+          }));
+          await fetchWithAuth(`/bookreads/${added.id}/chapters`, token, {
+            method: 'POST',
+            body: JSON.stringify(chapters),
+          });
+        }
+      }
+
+      navigate('/reading-list', { state: { newGoogleBookId: added.googleBookId } });
     } finally {
       setAdding(null);
     }

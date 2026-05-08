@@ -1,194 +1,246 @@
 # Tasks: Reading Rewards Parity Rebuild
 
 **Input**: Design documents from `/specs/001-reading-rewards-parity/`
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
+**Prerequisites**: plan.md (required), spec.md (required), research.md, data-model.md, contracts/, quickstart.md
 
-**Status**: Implementation complete. Remaining work is one E2E test gap (G3), three documentation items (A1, A2, I2), and one minor spec cleanup (T1).
+**Planning Note**: This is a regenerated forward implementation plan for the clarified spec. Checklist states are intentionally reset for execution planning.
+
+**Tests**: Backend, frontend, and end-to-end tests are required by spec (FR-010, SC-002).
+
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing.
 
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
-- **[x]**: Completed task
-
----
+- **[Story]**: User story label (`[US1]`, `[US2]`, `[US3]`)
+- Every task includes an exact file path
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Repository initialization, toolchains, environment configuration, and base project structure.
+**Purpose**: Align toolchain, environment templates, and test harnesses for the rebuilt repo.
 
-- [x] T001 Initialize backend Spring Boot 3.5.6 project with Java 21 in `backend/`
-- [x] T002 Initialize frontend Vite + React 19 + TypeScript project in `frontend/`
-- [x] T003 [P] Configure Docker Compose for PostgreSQL, backend, and frontend in `docker-compose.yml`
-- [x] T004 [P] Add `.env.example` / `.env.sh` environment templates and startup validation
-- [x] T005 [P] Configure Flyway migrations framework in `backend/src/main/resources/db/migration/`
-- [x] T006 [P] Configure Vitest + React Testing Library in `frontend/`
-- [x] T007 [P] Configure Playwright for end-to-end tests in `tests/e2e/`
-
-**Checkpoint**: Repository bootstrapped — backend, frontend, and E2E environments runnable from Docker Compose
+- [ ] T001 Update environment templates for JWT/Brevo/frontend URL parity in `.env.example`
+- [ ] T002 Update compose defaults for backend/frontend runtime env alignment in `docker-compose.yml`
+- [ ] T003 [P] Verify backend build/test toolchain setup for Java 21 in `backend/pom.xml`
+- [ ] T004 [P] Verify frontend build/test toolchain setup for Vite/Vitest in `frontend/package.json`
+- [ ] T005 [P] Validate Playwright base URL and project config in `playwright.config.ts`
+- [ ] T006 [P] Refresh quickstart run/test commands and env prerequisites in `specs/001-reading-rewards-parity/quickstart.md`
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Core infrastructure that must be complete before any user story can be implemented.
+**Purpose**: Core contracts, security boundaries, and shared domain behavior required by all stories.
 
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+**CRITICAL**: No user story work should begin until this phase is complete.
 
-- [x] T008 Create Flyway migration V1 for User, Book, BookRead, Chapter, ChapterRead, Reward tables in `backend/src/main/resources/db/migration/V1__init.sql`
-- [x] T009 Implement JPA entities (User, Book, BookRead, Chapter, ChapterRead, Reward) in `backend/src/main/java/com/example/readingrewards/domain/`
-- [x] T010 Implement Spring Security configuration with JWT Bearer authentication in `backend/src/main/java/com/example/readingrewards/auth/SecurityConfig.java`
-- [x] T011 [P] Implement JWT token generation and validation utilities in `backend/src/main/java/com/example/readingrewards/auth/`
-- [x] T012 [P] Configure frontend API base URL, Bearer token injection, and auth error recovery in `frontend/src/fetchWithAuth.ts`
-- [x] T013 [P] Add DevAuthController for dev/test email verification bypass in `backend/src/main/java/com/example/readingrewards/auth/DevAuthController.java`
+- [ ] T007 Normalize parent/child capability rules in API contract notes in `specs/001-reading-rewards-parity/contracts/README.md`
+- [ ] T008 [P] Add/confirm role boundary checks for parent vs child endpoints in `backend/src/main/java/com/example/readingrewards/config/SecurityConfig.java`
+- [ ] T009 [P] Ensure JWT secret parsing supports env-safe formats with secure fallback behavior in `backend/src/main/java/com/example/readingrewards/auth/util/JwtUtil.java`
+- [ ] T010 [P] Add shared error response mapping for authorization and validation failures in `backend/src/main/java/com/example/readingrewards/shared/ApiExceptionHandler.java`
+- [ ] T011 [P] Align shared DTOs for book reads, chapter reads, and rewards rollups in `backend/src/main/java/com/example/readingrewards/domain/dto/`
+- [ ] T012 [P] Add frontend auth guard utility for role-based route protection in `frontend/src/features/auth/RequireRole.tsx`
+- [ ] T013 Add route map alignment for parent/child navigation boundaries in `frontend/src/App.tsx`
 
-**Checkpoint**: Foundation ready — all user story implementation can begin in parallel
-
----
-
-## Phase 3: User Story 1 — Parent account lifecycle works end-to-end (Priority: P1) 🎯 MVP
-
-**Goal**: Parent can sign up, verify their email, log in, manage child accounts, and reset child passwords.
-
-**Independent Test**: Sign up a parent, verify the account, log in, create a child, reset the child's password — all without errors.
-
-### Backend — User Story 1
-
-- [x] T014 [US1] Implement `POST /api/auth/signup` in `backend/src/main/java/com/example/readingrewards/auth/AuthController.java`
-- [x] T015 [US1] Implement `GET /api/auth/verify-email?token=...` in `backend/src/main/java/com/example/readingrewards/auth/AuthController.java`
-- [x] T016 [US1] Implement `POST /api/auth/login` with parent-only UNVERIFIED guard in `backend/src/main/java/com/example/readingrewards/auth/AuthController.java`
-- [x] T017 [US1] Implement `POST /api/auth/logout` in `backend/src/main/java/com/example/readingrewards/auth/AuthController.java`
-- [x] T018 [P] [US1] Implement `GET /api/parent/kids` in `backend/src/main/java/com/example/readingrewards/domain/ParentController.java`
-- [x] T019 [P] [US1] Implement `POST /api/parent/kids` in `backend/src/main/java/com/example/readingrewards/domain/ParentController.java`
-- [x] T020 [P] [US1] Implement `POST /api/parent/reset-child-password` in `backend/src/main/java/com/example/readingrewards/domain/ParentController.java`
-
-### Frontend — User Story 1
-
-- [x] T021 [P] [US1] Implement signup page in `frontend/src/features/auth/Signup.tsx`
-- [x] T022 [P] [US1] Implement email verification page in `frontend/src/features/auth/VerifyEmail.tsx`
-- [x] T023 [P] [US1] Implement login page in `frontend/src/features/auth/Login.tsx`
-- [x] T024 [P] [US1] Implement auth context and session state in `frontend/src/features/auth/AuthContext.tsx`
-- [x] T025 [P] [US1] Implement parent dashboard (kid list, add kid, reset password) in `frontend/src/features/parent/ParentDashboard.tsx`
-
-### Tests — User Story 1
-
-- [x] T026 [P] [US1] Backend tests: signup, verify-email, login (verified/unverified), logout, kid CRUD, reset-child-password in `backend/src/test/`
-- [x] T027 [P] [US1] Frontend tests: Signup, VerifyEmail, Login, AuthContext, ParentDashboard components in `frontend/src/`
-- [x] T028 [US1] E2E tests: parent signup → verify → login → create child → login as child in `tests/e2e/`
-
-**Checkpoint**: User Story 1 fully functional and independently testable
+**Checkpoint**: Foundation complete. User stories can now be implemented and tested independently.
 
 ---
 
-## Phase 4: User Story 2 — Child reading progress and rewards remain consistent (Priority: P1)
+## Phase 3: User Story 1 - Parent Account Lifecycle And Dashboard (Priority: P1) 🎯 MVP
 
-**Goal**: A child can search for books, add them, manage chapters, mark chapters read, earn rewards, finish books, and reread books.
+**Goal**: Parent can sign up/verify/login, manage kids, and view per-child summary cards with drill-down entry points.
 
-**Independent Test**: Log in as a child, search for a book, add it, add chapters, mark a chapter as read, verify a reward is recorded, finish the book, reread — all consistent with legacy behavior.
+**Independent Test**: Sign up and verify a parent, log in, add a child, reset child password, and view dashboard cards with drill-down links for each child.
 
-### Backend — User Story 2
+### Tests for User Story 1
 
-- [x] T029 [P] [US2] Implement `GET /api/search` (Google Books proxy) in `backend/src/main/java/com/example/readingrewards/domain/BookController.java`
-- [x] T030 [P] [US2] Implement `GET /api/books` and `POST /api/books` in `backend/src/main/java/com/example/readingrewards/domain/BookController.java`
-- [x] T031 [P] [US2] Implement `POST /api/books/{googleBookId}/finish` and `POST /api/books/{googleBookId}/reread` in `backend/src/main/java/com/example/readingrewards/domain/BookController.java`
-- [x] T032 [P] [US2] Implement `DELETE /api/bookreads/{bookReadId}` with cascading chapter-read and reward removal in `backend/src/main/java/com/example/readingrewards/domain/BookController.java`
-- [x] T033 [P] [US2] Implement `GET /api/books/{googleBookId}/chapters`, `POST /api/books/{googleBookId}/chapters`, `PUT /api/chapters/{id}` in `backend/src/main/java/com/example/readingrewards/domain/ChapterController.java`
-- [x] T034 [P] [US2] Implement `POST /api/bookreads/{bookReadId}/chapters/{chapterId}/read` (creates earn reward) in `backend/src/main/java/com/example/readingrewards/domain/ChapterController.java`
-- [x] T035 [P] [US2] Implement `DELETE /api/books/{googleBookId}/chapters/{chapterId}/read` (reverses reward) in `backend/src/main/java/com/example/readingrewards/domain/ChapterController.java`
-- [x] T036 [P] [US2] Implement `GET /api/bookreads/{bookReadId}/chapterreads` and `GET /api/bookreads/in-progress` in `backend/src/main/java/com/example/readingrewards/domain/BookController.java`
-- [x] T037 [P] [US2] Implement `GET /api/rewards/summary`, `GET /api/rewards`, `POST /api/rewards/spend`, `POST /api/rewards/payout` in `backend/src/main/java/com/example/readingrewards/domain/RewardController.java`
-- [x] T038 [P] [US2] Implement `GET /api/credits` (reward balance alias) in `backend/src/main/java/com/example/readingrewards/domain/RewardController.java`
+- [ ] T014 [P] [US1] Add backend integration tests for parent auth lifecycle and kid management in `backend/src/test/java/com/example/readingrewards/auth/AuthControllerIntegrationTests.java`
+- [ ] T015 [P] [US1] Add backend integration tests for parent dashboard summary card payloads in `backend/src/test/java/com/example/readingrewards/domain/ParentControllerIntegrationTests.java`
+- [ ] T016 [P] [US1] Add frontend component tests for signup/login/verify flows in `frontend/src/features/auth/__tests__/`
+- [ ] T017 [P] [US1] Add frontend component tests for parent dashboard cards and drill-down navigation in `frontend/src/features/parent/__tests__/ParentDashboard.test.tsx`
+- [ ] T018 [US1] Add Playwright scenario for parent onboarding, kid creation, and dashboard card visibility in `tests/e2e/parent-dashboard.spec.ts`
 
-### Frontend — User Story 2
+### Implementation for User Story 1
 
-- [x] T039 [P] [US2] Implement book search and reading list in `frontend/src/features/books/`
-- [x] T040 [P] [US2] Implement chapter management and chapter-read marking in `frontend/src/features/books/`
-- [x] T041 [P] [US2] Implement rewards display in `frontend/src/features/rewards/Rewards.tsx`
-- [x] T042 [P] [US2] Implement scanner component in `frontend/src/features/books/Scanner.tsx`
+- [ ] T019 [P] [US1] Implement parent signup endpoint validation and account creation flow in `backend/src/main/java/com/example/readingrewards/auth/controller/AuthController.java`
+- [ ] T020 [P] [US1] Implement email verification and token invalidation flow in `backend/src/main/java/com/example/readingrewards/auth/controller/AuthController.java`
+- [ ] T021 [P] [US1] Implement parent login/logout with verified-account guard in `backend/src/main/java/com/example/readingrewards/auth/controller/AuthController.java`
+- [ ] T022 [P] [US1] Implement create/list/reset child account endpoints in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
+- [ ] T023 [US1] Implement parent dashboard summary endpoint (per-child rollup cards) in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
+- [ ] T024 [P] [US1] Implement signup screen behavior and validation in `frontend/src/features/auth/Signup.tsx`
+- [ ] T025 [P] [US1] Implement verify-email screen with backend-driven status messaging in `frontend/src/features/auth/VerifyEmail.tsx`
+- [ ] T026 [P] [US1] Implement login screen role-aware flow in `frontend/src/features/auth/Login.tsx`
+- [ ] T027 [P] [US1] Implement parent auth/session state handling in `frontend/src/features/auth/AuthContext.tsx`
+- [ ] T028 [US1] Implement parent dashboard with per-child cards and drill-down links in `frontend/src/features/parent/ParentDashboard.tsx`
+- [ ] T029 [US1] Update parent navigation items to expose dashboard and kid management flows in `frontend/src/features/nav/Nav.tsx`
+- [ ] T030 [US1] Document US1 endpoint contracts and payload examples in `specs/001-reading-rewards-parity/contracts/README.md`
 
-### Tests — User Story 2
-
-- [x] T043 [P] [US2] Backend tests: book CRUD, chapter CRUD, chapter-read create/delete, reward creation/reversal, finish/reread in `backend/src/test/`
-- [x] T044 [P] [US2] Frontend tests: ReadingList, ManualSearch, Rewards components in `frontend/src/`
-- [x] T045 [US2] E2E tests: child login → add book → add chapters → mark chapter read → verify reward → finish → reread in `tests/e2e/`
-
-**Checkpoint**: User Story 2 fully functional and independently testable
+**Checkpoint**: User Story 1 is independently functional and testable.
 
 ---
 
-## Phase 5: User Story 3 — Parent reporting and child history remain available (Priority: P2)
+## Phase 4: User Story 2 - Child Reading Progress And Rewards (Priority: P1)
 
-**Goal**: Parents can view per-child progress summaries; children can view their own reading history and reward history.
+**Goal**: Child can search/add books, seed/reuse chapters, mark chapter reads, earn/spend/payout rewards, finish and reread books.
 
-**Independent Test**: Seed reading and reward data, validate parent summary totals per child, validate child history and paginated reward list match legacy math.
+**Independent Test**: Log in as child, add a searched book, seed chapters if missing, mark chapter read, verify rewards, finish and reread successfully.
 
-### Backend — User Story 3
+### Tests for User Story 2
 
-- [x] T046 [US3] Implement `GET /api/parent/kids/summary` (per-child books, chapters, earnings, balance) in `backend/src/main/java/com/example/readingrewards/domain/ParentController.java`
-- [x] T047 [US3] Implement `GET /api/history` (child reading history) in `backend/src/main/java/com/example/readingrewards/domain/HistoryController.java`
+- [ ] T031 [P] [US2] Add backend integration tests for search/add/finish/reread workflows in `backend/src/test/java/com/example/readingrewards/domain/BookControllerIntegrationTests.java`
+- [ ] T032 [P] [US2] Add backend integration tests for chapter seed/reuse and chapter-read reward side effects in `backend/src/test/java/com/example/readingrewards/domain/ChapterControllerIntegrationTests.java`
+- [ ] T033 [P] [US2] Add frontend tests for search/add book and chapter seeding prompt flow in `frontend/src/features/books/SearchPage.test.tsx`
+- [ ] T034 [P] [US2] Add frontend tests for reading list chapter state and reward math display in `frontend/src/features/books/ReadingListPage.test.tsx`
+- [ ] T035 [P] [US2] Add frontend tests for rewards history and spend/payout actions in `frontend/src/features/rewards/RewardsPage.test.tsx`
+- [ ] T036 [US2] Add Playwright child journey for add/read/reward/finish/reread flow in `tests/e2e/reading-journey.spec.ts`
 
-### Frontend — User Story 3
+### Implementation for User Story 2
 
-- [x] T048 [P] [US3] Implement parent summary view in `frontend/src/features/parent/ParentSummary.tsx`
-- [x] T049 [P] [US3] Implement child history view in `frontend/src/features/rewards/History.tsx`
+- [ ] T037 [P] [US2] Implement search provider service using Open Library with resilient mapping in `backend/src/main/java/com/example/readingrewards/domain/service/GoogleBooksService.java`
+- [ ] T038 [P] [US2] Implement search/books CRUD and finish/reread endpoints in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
+- [ ] T039 [P] [US2] Implement chapter list/create/update and bookRead-based chapter endpoints in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
+- [ ] T040 [P] [US2] Implement chapter-read create/delete behavior with reward side effects in `backend/src/main/java/com/example/readingrewards/domain/service/RewardService.java`
+- [ ] T041 [P] [US2] Implement rewards summary/history/spend/payout plus credits alias endpoint in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
+- [ ] T042 [US2] Implement chapter seed-on-first-add and reuse-on-next-add domain behavior in `backend/src/main/java/com/example/readingrewards/domain/service/BookService.java`
+- [ ] T043 [P] [US2] Implement child search page UX with robust network error handling in `frontend/src/features/books/SearchPage.tsx`
+- [ ] T044 [P] [US2] Implement reading list chapter management and read/unread toggles in `frontend/src/features/books/ReadingListPage.tsx`
+- [ ] T045 [P] [US2] Implement scanner/manual search integration behavior in `frontend/src/features/books/Scanner.tsx`
+- [ ] T046 [P] [US2] Implement rewards and credits views for child account in `frontend/src/features/rewards/Rewards.tsx`
+- [ ] T047 [US2] Implement child history view wiring and pagination behavior in `frontend/src/features/rewards/History.tsx`
+- [ ] T048 [US2] Update shared DTO typings for chapter/reward/history responses in `frontend/src/types/dto.d.ts`
+- [ ] T049 [US2] Document US2 endpoint contracts and Open Library notes in `specs/001-reading-rewards-parity/contracts/README.md`
 
-### Tests — User Story 3
+**Checkpoint**: User Story 2 is independently functional and testable.
 
-- [x] T050 [P] [US3] Backend tests: parent summary totals, history endpoint in `backend/src/test/`
-- [x] T051 [P] [US3] Frontend tests: ParentSummary, History components in `frontend/src/`
-- [x] T052 [US3] E2E test: child login → navigate to history/rewards page → verify completed reading records and reward totals are displayed in `tests/e2e/` *(gap: G3 — GET /api/history is tested in backend but no E2E test covers the child history/rewards UI)*
+---
 
-**Checkpoint**: All three user stories independently functional and tested
+## Phase 5: User Story 3 - Parent Child Detail And Reversal Capability (Priority: P2)
+
+**Goal**: Parent can drill into a child detail view, inspect all reading/reward activity, and reverse erroneous chapter-read/reward entries.
+
+**Independent Test**: Parent opens a child detail screen, inspects in-progress/finished books + reward ledger, reverses one chapter-read, and sees both chapter-read and reward reversed.
+
+### Tests for User Story 3
+
+- [ ] T050 [P] [US3] Add backend integration tests for parent child-detail payload and authorization boundaries in `backend/src/test/java/com/example/readingrewards/domain/ParentChildDetailIntegrationTests.java`
+- [ ] T051 [P] [US3] Add backend integration tests for parent-triggered chapter-read reversal behavior in `backend/src/test/java/com/example/readingrewards/domain/ParentReversalIntegrationTests.java`
+- [ ] T052 [P] [US3] Add frontend tests for parent child-detail rendering and reward ledger visibility in `frontend/src/features/parent/ParentChildDetail.test.tsx`
+- [ ] T053 [P] [US3] Add frontend tests for reversal action UX and post-reversal state refresh in `frontend/src/features/parent/ParentChildDetail.test.tsx`
+- [ ] T054 [US3] Add Playwright parent drill-down and reversal scenario in `tests/e2e/parent-reversal.spec.ts`
+
+### Implementation for User Story 3
+
+- [ ] T055 [P] [US3] Implement parent child-detail endpoint (books, chapters, rewards rollup) in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
+- [ ] T056 [P] [US3] Implement parent-triggered reverse chapter-read endpoint and service logic in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
+- [ ] T057 [P] [US3] Enforce parent-only access checks for child-detail and reversal endpoints in `backend/src/main/java/com/example/readingrewards/config/JwtAuthFilter.java`
+- [ ] T058 [P] [US3] Implement parent summary drill-down page with read-only child activity in `frontend/src/features/parent/ParentChildDetail.tsx`
+- [ ] T059 [P] [US3] Implement reversal action controls in parent child-detail page in `frontend/src/features/parent/ParentChildDetail.tsx`
+- [ ] T060 [US3] Wire parent child-detail route and guard behavior in `frontend/src/App.tsx`
+- [ ] T061 [US3] Update parent summary page navigation to child detail routes in `frontend/src/features/parent/ParentSummary.tsx`
+- [ ] T062 [US3] Document US3 contracts (child-detail and reversal) in `specs/001-reading-rewards-parity/contracts/README.md`
+
+**Checkpoint**: User Story 3 is independently functional and testable.
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-**Purpose**: Documentation, production-readiness notes, and minor spec cleanup.
+**Purpose**: Cross-story hardening, cleanup, and validation.
 
-- [x] T053 [P] Document DevAuthController production safety: add README section or inline comment in `backend/src/main/java/com/example/readingrewards/auth/DevAuthController.java` clarifying that this controller is disabled in prod via Spring profile guard and must not be exposed in production deployments *(gap: A1)*
-- [x] T054 [P] Document Brevo production email activation: add setup instructions to `specs/001-reading-rewards-parity/quickstart.md` or root `README.md` describing how to configure the Brevo API key and sender identity for the production email verification flow *(gap: A2)*
-- [x] T055 [P] Clarify performance targets classification: update `specs/001-reading-rewards-parity/plan.md` or `spec.md` to note that the stated performance goals (30s startup, 200ms transitions, 300ms p95 API) are local development guidance targets, not contractual SLOs *(gap: I2)*
-- [x] T056 [P] Add credits endpoint terminology note to `specs/001-reading-rewards-parity/contracts/README.md`: note that `GET /api/credits` is a reward-balance alias retained for legacy parity and is functionally equivalent to `GET /api/rewards/summary` balance field *(gap: T1)*
+- [ ] T063 [P] Remove duplicate/contradictory lines introduced in clarified spec sections in `specs/001-reading-rewards-parity/spec.md`
+- [ ] T064 [P] Align data model naming from `googleBookId` to provider-agnostic wording notes in `specs/001-reading-rewards-parity/data-model.md`
+- [ ] T065 [P] Update quickstart with parent dashboard and reversal verification steps in `specs/001-reading-rewards-parity/quickstart.md`
+- [ ] T066 [P] Add Open Library dependency note and fallback behavior in `README.md`
+- [ ] T067 Run backend test suite and capture results in `backend/src/test/`
+- [ ] T068 Run frontend unit test suite and capture results in `frontend/src/`
+- [ ] T069 Run Playwright E2E suite and capture results in `tests/e2e/`
 
 ---
 
-## Dependencies
+## Dependencies & Execution Order
 
+### Phase Dependencies
+
+- **Phase 1 (Setup)**: No dependencies; start immediately.
+- **Phase 2 (Foundational)**: Depends on Phase 1; blocks all user stories.
+- **Phase 3 (US1)**: Depends on Phase 2; MVP target.
+- **Phase 4 (US2)**: Depends on Phase 2; can run in parallel with US1 after foundation is complete.
+- **Phase 5 (US3)**: Depends on Phase 2 and contracts from US1/US2; should start after US1 dashboard baseline.
+- **Phase 6 (Polish)**: Depends on completion of desired user stories.
+
+### User Story Dependencies
+
+- **US1 (P1)**: Independent after foundational phase.
+- **US2 (P1)**: Independent after foundational phase.
+- **US3 (P2)**: Depends on US1 dashboard drill-down entry points and US2 chapter-read/reward data.
+
+### Within Each User Story
+
+- Tests first (write and confirm fail before implementation).
+- Backend/domain changes before UI integration wiring.
+- Contracts/docs update before story checkpoint sign-off.
+
+## Parallel Opportunities
+
+- Setup tasks `T003`-`T006` are parallelizable.
+- Foundational tasks `T008`-`T012` are parallelizable.
+- In US1, backend endpoint tasks `T019`-`T023` and frontend tasks `T024`-`T029` can run in parallel by separate contributors.
+- In US2, backend tasks `T037`-`T042` and frontend tasks `T043`-`T048` can run in parallel.
+- In US3, endpoint tasks `T055`-`T057` and frontend tasks `T058`-`T061` can run in parallel.
+
+---
+
+## Parallel Example: User Story 1
+
+```bash
+# Parallel backend work
+Task: T019 Implement parent signup endpoint validation flow in backend/src/main/java/com/example/readingrewards/auth/controller/AuthController.java
+Task: T022 Implement child account management endpoints in backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java
+
+# Parallel frontend work
+Task: T024 Implement signup screen behavior in frontend/src/features/auth/Signup.tsx
+Task: T028 Implement parent dashboard card view in frontend/src/features/parent/ParentDashboard.tsx
 ```
-Phase 1 (Setup)
-  └── Phase 2 (Foundation)
-        ├── Phase 3 (US1 — P1, MVP)
-        ├── Phase 4 (US2 — P1, can run in parallel with US3 backend)
-        └── Phase 5 (US3 — P2, backend can run in parallel with US2)
-Phase 6 (Polish — independent, can run at any time after spec is stable)
+
+## Parallel Example: User Story 2
+
+```bash
+# Parallel service and UI work
+Task: T037 Implement Open Library search mapping in backend/src/main/java/com/example/readingrewards/domain/service/GoogleBooksService.java
+Task: T044 Implement reading list chapter toggles in frontend/src/features/books/ReadingListPage.tsx
 ```
 
-## Parallel Execution Examples
+## Parallel Example: User Story 3
 
-**Within Phase 3 (US1)**: T021–T025 (frontend components) can run in parallel with T026 (backend tests), and T014–T020 (backend endpoints) can run in parallel with each other.
+```bash
+# Parallel parent detail and reversal work
+Task: T055 Implement parent child-detail endpoint in backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java
+Task: T058 Implement parent child-detail page in frontend/src/features/parent/ParentChildDetail.tsx
+```
 
-**Within Phase 4 (US2)**: T029–T038 (backend endpoints) and T039–T042 (frontend components) can run in parallel with each other and with T043–T044 (unit tests).
-
-**Within Phase 5 (US3)**: T048–T049 (frontend) can run in parallel with T050 (backend tests). T052 (E2E gap) runs after frontend and backend for US3 are confirmed working.
-
-**Phase 6**: T053–T056 are all independent documentation tasks and can run in any order.
+---
 
 ## Implementation Strategy
 
-- **MVP scope**: Phase 1 + Phase 2 + Phase 3 (US1) — parent account lifecycle, auth, and kid management end-to-end.
-- **Core parity**: Add Phase 4 (US2) — child reading and rewards, the product's primary business behavior.
-- **Full parity**: Add Phase 5 (US3) — reporting and history views.
-- **Done**: All 56 tasks (T001–T056) are complete.
+### MVP First (US1)
 
-## Task Summary
+1. Complete Phase 1 (Setup).
+2. Complete Phase 2 (Foundational).
+3. Complete Phase 3 (US1).
+4. Validate US1 independently before expanding scope.
 
-| Phase | Total | Completed | Remaining |
-|-------|-------|-----------|-----------|
-| Phase 1: Setup | 7 | 7 | 0 |
-| Phase 2: Foundational | 6 | 6 | 0 |
-| Phase 3: US1 | 15 | 15 | 0 |
-| Phase 4: US2 | 17 | 17 | 0 |
-| Phase 5: US3 | 7 | 7 | 0 |
-| Phase 6: Polish | 4 | 4 | 0 |
-| **Total** | **56** | **56** | **0** |
+### Incremental Delivery
+
+1. Deliver US1 (parent auth + dashboard cards + drill-down links).
+2. Deliver US2 (child reading/rewards core behavior).
+3. Deliver US3 (parent detail view + reversal controls).
+4. Finish with polish, documentation, and full-suite validation.
+
+### Parallel Team Strategy
+
+1. Team aligns on Setup + Foundational tasks.
+2. Split by story after foundation is complete:
+   - Developer A: US1
+   - Developer B: US2
+   - Developer C: US3 (after US1 drill-down baseline)
+3. Reintegrate at story checkpoints with test evidence.

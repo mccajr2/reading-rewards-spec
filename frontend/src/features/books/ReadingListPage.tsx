@@ -40,32 +40,37 @@ export function ReadingListPage() {
 
   const load = async () => {
     setLoading(true);
-    const res = await fetchWithAuth('/bookreads/in-progress', token);
-    if (!res.ok) return;
-    const brs: BookReadProgress[] = await res.json();
-    setBookReads(brs);
+    try {
+      const res = await fetchWithAuth('/bookreads/in-progress', token);
+      if (!res.ok) return;
+      const brs: BookReadProgress[] = await res.json();
+      setBookReads(brs);
 
-    const chaptersMap: Record<string, Chapter[]> = {};
-    const datesMap: Record<string, Record<string, string>> = {};
+      const chaptersMap: Record<string, Chapter[]> = {};
+      const datesMap: Record<string, Record<string, string>> = {};
 
-    for (const br of brs) {
-      const cr = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapters`, token);
-      chaptersMap[br.googleBookId] = cr.ok ? await cr.json() : [];
+      for (const br of brs) {
+        const cr = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapters`, token);
+        chaptersMap[br.googleBookId] = cr.ok ? await cr.json() : [];
 
-      const drRes = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapterreads`, token);
-      if (drRes.ok) {
-        const drArr: ChapterRead[] = await drRes.json();
-        datesMap[br.bookReadId] = {};
-        for (const dr of drArr) {
-          if (dr.chapterId && dr.completionDate) {
-            datesMap[br.bookReadId][dr.chapterId] = new Date(dr.completionDate).toLocaleDateString();
+        const drRes = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapterreads`, token);
+        if (drRes.ok) {
+          const drArr: ChapterRead[] = await drRes.json();
+          datesMap[br.bookReadId] = {};
+          for (const dr of drArr) {
+            if (dr.chapterId && dr.completionDate) {
+              datesMap[br.bookReadId][dr.chapterId] = new Date(dr.completionDate).toLocaleDateString();
+            }
           }
         }
       }
+      setChapters(chaptersMap);
+      setReadDates(datesMap);
+    } catch {
+      // Keep page responsive when API is unavailable (e.g., isolated frontend tests).
+    } finally {
+      setLoading(false);
     }
-    setChapters(chaptersMap);
-    setReadDates(datesMap);
-    setLoading(false);
   };
 
   useEffect(() => { load(); }, []);

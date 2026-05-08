@@ -1,5 +1,6 @@
 package com.example.readingrewards.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -24,6 +25,7 @@ public class Chapter {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "google_book_id", insertable = false, updatable = false)
     @JsonIgnoreProperties({"chapters"})
+    @JsonIgnore
     private Book book;
 
     @Column(nullable = false, length = 500)
