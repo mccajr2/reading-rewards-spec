@@ -11,7 +11,7 @@
 - The verification page now calls backend token verification and displays backend success/error messages.
 - Parent kid management, reading-progress, history, and rewards flows are implemented.
 - Backend and frontend automated tests are in place and passing locally.
-- End-to-end Playwright smoke tests are still planned and not yet implemented in this repository.
+- End-to-end Playwright smoke tests are implemented: 8 tests across auth, parent, and reading journeys — all passing.
 
 ## User Scenarios & Testing *(mandatory)*
 

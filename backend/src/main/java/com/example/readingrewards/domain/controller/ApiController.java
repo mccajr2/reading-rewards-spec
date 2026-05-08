@@ -68,6 +68,7 @@ public class ApiController {
 
     // ---- Books / Reading List ----
 
+    @Transactional
     @GetMapping("/books")
     public List<Map<String, Object>> getBooks(@AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
@@ -99,7 +100,7 @@ public class ApiController {
     }
 
     @PostMapping("/books")
-    public Book saveBook(@RequestBody BookSummaryDto dto, @AuthenticationPrincipal UserDetails userDetails) {
+    public Map<String, Object> saveBook(@RequestBody BookSummaryDto dto, @AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         Book book = bookRepo.findById(dto.getGoogleBookId()).orElseGet(Book::new);
         book.setGoogleBookId(dto.getGoogleBookId());
@@ -107,14 +108,19 @@ public class ApiController {
         book.setDescription(dto.getDescription());
         book.setThumbnailUrl(dto.getThumbnailUrl());
         book.setAuthors(dto.getAuthors() != null ? dto.getAuthors() : List.of());
-        Book saved = bookRepo.save(book);
-
+        bookRepo.save(book);
         BookRead br = new BookRead();
-        br.setGoogleBookId(saved.getGoogleBookId());
+        br.setGoogleBookId(book.getGoogleBookId());
         br.setUserId(user.getId());
         br.setStartDate(LocalDateTime.now());
-        bookReadRepo.save(br);
-        return saved;
+        BookRead savedBr = bookReadRepo.save(br);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("id", savedBr.getId());
+        result.put("googleBookId", savedBr.getGoogleBookId());
+        result.put("title", book.getTitle());
+        result.put("userId", savedBr.getUserId());
+        result.put("startDate", savedBr.getStartDate());
+        return result;
     }
 
     @PostMapping("/books/{googleBookId}/finish")
@@ -249,6 +255,7 @@ public class ApiController {
         return chapterReadRepo.findByBookReadId(bookReadId);
     }
 
+    @Transactional
     @GetMapping("/bookreads/in-progress")
     public List<BookReadProgressDto> getInProgressBookReads(@AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);

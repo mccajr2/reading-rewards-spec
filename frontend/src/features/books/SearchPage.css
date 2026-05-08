@@ -61,3 +61,32 @@
   color: var(--color-muted, #a6adc8);
   margin: 0;
 }
+
+/* ── Scanner ──────────────────────────────────────────── */
+.scanner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.scanner-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.scanner-video {
+  display: none;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 8px;
+  border: 2px solid var(--color-border, #313244);
+  background: #000;
+}
+
+.scanner-video--active {
+  display: block;
+}
+

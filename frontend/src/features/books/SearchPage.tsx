@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth } from '../../shared/api';
+import { Scanner } from './Scanner';
 import './SearchPage.css';
 
 type BookResult = {
@@ -62,9 +63,27 @@ export function SearchPage() {
     }
   };
 
+  const handleScan = async (isbnOrUpc: string) => {
+    setError('');
+    setResults([]);
+    setIsbn(isbnOrUpc);
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ isbn: isbnOrUpc });
+      const res = await fetchWithAuth(`/search?${params}`, token);
+      if (!res.ok) throw new Error('Search failed');
+      setResults(await res.json());
+    } catch {
+      setError('Could not find book for scanned barcode.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="page search-page">
       <h1>Search Books</h1>
+      <Scanner onResult={handleScan} disabled={loading} />
       <form className="search-form" onSubmit={handleSearch}>
         <div className="search-fields">
           <input
