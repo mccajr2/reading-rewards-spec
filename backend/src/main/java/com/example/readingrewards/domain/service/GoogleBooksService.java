@@ -3,23 +3,24 @@ package com.example.readingrewards.domain.service;
 import com.example.readingrewards.domain.dto.BookSummaryDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
+/**
+ * Book search service using Open Library API (free, no key required).
+ * Open Library provides generous free tier suitable for personal/small-scale apps.
+ */
 @Service
 public class GoogleBooksService {
 
     private static final Logger log = LoggerFactory.getLogger(GoogleBooksService.class);
-    private static final String API_URL = "https://www.googleapis.com/books/v1/volumes";
+    private static final String API_URL = "https://openlibrary.org/search.json";
+    private static final String COVERS_URL = "https://covers.openlibrary.org/b/id";
 
     private final RestTemplate restTemplate;
-
-    @Value("${GOOGLE_BOOKS_API_KEY:}")
-    private String apiKey;
 
     public GoogleBooksService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -31,52 +32,55 @@ public class GoogleBooksService {
             return Collections.emptyList();
         }
 
-        StringBuilder q = new StringBuilder();
-        if (!isBlank(title))  appendPart(q, "intitle:" + title.replace(" ", "+"));
-        if (!isBlank(author)) appendPart(q, "inauthor:" + author.replace(" ", "+"));
-        if (!isBlank(isbn))   appendPart(q, "isbn:" + isbn.replace("-", ""));
-
-        String url = API_URL + "?q=" + q + "&maxResults=20";
-        if (!isBlank(apiKey)) url += "&key=" + apiKey;
+        StringBuilder urlBuilder = new StringBuilder(API_URL + "?");
+        if (!isBlank(title))  urlBuilder.append("title=").append(encodeParam(title)).append("&");
+        if (!isBlank(author)) urlBuilder.append("author=").append(encodeParam(author)).append("&");
+        if (!isBlank(isbn))   urlBuilder.append("isbn=").append(encodeParam(isbn.replace("-", ""))).append("&");
+        urlBuilder.append("limit=20");
 
         Map<String, Object> result;
         try {
-            result = restTemplate.getForObject(url, Map.class);
+            result = restTemplate.getForObject(urlBuilder.toString(), Map.class);
         } catch (RestClientException e) {
-            log.warn("Google Books API unavailable: {}", e.getMessage());
+            log.warn("Open Library API unavailable: {}", e.getMessage());
             return Collections.emptyList();
         }
-        if (result == null || !(result.get("items") instanceof List<?> items)) {
+
+        if (result == null || !(result.get("docs") instanceof List<?> docs)) {
             return Collections.emptyList();
         }
 
         List<BookSummaryDto> books = new ArrayList<>();
-        for (Object itemObj : items) {
-            if (!(itemObj instanceof Map<?, ?> item)) continue;
-            String volumeId = item.get("id") != null ? item.get("id").toString() : null;
-            if (!(item.get("volumeInfo") instanceof Map<?, ?> info)) continue;
+        for (Object docObj : docs) {
+            if (!(docObj instanceof Map<?, ?> doc)) continue;
 
-            String titleVal = info.get("title") != null ? info.get("title").toString() : null;
-            String description = info.get("description") != null ? info.get("description").toString() : null;
+            String volumeId = doc.get("key") != null ? doc.get("key").toString() : null;
+            String titleVal = doc.get("title") != null ? doc.get("title").toString() : null;
 
             List<String> authors = new ArrayList<>();
-            if (info.get("authors") instanceof List<?> al) {
+            if (doc.get("author_name") instanceof List<?> al) {
                 for (Object a : al) { if (a != null) authors.add(a.toString()); }
             }
 
+            // Open Library doesn't provide descriptions directly, omit for now
+            String description = null;
+
+            // Thumbnail from cover ID
             String thumbnailUrl = null;
-            if (info.get("imageLinks") instanceof Map<?, ?> links && links.get("thumbnail") != null) {
-                thumbnailUrl = links.get("thumbnail").toString();
+            if (doc.get("cover_i") instanceof Number coverId) {
+                thumbnailUrl = COVERS_URL + "/" + coverId + "-M.jpg";
             }
 
-            books.add(new BookSummaryDto(volumeId, titleVal, authors, description, thumbnailUrl));
+            if (titleVal != null) {
+                books.add(new BookSummaryDto(volumeId, titleVal, authors, description, thumbnailUrl));
+            }
         }
         return books;
     }
 
-    private static boolean isBlank(String s) { return s == null || s.isBlank(); }
-    private static void appendPart(StringBuilder sb, String part) {
-        if (!sb.isEmpty()) sb.append("+");
-        sb.append(part);
+    private static String encodeParam(String s) {
+        return s.replace(" ", "+").replace("&", "%26");
     }
+
+    private static boolean isBlank(String s) { return s == null || s.isBlank(); }
 }
