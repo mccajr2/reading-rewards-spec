@@ -15,7 +15,7 @@ Create a new standalone implementation of Reading Rewards in this repository by 
 **Testing**: JUnit 5, Spring Boot Test, Vitest, React Testing Library  
 **Target Platform**: macOS and Linux developer environments, container-friendly web deployment  
 **Project Type**: Full-stack web application  
-**Performance Goals**: Local startup under 30 seconds, interactive page transitions under 200 ms on normal local data volumes, API response times under 300 ms p95 for core CRUD flows in local validation  
+**Performance Goals** *(local developer-experience guidance targets, not contractual SLOs)*: Local startup under 30 seconds, interactive page transitions under 200 ms on normal local data volumes, API response times under 300 ms p95 for core CRUD flows in local validation  
 **Constraints**: Preserve legacy API semantics for approved flows, no live secrets in tracked files, keep the original repository untouched, plain CSS over component-library lock-in  
 **Scale/Scope**: Single family-oriented web app with parent and child roles, one backend service, one SPA frontend, and one PostgreSQL database
 

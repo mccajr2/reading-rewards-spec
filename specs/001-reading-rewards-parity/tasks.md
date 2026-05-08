@@ -136,7 +136,7 @@
 
 - [x] T050 [P] [US3] Backend tests: parent summary totals, history endpoint in `backend/src/test/`
 - [x] T051 [P] [US3] Frontend tests: ParentSummary, History components in `frontend/src/`
-- [ ] T052 [US3] E2E test: child login → navigate to history/rewards page → verify completed reading records and reward totals are displayed in `tests/e2e/` *(gap: G3 — GET /api/history is tested in backend but no E2E test covers the child history/rewards UI)*
+- [x] T052 [US3] E2E test: child login → navigate to history/rewards page → verify completed reading records and reward totals are displayed in `tests/e2e/` *(gap: G3 — GET /api/history is tested in backend but no E2E test covers the child history/rewards UI)*
 
 **Checkpoint**: All three user stories independently functional and tested
 
@@ -146,10 +146,10 @@
 
 **Purpose**: Documentation, production-readiness notes, and minor spec cleanup.
 
-- [ ] T053 [P] Document DevAuthController production safety: add README section or inline comment in `backend/src/main/java/com/example/readingrewards/auth/DevAuthController.java` clarifying that this controller is disabled in prod via Spring profile guard and must not be exposed in production deployments *(gap: A1)*
-- [ ] T054 [P] Document Brevo production email activation: add setup instructions to `specs/001-reading-rewards-parity/quickstart.md` or root `README.md` describing how to configure the Brevo API key and sender identity for the production email verification flow *(gap: A2)*
-- [ ] T055 [P] Clarify performance targets classification: update `specs/001-reading-rewards-parity/plan.md` or `spec.md` to note that the stated performance goals (30s startup, 200ms transitions, 300ms p95 API) are local development guidance targets, not contractual SLOs *(gap: I2)*
-- [ ] T056 [P] Add credits endpoint terminology note to `specs/001-reading-rewards-parity/contracts/README.md`: note that `GET /api/credits` is a reward-balance alias retained for legacy parity and is functionally equivalent to `GET /api/rewards/summary` balance field *(gap: T1)*
+- [x] T053 [P] Document DevAuthController production safety: add README section or inline comment in `backend/src/main/java/com/example/readingrewards/auth/DevAuthController.java` clarifying that this controller is disabled in prod via Spring profile guard and must not be exposed in production deployments *(gap: A1)*
+- [x] T054 [P] Document Brevo production email activation: add setup instructions to `specs/001-reading-rewards-parity/quickstart.md` or root `README.md` describing how to configure the Brevo API key and sender identity for the production email verification flow *(gap: A2)*
+- [x] T055 [P] Clarify performance targets classification: update `specs/001-reading-rewards-parity/plan.md` or `spec.md` to note that the stated performance goals (30s startup, 200ms transitions, 300ms p95 API) are local development guidance targets, not contractual SLOs *(gap: I2)*
+- [x] T056 [P] Add credits endpoint terminology note to `specs/001-reading-rewards-parity/contracts/README.md`: note that `GET /api/credits` is a reward-balance alias retained for legacy parity and is functionally equivalent to `GET /api/rewards/summary` balance field *(gap: T1)*
 
 ---
 
@@ -179,7 +179,7 @@ Phase 6 (Polish — independent, can run at any time after spec is stable)
 - **MVP scope**: Phase 1 + Phase 2 + Phase 3 (US1) — parent account lifecycle, auth, and kid management end-to-end.
 - **Core parity**: Add Phase 4 (US2) — child reading and rewards, the product's primary business behavior.
 - **Full parity**: Add Phase 5 (US3) — reporting and history views.
-- **Done**: All implementation tasks (T001–T051) are complete. Remaining work: T052 (E2E gap, US3), T053–T056 (documentation and cleanup).
+- **Done**: All 56 tasks (T001–T056) are complete.
 
 ## Task Summary
 
@@ -189,6 +189,6 @@ Phase 6 (Polish — independent, can run at any time after spec is stable)
 | Phase 2: Foundational | 6 | 6 | 0 |
 | Phase 3: US1 | 15 | 15 | 0 |
 | Phase 4: US2 | 17 | 17 | 0 |
-| Phase 5: US3 | 7 | 6 | 1 (T052 E2E) |
-| Phase 6: Polish | 4 | 0 | 4 (A1, A2, I2, T1) |
-| **Total** | **56** | **51** | **5** |
+| Phase 5: US3 | 7 | 7 | 0 |
+| Phase 6: Polish | 4 | 4 | 0 |
+| **Total** | **56** | **56** | **0** |

@@ -31,6 +31,9 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // /api/auth/dev/** is permitted at the HTTP level but DevAuthController is
+                // annotated @Profile("!prod"), so it is never registered in production — the route
+                // returns 404 in prod regardless of this permit rule.
                 .requestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/verify-email", "/api/auth/dev/**", "/actuator/health").permitAll()
                 .anyRequest().authenticated()
             )

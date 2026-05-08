@@ -39,6 +39,22 @@ cd /Users/jasonmccarthy/projects/reading-rewards-spec/frontend
 npm test -- --run
 ```
 
+## Production email (Brevo)
+
+In development and test environments, email verification is bypassed via the `DevAuthController` dev-only endpoint (`POST /api/auth/dev/verify?email=...`), which is disabled in the `prod` Spring profile.
+
+To activate real email delivery in production:
+
+1. Create a free [Brevo](https://brevo.com) account and obtain an API key.
+2. Configure a verified sender identity in the Brevo dashboard.
+3. Add the following to your production environment (e.g., `.env.sh` or your deployment secrets):
+   ```
+   BREVO_API_KEY=your-brevo-api-key
+   BREVO_SENDER_EMAIL=noreply@yourdomain.com
+   BREVO_SENDER_NAME=Reading Rewards
+   ```
+4. Deploy with `SPRING_PROFILES_ACTIVE=prod` to activate `BrevoEmailService` and disable `DevAuthController`.
+
 ## Spec Kit commands
 
 - `./.venv/bin/specify check`

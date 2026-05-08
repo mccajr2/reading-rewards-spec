@@ -40,3 +40,4 @@ Notes:
 
 - Protected endpoints require Bearer JWT except configured public auth routes.
 - Parent login is blocked when account status is `UNVERIFIED`.
+- `GET /api/credits` is a legacy-parity alias that returns `{ cents, dollars }` derived from the same reward balance as `GET /api/rewards/summary`. It was retained to match the legacy app's route surface and is the primary balance indicator used by the child UI.
