@@ -30,7 +30,16 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
   }
 
   const text = await response.text();
-  return text ? (JSON.parse(text) as T) : (undefined as T);
+  if (!text) {
+    return undefined as T;
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (contentType.includes('application/json')) {
+    return JSON.parse(text) as T;
+  }
+
+  return text as T;
 }
 
 export async function getText(path: string): Promise<string> {
