@@ -281,4 +281,155 @@ class ApiControllerIntegrationTests {
             .andExpect(jsonPath("$.length()").value(1))
             .andExpect(jsonPath("$[0].username").value("kiduser"));
     }
+
+    @Test
+    void finishBookSetsEndDateAndRereadCreatesNewBookRead() throws Exception {
+        // Add book
+        mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"googleBookId":"gbk-finish","title":"Finish Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    """))
+            .andExpect(status().isOk());
+
+        assertThat(bookReadRepository.findAll().get(0).isInProgress()).isTrue();
+
+        // Finish book
+        mockMvc.perform(post("/api/books/gbk-finish/finish")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        assertThat(bookReadRepository.findAll().get(0).isInProgress()).isFalse();
+
+        // Reread creates a new BookRead
+        mockMvc.perform(post("/api/books/gbk-finish/reread")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        assertThat(bookReadRepository.findAll()).hasSize(2);
+        long inProgressCount = bookReadRepository.findAll().stream().filter(br -> br.isInProgress()).count();
+        assertThat(inProgressCount).isEqualTo(1);
+    }
+
+    @Test
+    void deleteChapterReadReversesReward() throws Exception {
+        // Add book + chapter + mark read
+        mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"googleBookId":"gbk-del-cr","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    """))
+            .andExpect(status().isOk());
+
+        String bookReadId = bookReadRepository.findAll().get(0).getId().toString();
+
+        mockMvc.perform(post("/api/books/gbk-del-cr/chapters")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    [{"name":"Chapter 1","chapterIndex":0}]
+                    """))
+            .andExpect(status().isOk());
+
+        String chapterId = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk-del-cr").get(0).getId().toString();
+
+        mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        assertThat(rewardRepository.findAll()).hasSize(1);
+        assertThat(chapterReadRepository.findAll()).hasSize(1);
+
+        // Delete chapter read — should also delete reward
+        mockMvc.perform(delete("/api/books/gbk-del-cr/chapters/" + chapterId + "/read")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        assertThat(chapterReadRepository.findAll()).isEmpty();
+        assertThat(rewardRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void deleteBookReadCascadesChapterReadsAndRewards() throws Exception {
+        // Add book + chapter + mark read
+        mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"googleBookId":"gbk-del-br","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    """))
+            .andExpect(status().isOk());
+
+        String bookReadId = bookReadRepository.findAll().get(0).getId().toString();
+
+        mockMvc.perform(post("/api/books/gbk-del-br/chapters")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    [{"name":"Ch1","chapterIndex":0}]
+                    """))
+            .andExpect(status().isOk());
+
+        String chapterId = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk-del-br").get(0).getId().toString();
+
+        mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        assertThat(chapterReadRepository.findAll()).hasSize(1);
+        assertThat(rewardRepository.findAll()).hasSize(1);
+
+        // Delete the BookRead — should cascade-delete ChapterRead + Reward
+        mockMvc.perform(delete("/api/bookreads/" + bookReadId)
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        assertThat(bookReadRepository.findAll()).isEmpty();
+        assertThat(chapterReadRepository.findAll()).isEmpty();
+        assertThat(rewardRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void spendReducesCurrentBalanceInSummary() throws Exception {
+        // Earn $1 by reading a chapter
+        mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"googleBookId":"gbk-spend","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    """))
+            .andExpect(status().isOk());
+
+        String bookReadId = bookReadRepository.findAll().get(0).getId().toString();
+
+        mockMvc.perform(post("/api/books/gbk-spend/chapters")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    [{"name":"Chapter 1","chapterIndex":0}]
+                    """))
+            .andExpect(status().isOk());
+
+        String chapterId = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk-spend").get(0).getId().toString();
+
+        mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        // Spend $0.50
+        mockMvc.perform(post("/api/rewards/spend")
+                .header("Authorization", "Bearer " + jwt)
+                .param("amount", "0.50")
+                .param("note", "ice cream"))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/rewards/summary")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalEarned").value(1.0))
+            .andExpect(jsonPath("$.totalSpent").value(0.5))
+            .andExpect(jsonPath("$.currentBalance").value(0.5));
+    }
 }

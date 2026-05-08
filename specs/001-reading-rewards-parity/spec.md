@@ -84,7 +84,7 @@ Parents can inspect child progress summaries, and children can inspect their own
 - **FR-007**: The system MUST support finishing and rereading books while preserving existing reading history.
 - **FR-008**: The system MUST expose parent summary and child history views that match the legacy app's information model.
 - **FR-009**: The system MUST provide deterministic local development and test setup using environment templates rather than committed live secrets.
-- **FR-010**: The system MUST include backend and frontend automated tests for the critical journeys covered by this spec, and MUST track end-to-end smoke tests as planned follow-on coverage.
+- **FR-010**: The system MUST include backend, frontend, and end-to-end automated tests for the critical journeys covered by this spec. See SC-002.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -100,7 +100,7 @@ Parents can inspect child progress summaries, and children can inspect their own
 ### Measurable Outcomes
 
 - **SC-001**: The successor app reproduces the approved parent and child core workflows without contract drift in endpoint path, status behavior, or required payload fields for the covered journeys.
-- **SC-002**: Automated backend and frontend tests cover P1 user stories and pass in local execution, with end-to-end smoke coverage tracked as a planned follow-on milestone.
+- **SC-002**: Automated backend, frontend, and end-to-end tests cover P1 user stories and pass in local execution. All three test layers are implemented and passing.
 - **SC-003**: The new repository can be bootstrapped from documented environment templates without requiring secrets committed to source control.
 - **SC-004**: The successor repository isolates its own toolchains, configuration, and git history from the legacy repository while remaining traceable to the legacy behavior baseline.
 
