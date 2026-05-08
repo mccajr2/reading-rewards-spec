@@ -49,7 +49,7 @@ export function ReadingListPage() {
     const datesMap: Record<string, Record<string, string>> = {};
 
     for (const br of brs) {
-      const cr = await fetchWithAuth(`/books/${br.googleBookId}/chapters`, token);
+      const cr = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapters`, token);
       chaptersMap[br.googleBookId] = cr.ok ? await cr.json() : [];
 
       const drRes = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapterreads`, token);

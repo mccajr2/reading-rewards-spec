@@ -54,7 +54,8 @@ public class GoogleBooksService {
         for (Object docObj : docs) {
             if (!(docObj instanceof Map<?, ?> doc)) continue;
 
-            String volumeId = doc.get("key") != null ? doc.get("key").toString() : null;
+            // Open Library keys start with "/" (e.g., "/works/OL15936512W"), strip it for clean URLs
+            String volumeId = doc.get("key") != null ? doc.get("key").toString().replaceFirst("^/", "") : null;
             String titleVal = doc.get("title") != null ? doc.get("title").toString() : null;
 
             List<String> authors = new ArrayList<>();

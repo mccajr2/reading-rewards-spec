@@ -182,9 +182,27 @@ public class ApiController {
         return chapterRepo.findByGoogleBookIdOrderByChapterIndex(googleBookId);
     }
 
+    @GetMapping("/bookreads/{bookReadId}/chapters")
+    public List<Chapter> getChaptersForBookRead(@PathVariable UUID bookReadId) {
+        Optional<BookRead> br = bookReadRepo.findById(bookReadId);
+        if (br.isEmpty()) return Collections.emptyList();
+        return chapterRepo.findByGoogleBookIdOrderByChapterIndex(br.get().getGoogleBookId());
+    }
+
     @PostMapping("/books/{googleBookId}/chapters")
     public List<Chapter> saveChapters(@PathVariable String googleBookId,
                                       @RequestBody List<Chapter> chapters) {
+        chapterRepo.deleteByGoogleBookId(googleBookId);
+        chapters.forEach(c -> c.setGoogleBookId(googleBookId));
+        return chapterRepo.saveAll(chapters);
+    }
+
+    @PostMapping("/bookreads/{bookReadId}/chapters")
+    public List<Chapter> saveChaptersForBookRead(@PathVariable UUID bookReadId,
+                                                 @RequestBody List<Chapter> chapters) {
+        Optional<BookRead> br = bookReadRepo.findById(bookReadId);
+        if (br.isEmpty()) return Collections.emptyList();
+        String googleBookId = br.get().getGoogleBookId();
         chapterRepo.deleteByGoogleBookId(googleBookId);
         chapters.forEach(c -> c.setGoogleBookId(googleBookId));
         return chapterRepo.saveAll(chapters);
