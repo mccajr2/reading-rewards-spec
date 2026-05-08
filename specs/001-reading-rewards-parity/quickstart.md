@@ -37,6 +37,38 @@ JAVA_HOME=/opt/homebrew/opt/openjdk ./mvnw test
 
 cd /Users/jasonmccarthy/projects/reading-rewards-spec/frontend
 npm test -- --run
+
+cd /Users/jasonmccarthy/projects/reading-rewards-spec
+npx --yes playwright test --reporter=list
+```
+
+## Test evidence capture template
+
+For each test run (backend, frontend, E2E), record the following in this section:
+
+- Command: exact command executed
+- Timestamp: local run time
+- Exit code: `0` for pass, non-zero for fail
+- Totals: passed/failed/skipped counts
+- Failure details: failing test names and first actionable error (if any)
+
+Example entry format:
+
+```text
+[backend] 2026-05-08 20:15 local
+Command: cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk ./mvnw test
+Exit code: 0
+Totals: 16 passed, 0 failed, 0 skipped
+
+[frontend] 2026-05-08 20:17 local
+Command: cd frontend && npm test -- --run
+Exit code: 0
+Totals: 18 passed, 0 failed
+
+[e2e] 2026-05-08 20:20 local
+Command: npx --yes playwright test --reporter=list
+Exit code: 0
+Totals: 11 passed, 0 failed
 ```
 
 ## Production email (Brevo)

@@ -13,7 +13,7 @@
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: User story label (`[US1]`, `[US2]`, `[US3]`)
-- Every task includes an exact file path
+- Every task includes a concrete target file path (existing file or explicitly planned new file)
 
 ## Phase 1: Setup (Shared Infrastructure)
 
@@ -37,9 +37,9 @@
 - [ ] T007 Normalize parent/child capability rules in API contract notes in `specs/001-reading-rewards-parity/contracts/README.md`
 - [ ] T008 [P] Add/confirm role boundary checks for parent vs child endpoints in `backend/src/main/java/com/example/readingrewards/auth/config/SecurityConfig.java`
 - [ ] T009 [P] Ensure JWT secret parsing supports env-safe formats with secure fallback behavior in `backend/src/main/java/com/example/readingrewards/auth/util/JwtUtil.java`
-- [ ] T010 [P] Add shared error response mapping for authorization and validation failures in `backend/src/main/java/com/example/readingrewards/shared/ApiExceptionHandler.java`
+- [ ] T010 [P] Add shared error response mapping for authorization and validation failures in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
 - [ ] T011 [P] Align shared DTOs for book reads, chapter reads, and rewards rollups in `backend/src/main/java/com/example/readingrewards/domain/dto/BookSummaryDto.java`
-- [ ] T012 [P] Add frontend auth guard utility for role-based route protection in `frontend/src/app/RequireRole.tsx`
+- [ ] T012 [P] Add frontend auth guard utility for role-based route protection in `frontend/src/app/App.tsx`
 - [ ] T013 Add route map alignment for parent/child navigation boundaries in `frontend/src/app/App.tsx`
 
 **Checkpoint**: Foundation complete. User stories can now be implemented and tested independently.
@@ -58,7 +58,7 @@
 - [ ] T015 [P] [US1] Add backend integration tests for parent dashboard summary card payloads in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
 - [ ] T016 [P] [US1] Add frontend component tests for signup/login/verify flows in `frontend/src/features/auth/LoginPage.test.tsx`
 - [ ] T017 [P] [US1] Add frontend component tests for parent dashboard cards and drill-down navigation in `frontend/src/features/parent/ParentDashboard.test.tsx`
-- [ ] T018 [US1] Add Playwright scenario for parent onboarding, kid creation, and dashboard card visibility in `tests/e2e/parent-dashboard.spec.ts`
+- [ ] T018 [US1] Add Playwright scenario for parent onboarding, kid creation, and dashboard card visibility in `tests/e2e/parent.spec.ts`
 
 ### Implementation for User Story 1
 
@@ -74,6 +74,10 @@
 - [ ] T028 [US1] Implement parent dashboard with per-child cards and drill-down links in `frontend/src/features/parent/ParentDashboard.tsx`
 - [ ] T029 [US1] Update parent navigation items to expose dashboard and kid management flows in `frontend/src/features/nav/Nav.tsx`
 - [ ] T030 [US1] Document US1 endpoint contracts and payload examples in `specs/001-reading-rewards-parity/contracts/README.md`
+- [ ] T073 [P] [US1] Add backend integration tests for parent self reading-list add/list behavior in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
+- [ ] T074 [P] [US1] Implement parent self reading-list add/list authorization behavior in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
+- [ ] T075 [P] [US1] Add parent self reading-list entry points in the parent dashboard UI in `frontend/src/features/parent/ParentDashboard.tsx`
+- [ ] T076 [US1] Add Playwright scenario for parent self reading-list positive path and child-boundary denial in `tests/e2e/parent.spec.ts`
 
 **Checkpoint**: User Story 1 is independently functional and testable.
 
@@ -88,17 +92,17 @@
 ### Tests for User Story 2
 
 - [ ] T031 [P] [US2] Add backend integration tests for search/add/finish/reread workflows in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
-- [ ] T032 [P] [US2] Add backend integration tests for chapter seed/reuse and chapter-read reward side effects in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
+- [ ] T032 [P] [US2] Add backend integration tests for chapter seed/reuse, explicit chapter rename behavior, and chapter-read reward side effects in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
 - [ ] T033 [P] [US2] Add frontend tests for search/add book and chapter seeding prompt flow in `frontend/src/features/books/SearchPage.test.tsx`
-- [ ] T034 [P] [US2] Add frontend tests for reading list chapter state and reward math display in `frontend/src/features/books/ReadingListPage.test.tsx`
+- [ ] T034 [P] [US2] Add frontend tests for reading list chapter state, chapter rename UX, and reward math display in `frontend/src/features/books/ReadingListPage.test.tsx`
 - [ ] T035 [P] [US2] Add frontend tests for rewards history and spend/payout actions in `frontend/src/features/rewards/RewardsPage.test.tsx`
-- [ ] T036 [US2] Add Playwright child journey for add/read/reward/finish/reread flow in `tests/e2e/reading-journey.spec.ts`
+- [ ] T036 [US2] Add Playwright child journey for add/read/reward/finish/reread flow in `tests/e2e/reading.spec.ts`
 
 ### Implementation for User Story 2
 
 - [ ] T037 [P] [US2] Implement search provider service using Open Library with resilient mapping in `backend/src/main/java/com/example/readingrewards/domain/service/GoogleBooksService.java`
 - [ ] T038 [P] [US2] Implement search/books CRUD and finish/reread endpoints in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
-- [ ] T039 [P] [US2] Implement chapter list/create/update and bookRead-based chapter endpoints in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
+- [ ] T039 [P] [US2] Implement chapter list/create/update (including explicit rename semantics) and bookRead-based chapter endpoints in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
 - [ ] T040 [P] [US2] Implement chapter-read create/delete behavior with reward side effects in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
 - [ ] T041 [P] [US2] Implement rewards summary/history/spend/payout plus credits alias endpoint in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
 - [ ] T042 [US2] Implement chapter seed-on-first-add and reuse-on-next-add domain behavior in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
@@ -124,17 +128,17 @@
 
 - [ ] T050 [P] [US3] Add backend integration tests for parent child-detail payload and authorization boundaries in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
 - [ ] T051 [P] [US3] Add backend integration tests for parent-triggered chapter-read reversal behavior in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
-- [ ] T052 [P] [US3] Add frontend tests for parent child-detail rendering and reward ledger visibility in `frontend/src/features/parent/ParentChildDetail.test.tsx`
-- [ ] T053 [P] [US3] Add frontend tests for reversal action UX and post-reversal state refresh in `frontend/src/features/parent/ParentChildDetail.test.tsx`
-- [ ] T054 [US3] Add Playwright parent drill-down and reversal scenario in `tests/e2e/parent-reversal.spec.ts`
+- [ ] T052 [P] [US3] Add frontend tests for parent child-detail rendering and reward ledger visibility in `frontend/src/features/parent/ParentDashboard.test.tsx`
+- [ ] T053 [P] [US3] Add frontend tests for reversal action UX and post-reversal state refresh in `frontend/src/features/parent/ParentDashboard.test.tsx`
+- [ ] T054 [US3] Add Playwright parent drill-down and reversal scenario in `tests/e2e/parent.spec.ts`
 
 ### Implementation for User Story 3
 
 - [ ] T055 [P] [US3] Implement parent child-detail endpoint (books, chapters, rewards rollup) in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
 - [ ] T056 [P] [US3] Implement parent-triggered reverse chapter-read endpoint and service logic in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
 - [ ] T057 [P] [US3] Enforce parent-only access checks for child-detail and reversal endpoints in `backend/src/main/java/com/example/readingrewards/auth/config/JwtAuthFilter.java`
-- [ ] T058 [P] [US3] Implement parent summary drill-down page with read-only child activity in `frontend/src/features/parent/ParentChildDetail.tsx`
-- [ ] T059 [P] [US3] Implement reversal action controls in parent child-detail page in `frontend/src/features/parent/ParentChildDetail.tsx`
+- [ ] T058 [P] [US3] Implement parent summary drill-down page with read-only child activity in `frontend/src/features/parent/ParentSummary.tsx`
+- [ ] T059 [P] [US3] Implement reversal action controls in parent child-detail page in `frontend/src/features/parent/ParentSummary.tsx`
 - [ ] T060 [US3] Wire parent child-detail route and guard behavior in `frontend/src/app/App.tsx`
 - [ ] T061 [US3] Update parent summary page navigation to child detail routes in `frontend/src/features/parent/ParentSummary.tsx`
 - [ ] T062 [US3] Document US3 contracts (child-detail and reversal) in `specs/001-reading-rewards-parity/contracts/README.md`
@@ -151,12 +155,12 @@
 - [ ] T064 [P] Align data model naming from `googleBookId` to provider-agnostic wording notes in `specs/001-reading-rewards-parity/data-model.md`
 - [ ] T065 [P] Update quickstart with parent dashboard and reversal verification steps in `specs/001-reading-rewards-parity/quickstart.md`
 - [ ] T066 [P] Add Open Library dependency note and fallback behavior in `README.md`
-- [ ] T067 Run backend test suite and capture results in `backend/pom.xml`
-- [ ] T068 Run frontend unit test suite and capture results in `frontend/package.json`
-- [ ] T069 Run Playwright E2E suite and capture results in `playwright.config.ts`
-- [ ] T070 [P] Add backend unit tests for domain reward and chapter-read logic in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
-- [ ] T071 [P] Add backend unit tests for auth and JWT utility behavior in `backend/src/test/java/com/example/readingrewards/auth/AuthControllerIntegrationTests.java`
-- [ ] T072 [P] Add SC-004 isolation/traceability verification note (toolchain + git-history boundary) in `specs/001-reading-rewards-parity/quickstart.md`
+- [ ] T067 Run backend test suite and capture summary results in `specs/001-reading-rewards-parity/quickstart.md`
+- [ ] T068 Run frontend unit test suite and capture summary results in `specs/001-reading-rewards-parity/quickstart.md`
+- [ ] T069 Run Playwright E2E suite and capture summary results in `specs/001-reading-rewards-parity/quickstart.md`
+- [ ] T070 [P] Add backend unit tests for domain reward and chapter-read logic in `backend/src/test/java/com/example/readingrewards/domain/RewardLogicUnitTests.java`
+- [ ] T071 [P] Add backend unit tests for auth and JWT utility behavior in `backend/src/test/java/com/example/readingrewards/auth/JwtUtilUnitTests.java`
+- [ ] T072 [P] Add SC-004 isolation/traceability verification checklist with explicit validation commands in `specs/001-reading-rewards-parity/quickstart.md`
 
 ---
 
@@ -218,7 +222,7 @@ Task: T044 Implement reading list chapter toggles in frontend/src/features/books
 ```bash
 # Parallel parent detail and reversal work
 Task: T055 Implement parent child-detail endpoint in backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java
-Task: T058 Implement parent child-detail page in frontend/src/features/parent/ParentChildDetail.tsx
+Task: T058 Implement parent child-detail page in frontend/src/features/parent/ParentSummary.tsx
 ```
 
 ---
