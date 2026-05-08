@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from '../features/auth/AuthContext';
 import { LoginPage } from '../features/auth/LoginPage';
@@ -17,6 +18,16 @@ import '../features/books/HistoryPage.css';
 import '../features/rewards/RewardsPage.css';
 import '../features/parent/ParentDashboard.css';
 
+function ParentOnlyRoute({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+
+  if (user?.role !== 'PARENT') {
+    return <Navigate to="/reading-list" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AuthenticatedLayout() {
   return (
     <div className="app-layout">
@@ -28,8 +39,30 @@ function AuthenticatedLayout() {
           <Route path="/reading-list" element={<ReadingListPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/rewards" element={<RewardsPage />} />
-          <Route path="/parent" element={<ParentDashboard />} />
-          <Route path="/parent/summary" element={<ParentSummary />} />
+          <Route
+            path="/parent"
+            element={(
+              <ParentOnlyRoute>
+                <ParentDashboard />
+              </ParentOnlyRoute>
+            )}
+          />
+          <Route
+            path="/parent/summary"
+            element={(
+              <ParentOnlyRoute>
+                <ParentSummary />
+              </ParentOnlyRoute>
+            )}
+          />
+          <Route
+            path="/parent/summary/:childId"
+            element={(
+              <ParentOnlyRoute>
+                <ParentSummary />
+              </ParentOnlyRoute>
+            )}
+          />
           <Route path="*" element={<Navigate to="/reading-list" replace />} />
         </Routes>
       </div>

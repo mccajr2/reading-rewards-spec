@@ -36,4 +36,24 @@ describe('App routing', () => {
 
     expect(screen.getByText(/reading rewards/i)).toBeInTheDocument();
   });
+
+  it('redirects child user away from parent detail routes', async () => {
+    localStorage.setItem('jwtToken', 'demo-token');
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        id: '1',
+        role: 'CHILD',
+        firstName: 'Jamie'
+      })
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/parent/summary/kid-1']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('heading', { name: /my reading list/i })).toBeInTheDocument();
+  });
 });

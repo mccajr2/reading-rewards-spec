@@ -88,6 +88,13 @@ export function ParentDashboard() {
                   <td>{kid.firstName}</td>
                   <td>{kid.username}</td>
                   <td>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => navigate(`/parent/summary/${kid.id}`)}
+                      aria-label={`View details for ${kid.firstName}`}
+                    >
+                      View Details
+                    </button>
                     <button className="btn btn-secondary btn-sm" onClick={() => { setResetTarget(kid.username); setResetMsg(''); setNewPassword(''); }}>
                       Reset Password
                     </button>

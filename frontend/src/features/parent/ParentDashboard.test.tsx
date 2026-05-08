@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import { ParentDashboard } from './ParentDashboard';
@@ -58,6 +58,22 @@ describe('ParentDashboard', () => {
 
     await waitFor(() => expect(screen.getByText('Jamie')).toBeInTheDocument());
     expect(screen.getByText('Sam')).toBeInTheDocument();
+  });
+
+  it('navigates to child detail from manage kids table', async () => {
+    const kids = [{ id: 'k-1', firstName: 'Jamie', username: 'jamie' }];
+    vi.spyOn(api, 'fetchWithAuth').mockResolvedValue(mockOkResponse(kids));
+
+    render(
+      <MemoryRouter>
+        <ParentDashboard />
+      </MemoryRouter>
+    );
+
+    const button = await screen.findByRole('button', { name: /view details for jamie/i });
+    fireEvent.click(button);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/parent/summary/k-1');
   });
 
   it('shows no-kids message when list is empty', async () => {
