@@ -40,9 +40,11 @@ export function SearchPage() {
       if (isbn) params.set('isbn', isbn);
       const res = await fetchWithAuth(`/search?${params}`, token);
       if (!res.ok) throw new Error('Search failed');
-      setResults(await res.json());
+      const books = await res.json();
+      setResults(books);
+      if (books.length === 0) setError('No results found. Try a different title or author.');
     } catch {
-      setError('Search failed. Please try again.');
+      setError('Search unavailable. Google Books may be temporarily down — try again in a moment.');
     } finally {
       setLoading(false);
     }

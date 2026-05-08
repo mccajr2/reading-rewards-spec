@@ -29,6 +29,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       BREVO_API_KEY: ${BREVO_API_KEY:-}
       SPRING_MAIL_FROM: ${SPRING_MAIL_FROM:-noreply@example.com}
+      GOOGLE_BOOKS_API_KEY: ${GOOGLE_BOOKS_API_KEY:-}
     ports:
       - "8080:8080"
     depends_on:

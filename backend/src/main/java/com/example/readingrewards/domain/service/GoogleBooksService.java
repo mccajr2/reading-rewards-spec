@@ -1,7 +1,11 @@
 package com.example.readingrewards.domain.service;
 
 import com.example.readingrewards.domain.dto.BookSummaryDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -9,9 +13,13 @@ import java.util.*;
 @Service
 public class GoogleBooksService {
 
+    private static final Logger log = LoggerFactory.getLogger(GoogleBooksService.class);
     private static final String API_URL = "https://www.googleapis.com/books/v1/volumes";
 
     private final RestTemplate restTemplate;
+
+    @Value("${GOOGLE_BOOKS_API_KEY:}")
+    private String apiKey;
 
     public GoogleBooksService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -29,7 +37,15 @@ public class GoogleBooksService {
         if (!isBlank(isbn))   appendPart(q, "isbn:" + isbn.replace("-", ""));
 
         String url = API_URL + "?q=" + q + "&maxResults=20";
-        Map<String, Object> result = restTemplate.getForObject(url, Map.class);
+        if (!isBlank(apiKey)) url += "&key=" + apiKey;
+
+        Map<String, Object> result;
+        try {
+            result = restTemplate.getForObject(url, Map.class);
+        } catch (RestClientException e) {
+            log.warn("Google Books API unavailable: {}", e.getMessage());
+            return Collections.emptyList();
+        }
         if (result == null || !(result.get("items") instanceof List<?> items)) {
             return Collections.emptyList();
         }
