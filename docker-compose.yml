@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: readingrewards
+      POSTGRES_USER: readingrewards
+      POSTGRES_PASSWORD: readingrewards
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U readingrewards"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/readingrewards
+      SPRING_DATASOURCE_USERNAME: readingrewards
+      SPRING_DATASOURCE_PASSWORD: readingrewards
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_FLYWAY_ENABLED: "true"
+      JWT_SECRET: ${JWT_SECRET:-changeme-replace-in-production-with-256bit-secret}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      SPRING_MAIL_FROM: ${SPRING_MAIL_FROM:-noreply@example.com}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8080/api}
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

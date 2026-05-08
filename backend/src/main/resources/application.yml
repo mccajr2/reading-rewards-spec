@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: reading-rewards-spec-backend
+  datasource:
+    url: ${DATABASE_URL:jdbc:h2:mem:reading_rewards;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}
+    username: ${DATABASE_USER:sa}
+    password: ${DATABASE_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:create-drop}
+    open-in-view: false
+  flyway:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+server:
+  port: 8080
+
+frontend:
+  url: ${FRONTEND_URL:http://localhost:3000}
+
+jwt:
+  secret: ${JWT_SECRET:cmVhZGluZy1yZXdhcmRzLXNwZWMtZGV2LXNlY3JldC1rZXktMjAyNg==}
