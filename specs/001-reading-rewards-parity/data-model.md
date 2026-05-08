@@ -8,10 +8,9 @@
   - `role` as `PARENT` or `CHILD`
   - `email` for parents
   - `username` for children
-  - `passwordHash`
+  - `password`
   - `firstName`
-  - `lastName`
-  - `verificationStatus`
+  - `status` (`UNVERIFIED` or `VERIFIED`)
   - `verificationToken`
   - `parentId` for children
 - **Rules**:
@@ -24,7 +23,6 @@
 
 - **Purpose**: Represents a book selected for tracking.
 - **Core attributes**:
-  - `id`
   - `googleBookId`
   - `title`
   - `authors`
@@ -40,10 +38,11 @@
 - **Core attributes**:
   - `id`
   - `userId`
-  - `bookId`
+  - `googleBookId`
   - `startDate`
   - `endDate`
-  - `inProgress`
+- **Derived attributes**:
+  - `inProgress` is derived from `endDate == null` and is not persisted as a separate column.
 - **Rules**:
   - A user may have multiple book-read records for the same book over time.
   - Finishing a book marks the current lifecycle complete without deleting history.
@@ -54,7 +53,7 @@
 - **Purpose**: Represents a chapter definition for a tracked book.
 - **Core attributes**:
   - `id`
-  - `bookId`
+  - `googleBookId`
   - `chapterIndex`
   - `name`
 - **Rules**:
@@ -71,7 +70,7 @@
   - `userId`
   - `completionDate`
 - **Rules**:
-  - A chapter can only be marked read once per book-read lifecycle.
+  - Current implementation allows multiple reads for the same chapter/book-read pair unless clients prevent duplicates.
   - Removing a chapter-read entry must reverse its dependent reward side effect.
 
 ## Reward

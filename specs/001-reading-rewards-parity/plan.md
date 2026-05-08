@@ -9,10 +9,10 @@ Create a new standalone implementation of Reading Rewards in this repository by 
 
 ## Technical Context
 
-**Language/Version**: Java 25, TypeScript 5.9, Node.js 20+  
-**Primary Dependencies**: Spring Boot, Spring Security, Spring Data JPA, Flyway, PostgreSQL driver, React 19, React Router, Vite, Vitest, React Testing Library, Playwright  
+**Language/Version**: Java 21, TypeScript 5.9, Node.js 20+  
+**Primary Dependencies**: Spring Boot 3.5.6, Spring Security, Spring Data JPA, Flyway, PostgreSQL driver, React 19, React Router, Vite, Vitest, React Testing Library  
 **Storage**: PostgreSQL  
-**Testing**: JUnit 5, Spring Boot Test, Vitest, React Testing Library, Playwright  
+**Testing**: JUnit 5, Spring Boot Test, Vitest, React Testing Library  
 **Target Platform**: macOS and Linux developer environments, container-friendly web deployment  
 **Project Type**: Full-stack web application  
 **Performance Goals**: Local startup under 30 seconds, interactive page transitions under 200 ms on normal local data volumes, API response times under 300 ms p95 for core CRUD flows in local validation  
@@ -39,8 +39,7 @@ specs/001-reading-rewards-parity/
 ├── research.md
 ├── data-model.md
 ├── quickstart.md
-├── contracts/
-└── tasks.md
+└── contracts/
 ```
 
 ### Source Code (repository root)
@@ -52,16 +51,12 @@ backend/
 │   ├── main/
 │   │   ├── java/com/example/readingrewards/
 │   │   │   ├── auth/
-│   │   │   ├── books/
-│   │   │   ├── progress/
-│   │   │   ├── rewards/
-│   │   │   ├── parents/
+│   │   │   ├── domain/
 │   │   │   ├── shared/
 │   │   │   └── ReadingRewardsApplication.java
 │   │   └── resources/
 │   └── test/
 │       └── java/com/example/readingrewards/
-├── scripts/
 └── Dockerfile
 
 frontend/
@@ -72,15 +67,12 @@ frontend/
 │   ├── features/
 │   │   ├── auth/
 │   │   ├── books/
-│   │   ├── history/
-│   │   ├── parents/
+│   │   ├── nav/
+│   │   ├── parent/
 │   │   └── rewards/
 │   ├── shared/
 │   └── styles/
-└── tests/
-
-tests/
-└── e2e/
+└── nginx.conf
 ```
 
 **Structure Decision**: Use a two-application repository with a bounded-context backend layout and a feature-first frontend layout. This keeps the rebuilt app maintainable while preserving the legacy behavior at the API and user-flow boundaries.

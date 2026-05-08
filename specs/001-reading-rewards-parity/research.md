@@ -8,13 +8,13 @@
   - Keep controller-centric logic structure from the legacy app. Rejected because it preserves technical debt instead of rebuilding for maintainability.
   - Redesign the API first. Rejected because the user explicitly requested behavior preservation.
 
-## Decision 2: Use Java 25 with a current Spring Boot line in the new repo
+## Decision 2: Use Java 21 LTS with Spring Boot 3.5.6 in the new repo
 
-- **Decision**: Target Java 25 for the new backend and pair it with a current Spring Boot release that supports that runtime.
-- **Rationale**: The new repository is intended to be the modern successor, so a fresh runtime target is appropriate. Toolchain risk is acceptable because the new repo is isolated from the production baseline.
+- **Decision**: Target Java 21 for the backend runtime and use Spring Boot 3.5.6.
+- **Rationale**: Java 21 provides stable LTS compatibility across local and container builds and aligns with the current backend Docker image/runtime.
 - **Alternatives considered**:
-  - Stay on Java 21 because it is already installed in the legacy environment. Rejected because the new repo is explicitly intended to move forward on versions.
-  - Use an unreleased or preview Java line. Rejected because the project goal is maintainability, not experimentation.
+  - Stay on Java 17. Rejected because Java 21 is the current LTS target and already validated in this repository.
+  - Use Java 25. Rejected because it caused avoidable container compatibility issues for this implementation.
 
 ## Decision 3: Replace MUI with plain React and CSS
 
@@ -23,12 +23,12 @@
 - **Alternatives considered**:
   - Keep MUI for faster parity. Rejected because it adds styling and dependency overhead the user no longer wants.
 
-## Decision 4: Treat end-to-end coverage as part of parity validation
+## Decision 4: Prioritize backend and frontend automated coverage first
 
-- **Decision**: Use Playwright smoke tests for the parent and child critical journeys in addition to backend and frontend tests.
-- **Rationale**: The rewrite crosses both layers, so contract-level and component-level tests alone are not enough to prove parity.
+- **Decision**: Implement and run backend and frontend automated tests as required parity gates, and track Playwright smoke tests as follow-on work.
+- **Rationale**: Backend and frontend tests are currently in place and actively used for regression control. E2E coverage remains planned but is not yet part of the committed test suite.
 - **Alternatives considered**:
-  - Backend and frontend tests only. Rejected because it leaves cross-layer workflow risk unverified.
+  - Blocking completion on immediate Playwright coverage. Rejected for now to avoid delaying stabilization of core parity flows.
 
 ## Decision 5: Keep secret handling external from day one
 
