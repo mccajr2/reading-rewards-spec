@@ -12,16 +12,29 @@
 - Parent kid management, reading-progress, history, and rewards flows are implemented.
 - Backend and frontend automated tests are in place and passing locally.
 - End-to-end Playwright smoke tests are implemented: 8 tests across auth, parent, and reading journeys — all passing.
+- End-to-end Playwright smoke tests are implemented: 8 tests across auth, parent, and reading journeys — all passing.
+
+## Clarifications
+
+### Session 2026-05-08
+
+- Q: Should parent accounts be admin-only (no book adding/scanning) or hybrid (can add own books)? → A: Hybrid-lite. Parents can manage kids and see reporting, plus optionally add their own books (separate from kids). Kids navigation is good and should remain unchanged.
+- Q: What should the parent dashboard display? → A: Per-child cards with rollup and drill-down. Dashboard shows each child's summary card (name, books in progress, completed count, current balance). Click to drill into that child's detail.
+- Q: What can parents do in child detail view? → A: Read-only + reversal. Parent can view child's current books (in progress + finished), chapters, current balance, reward history. Parent can reverse a chapter-read or reward to correct mistakes, but cannot edit child's reading list.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Parent account lifecycle works end-to-end (Priority: P1)
+### User Story 1 - Parent account lifecycle and dashboard work end-to-end (Priority: P1)
 
 A parent can sign up, verify their email address, log in, and manage child accounts without losing any behavior currently supported by the legacy app.
+A parent can sign up, verify their email address, log in, manage child accounts, and view a dashboard showing all children's reading progress and reward data without losing any behavior currently supported by the legacy app. Parent accounts are admin-only for child management but can optionally add their own books to a separate parent reading list.
 
 **Why this priority**: Parent onboarding and child management are the administrative entry points for the product. If this flow breaks, the rest of the system is unusable for families.
+**Why this priority**: Parent onboarding, child management, and reporting are the administrative entry points for the product. If this flow breaks, the rest of the system is unusable for families.
 
 **Independent Test**: Can be fully tested by signing up a parent, verifying the account, logging in, creating a child, and resetting that child's password through the parent workflow.
+**Independent Test**: Can be fully tested by signing up a parent, verifying the account, logging in, creating a child, resetting that child's password, and viewing the parent dashboard with child progress summaries.
 
 **Acceptance Scenarios**:
 
@@ -29,6 +42,9 @@ A parent can sign up, verify their email address, log in, and manage child accou
 2. **Given** a parent account has a valid verification token, **When** the parent opens the verification link, **Then** the account becomes verified and the token can no longer be reused.
 3. **Given** a verified parent is authenticated, **When** the parent creates a child account, **Then** the child can log in with a username and password and is linked only to that parent.
 4. **Given** an authenticated parent owns a child account, **When** the parent resets the child's password, **Then** the child can authenticate with the new password and previous access is invalidated.
+4. **Given** an authenticated parent owns a child account, **When** the parent resets the child's password, **Then** the child can authenticate with the new password and previous access is invalidated.
+5. **Given** an authenticated parent has one or more children with reading data, **When** the parent opens the parent dashboard, **Then** the dashboard displays a per-child summary card showing each child's name, books in progress, completed books count, and current reward balance.
+6. **Given** a parent is viewing the parent dashboard, **When** the parent clicks on a child's card, **Then** the parent drills into that child's detail view showing all books (in-progress and finished), chapters for each book, and complete reward history.
 
 ---
 
@@ -46,21 +62,31 @@ A child can search for books, add a book, manage chapters, mark chapters as read
 2. **Given** an in-progress book with unread chapters, **When** the child marks a chapter as read, **Then** the read state is stored and an earn-type reward is recorded for that chapter.
 3. **Given** a chapter read entry exists for a child, **When** the child removes that read marker, **Then** the associated chapter-read state and reward side effect are reversed consistently.
 4. **Given** a child finishes a book and later chooses reread, **When** the reread action succeeds, **Then** a new in-progress reading record is created without deleting the prior completed history.
+5. **Given** a child adds a book that has no saved chapter list, **When** the add flow asks for chapter count, **Then** the system seeds default chapter names (`Chapter 1..N`) that are shared for future readers of the same book.
+6. **Given** chapter definitions already exist for a book, **When** another child adds that same book, **Then** the existing shared chapter definitions are reused without re-seeding.
 
 ---
 
 ### User Story 3 - Parent reporting and child history remain available (Priority: P2)
+### User Story 3 - Parent child detail view and reversal capability (Priority: P2)
 
 Parents can inspect child progress summaries, and children can inspect their own history and rewards without a behavior regression.
+Parents can drill into any child's account to see all reading progress, reward transactions, and can reverse chapter-read or reward entries to correct data entry mistakes. Children can inspect their own history and rewards without a behavior regression.
 
 **Why this priority**: Reporting is secondary to core progression, but it is central to trust and usability for ongoing use.
+**Why this priority**: Parent oversight and data correction capability is central to trust and usability for ongoing use, especially when children make mistakes or parents need to audit activity.
 
 **Independent Test**: Can be fully tested by seeding reading and reward data, then validating parent summary views, child history views, and reward summary totals.
+**Independent Test**: Can be fully tested by seeding reading and reward data in a child account, viewing the parent drill-down, and reversing a chapter-read entry to verify it removes the associated reward.
+**Acceptance Scenarios**:
 
 **Acceptance Scenarios**:
 
 1. **Given** a parent has one or more child accounts with reading data, **When** the parent opens the summary experience, **Then** the parent sees per-child totals for books, chapters, earnings, and current balance.
+1. **Given** a parent is viewing a child's detail page, **When** the parent sees the complete reading history (books in-progress, finished, chapters read), **Then** the parent can see books with their chapter counts, chapters marked as read, and the reward earned for each chapter.
+2. **Given** a parent is viewing a child's detail page with reward history, **When** the parent identifies an erroneous chapter-read or reward entry, **Then** the parent can trigger a reversal action that removes the chapter-read entry and its associated reward without changing child's other data.
 2. **Given** a child has prior completed reading activity, **When** the child opens history and rewards, **Then** the child sees completed reading records and paginated reward history with the same summary math as the legacy app.
+3. **Given** a child has prior completed reading activity, **When** the child opens history and rewards, **Then** the child sees completed reading records and paginated reward history with the same summary math as the legacy app.
 
 ### Edge Cases
 
@@ -70,6 +96,10 @@ Parents can inspect child progress summaries, and children can inspect their own
 - Deleting a book-read must remove dependent chapter-read and reward records consistently.
 - Missing or invalid verification tokens must fail without partially changing account state.
 - Unauthorized API requests must be rejected and frontend auth state must recover cleanly.
+- Unauthorized API requests must be rejected and frontend auth state must recover cleanly.
+- A parent may NOT directly add books or mark chapters read on behalf of a child; all child reading actions must originate from the child account.
+- A parent may reverse (undo) a child's chapter-read entry, which must also reverse its corresponding reward entry; the reversal action is an explicit parent operation, not automatic.
+- A child accessing their own dashboard must NOT see their parent's books or reading data; parent and child reading lists are separate.
 
 ## Requirements *(mandatory)*
 
@@ -79,10 +109,14 @@ Parents can inspect child progress summaries, and children can inspect their own
 - **FR-002**: The system MUST allow authenticated parents to create and manage child accounts that authenticate by username and password.
 - **FR-003**: The system MUST preserve the current route-level authorization boundaries between unauthenticated users, parents, and children.
 - **FR-004**: The system MUST support book search by title, author, and ISBN and allow authenticated children to add books to their reading list.
-- **FR-005**: The system MUST preserve chapter management, chapter rename, chapter-read creation, and chapter-read reversal behavior.
+- **FR-004**: The system MUST support book search by title, author, and ISBN and allow authenticated children to add books to their reading list. Parents can optionally search and add books to their own separate reading list.
+- **FR-005**: The system MUST preserve chapter management, chapter rename, chapter-read creation, and chapter-read reversal behavior, including add-time chapter-count seeding for new books and shared chapter reuse for subsequent readers.
 - **FR-006**: The system MUST create and summarize reward entries with the same earn, spend, and payout semantics used by the legacy app unless an approved spec explicitly changes them.
 - **FR-007**: The system MUST support finishing and rereading books while preserving existing reading history.
 - **FR-008**: The system MUST expose parent summary and child history views that match the legacy app's information model.
+- **FR-008**: The system MUST expose parent summary and child history views that match the legacy app's information model. Specifically, parent dashboard MUST display per-child summary cards (name, books-in-progress count, finished books count, current reward balance) and allow drill-down into each child's detail view.
+- **FR-008a**: The system MUST allow parents to reverse (undo) a child's chapter-read entry from the child detail view, which automatically reverses the associated reward entry.
+- **FR-008b**: Parent and child reading lists MUST be completely separate; a parent cannot add books on behalf of a child, and a child cannot see parent's reading data.
 - **FR-009**: The system MUST provide deterministic local development and test setup using environment templates rather than committed live secrets.
 - **FR-010**: The system MUST include backend, frontend, and end-to-end automated tests for the critical journeys covered by this spec. See SC-002.
 
