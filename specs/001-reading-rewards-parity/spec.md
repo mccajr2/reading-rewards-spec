@@ -2,16 +2,16 @@
 
 **Feature Branch**: `001-reading-rewards-parity`  
 **Created**: 2026-05-07  
-**Status**: Refinement Planning  
+**Status**: Active Baseline  
 **Input**: User description: "Analyze the current Reading Rewards codebase, reverse engineer it into specs, rebuild it in a new repository, keep behavior the same, modernize the implementation and toolchains, add unit tests, and make the result easy to maintain."
 
-## Implementation Snapshot *(historical context as of 2026-05-07)*
+## Current Implementation Snapshot
 
 - Parent signup, email verification, login, and logout are implemented in backend and frontend.
 - The verification page now calls backend token verification and displays backend success/error messages.
 - Parent kid management, reading-progress, history, and rewards flows are implemented.
 - Backend and frontend automated tests are in place and passing locally.
-- End-to-end Playwright smoke tests are implemented: 8 tests across auth, parent, and reading journeys — all passing.
+- End-to-end Playwright tests are implemented across auth, parent, and reading journeys. The suite passes when the local stack is running and healthy.
 
 ## Clarifications
 
