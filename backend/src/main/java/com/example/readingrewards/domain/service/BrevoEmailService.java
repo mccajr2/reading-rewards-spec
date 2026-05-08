@@ -3,6 +3,7 @@ package com.example.readingrewards.domain.service;
 import com.example.readingrewards.auth.service.VerificationEmailService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -15,6 +16,7 @@ import java.util.Map;
  * Active when brevo.api.key is set to a non-empty value.
  */
 @Service
+@Primary
 @ConditionalOnProperty(name = "brevo.api.key", matchIfMissing = false)
 public class BrevoEmailService implements VerificationEmailService {
 
