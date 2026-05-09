@@ -74,10 +74,10 @@
 - [ ] T028 [US1] Implement parent dashboard with per-child cards and drill-down links in `frontend/src/features/parent/ParentDashboard.tsx`
 - [X] T029 [US1] Update parent navigation items to expose dashboard and kid management flows in `frontend/src/features/nav/Nav.tsx`
 - [ ] T030 [US1] Document US1 endpoint contracts and payload examples in `specs/001-reading-rewards-parity/contracts/README.md`
-- [ ] T073 [P] [US1] Add backend integration tests for parent self reading-list add/list behavior in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
+- [X] T073 [P] [US1] Add backend integration tests for parent self reading-list add/list behavior in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
 - [X] T074 [P] [US1] Implement parent self reading-list add/list authorization behavior in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
 - [ ] T075 [P] [US1] Add parent self reading-list entry points in the parent dashboard UI in `frontend/src/features/parent/ParentDashboard.tsx`
-- [ ] T076 [US1] Add Playwright scenario for parent self reading-list positive path and child-boundary denial in `tests/e2e/parent.spec.ts`
+- [X] T076 [US1] Add Playwright scenario for parent self reading-list positive path and child-boundary denial in `tests/e2e/parent.spec.ts`
 
 **Checkpoint**: User Story 1 is independently functional and testable.
 
@@ -91,8 +91,8 @@
 
 ### Tests for User Story 2
 
-- [ ] T031 [P] [US2] Add backend integration tests for search/add/finish/reread workflows in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
-- [ ] T032 [P] [US2] Add backend integration tests for chapter seed/reuse, explicit chapter rename behavior, and chapter-read reward side effects in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
+- [X] T031 [P] [US2] Add backend integration tests for search/add/finish/reread workflows in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
+- [X] T032 [P] [US2] Add backend integration tests for chapter seed/reuse, explicit chapter rename behavior, and chapter-read reward side effects in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
 - [X] T033 [P] [US2] Add frontend tests for search/add book and chapter seeding prompt flow in `frontend/src/features/books/SearchPage.test.tsx`
 - [X] T034 [P] [US2] Add frontend tests for reading list chapter state, chapter rename UX, and reward math display in `frontend/src/features/books/ReadingListPage.test.tsx`
 - [X] T035 [P] [US2] Add frontend tests for rewards history and spend/payout actions in `frontend/src/features/rewards/RewardsPage.test.tsx`

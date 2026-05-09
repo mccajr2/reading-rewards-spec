@@ -3,6 +3,7 @@ package com.example.readingrewards.domain;
 import com.example.readingrewards.auth.model.User;
 import com.example.readingrewards.auth.repo.UserRepository;
 import com.example.readingrewards.auth.service.VerificationEmailService;
+import com.example.readingrewards.domain.dto.BookSummaryDto;
 import com.example.readingrewards.domain.model.Book;
 import com.example.readingrewards.domain.model.BookRead;
 import com.example.readingrewards.domain.model.Chapter;
@@ -14,6 +15,7 @@ import com.example.readingrewards.domain.repo.BookRepository;
 import com.example.readingrewards.domain.repo.ChapterReadRepository;
 import com.example.readingrewards.domain.repo.ChapterRepository;
 import com.example.readingrewards.domain.repo.RewardRepository;
+import com.example.readingrewards.domain.service.GoogleBooksService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -41,6 +45,9 @@ class ApiControllerIntegrationTests {
 
     @MockBean
     private VerificationEmailService verificationEmailService;
+
+    @MockBean
+    private GoogleBooksService googleBooksService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -100,6 +107,8 @@ class ApiControllerIntegrationTests {
 
         Map<?, ?> body = objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
         jwt = (String) body.get("token");
+
+        when(googleBooksService.search(any(), any(), any())).thenReturn(List.of());
     }
 
     private User getCurrentParent() {
@@ -189,6 +198,60 @@ class ApiControllerIntegrationTests {
         assertThat(bookRepository.findById("book123")).isPresent();
         assertThat(bookReadRepository.findAll()).hasSize(1);
         assertThat(bookReadRepository.findAll().get(0).isInProgress()).isTrue();
+    }
+
+    @Test
+    void searchAddFinishAndRereadWorkflowIsSupported() throws Exception {
+        when(googleBooksService.search(any(), any(), any())).thenReturn(List.of(
+                new BookSummaryDto(
+                        "works/OL-SEARCH-1",
+                        "Searchable Book",
+                        List.of("Search Author"),
+                        "Search description",
+                        "http://img.example.com/search.jpg"
+                )
+        ));
+
+        mockMvc.perform(get("/api/search")
+                .param("title", "Searchable")
+                .param("author", "Search Author")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].googleBookId").value("works/OL-SEARCH-1"))
+            .andExpect(jsonPath("$[0].title").value("Searchable Book"));
+
+        MvcResult addRes = mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "googleBookId": "works/OL-SEARCH-1",
+                      "title": "Searchable Book",
+                      "authors": ["Search Author"],
+                      "description": "Search description",
+                      "thumbnailUrl": ""
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String googleBookId = objectMapper.readValue(addRes.getResponse().getContentAsString(), Map.class)
+                .get("googleBookId").toString();
+
+        mockMvc.perform(post("/api/books/" + googleBookId + "/finish")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        assertThat(bookReadRepository.findAll()).hasSize(1);
+        assertThat(bookReadRepository.findAll().get(0).isInProgress()).isFalse();
+
+        mockMvc.perform(post("/api/books/" + googleBookId + "/reread")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        assertThat(bookReadRepository.findAll()).hasSize(2);
+        assertThat(bookReadRepository.findAll().stream().filter(BookRead::isInProgress).count()).isEqualTo(1);
     }
 
     @Test
@@ -561,6 +624,45 @@ class ApiControllerIntegrationTests {
         assertThat(rewardRepository.findAll()).isEmpty();
     }
 
+    @Test
+    void explicitChapterRenamePersistsUpdatedName() throws Exception {
+        mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"googleBookId":"gbk-rename","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    """))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/books/gbk-rename/chapters")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    [{"name":"Original Name","chapterIndex":0}]
+                    """))
+            .andExpect(status().isOk());
+
+        String chapterId = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk-rename")
+                .get(0)
+                .getId()
+                .toString();
+
+        mockMvc.perform(put("/api/chapters/" + chapterId)
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"name":"Renamed Chapter"}
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Renamed Chapter"));
+
+        mockMvc.perform(get("/api/books/gbk-rename/chapters")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].name").value("Renamed Chapter"));
+    }
+
         @Test
         void chaptersSeededByFirstReaderAreReusedBySecondReader() throws Exception {
         MvcResult addFirst = mockMvc.perform(post("/api/books")
@@ -664,5 +766,49 @@ class ApiControllerIntegrationTests {
             .andExpect(jsonPath("$.totalEarned").value(1.0))
             .andExpect(jsonPath("$.totalSpent").value(0.5))
             .andExpect(jsonPath("$.currentBalance").value(0.5));
+    }
+
+    @Test
+    void parentSelfReadingListAddListAndChildBoundaryDenial() throws Exception {
+        MvcResult parentAdd = mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "googleBookId": "parent-self-gbk",
+                      "title": "Parent Self Book",
+                      "authors": ["Parent Author"],
+                      "description": "self",
+                      "thumbnailUrl": ""
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String parentBookReadId = objectMapper.readValue(parentAdd.getResponse().getContentAsString(), Map.class)
+                .get("id")
+                .toString();
+
+        mockMvc.perform(get("/api/bookreads/in-progress")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].title").value("Parent Self Book"));
+
+        User child = createChildForCurrentParent("kid-boundary", "Boundary");
+        String childJwt = loginAndGetToken("kid-boundary", "kidpass");
+
+        mockMvc.perform(get("/api/bookreads/in-progress")
+                .header("Authorization", "Bearer " + childJwt))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(0));
+
+        mockMvc.perform(delete("/api/bookreads/" + parentBookReadId)
+                .header("Authorization", "Bearer " + childJwt))
+            .andExpect(status().isNotFound());
+
+        assertThat(bookReadRepository.findAll()).hasSize(1);
+        assertThat(bookReadRepository.findAll().get(0).getUserId()).isEqualTo(getCurrentParent().getId());
+        assertThat(child.getParentId()).isEqualTo(getCurrentParent().getId());
     }
 }

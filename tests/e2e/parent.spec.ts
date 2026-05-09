@@ -132,4 +132,51 @@ test.describe('Parent dashboard journey', () => {
     expect(detail.rewards.length).toBe(0);
     expect(detail.books[0].chapters[0].isRead).toBeFalsy();
   });
+
+  test('parent can use own reading list and child cannot access parent items', async ({ page, request }) => {
+    const parentToken = await login(request, parentEmail, password);
+    const parentHeaders = { Authorization: `Bearer ${parentToken}`, 'Content-Type': 'application/json' };
+
+    const ownBook = {
+      googleBookId: `e2e-parent-self-${Date.now()}`,
+      title: 'Parent Personal Book',
+      authors: ['Parent Author'],
+      description: 'parent self list',
+      thumbnailUrl: '',
+    };
+
+    const addParentBookRes = await request.post('/api/books', { data: ownBook, headers: parentHeaders });
+    expect(addParentBookRes.ok()).toBeTruthy();
+
+    const kidUsername = uniqueUsername('kidbound');
+    await createKid(request, parentToken, kidUsername, 'BoundaryKid', 'KidPass1!');
+
+    await page.goto('/login');
+    await page.getByLabel('Username or Email').fill(parentEmail);
+    await page.getByLabel('Password').fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
+
+    await page.goto('/reading-list');
+    await expect(page.getByText('Parent Personal Book')).toBeVisible({ timeout: 5_000 });
+
+    await page.getByRole('button', { name: /logout/i }).click();
+    await expect(page).toHaveURL(/\/login/);
+
+    await page.getByLabel('Username or Email').fill(kidUsername);
+    await page.getByLabel('Password').fill('KidPass1!');
+    await page.getByRole('button', { name: /sign in/i }).click();
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
+
+    await page.goto('/reading-list');
+    await expect(page.getByText('Parent Personal Book')).toHaveCount(0);
+
+    const kidToken = await login(request, kidUsername, 'KidPass1!');
+    const kidBooksRes = await request.get('/api/books', {
+      headers: { Authorization: `Bearer ${kidToken}` },
+    });
+    expect(kidBooksRes.ok()).toBeTruthy();
+    const kidBooks = await kidBooksRes.json();
+    expect(kidBooks.some((b: { googleBookId: string }) => b.googleBookId === ownBook.googleBookId)).toBeFalsy();
+  });
 });
