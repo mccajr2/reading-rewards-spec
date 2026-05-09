@@ -15,6 +15,63 @@ export type LoginResponse = {
   user: AuthUser;
 };
 
+export type ChapterDto = {
+  id: string;
+  name: string;
+  chapterIndex: number;
+  bookGoogleBookId?: string;
+};
+
+export type ChapterReadDto = {
+  id: string;
+  chapterId: string;
+  completionDate: string;
+};
+
+export type HistoryItemDto = {
+  id: string;
+  chapterId: string;
+  chapterName: string;
+  bookTitle: string;
+  completionDate: string;
+};
+
+export type RewardType = 'EARN' | 'PAYOUT' | 'SPEND';
+
+export type RewardSummaryDto = {
+  totalEarned: number;
+  totalPaidOut: number;
+  totalSpent: number;
+  currentBalance: number;
+};
+
+export type RewardHistoryItemDto = {
+  id: string;
+  type: RewardType;
+  amount: number;
+  note?: string;
+  createdAt: string;
+  chapterReadId?: string;
+  completionDate?: string;
+  chapter?: ChapterDto;
+  bookRead?: {
+    id?: string;
+    startDate?: string;
+    endDate?: string | null;
+    inProgress?: boolean;
+    book?: {
+      googleBookId?: string;
+      title?: string;
+      authors?: string[];
+    };
+  };
+};
+
+export type RewardsPageResponseDto = {
+  rewards: RewardHistoryItemDto[];
+  totalCount: number;
+};
+
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     method: 'POST',

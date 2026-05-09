@@ -192,7 +192,10 @@ public class ApiController {
     @PostMapping("/books/{googleBookId}/chapters")
     public List<Chapter> saveChapters(@PathVariable String googleBookId,
                                       @RequestBody List<Chapter> chapters) {
-        chapterRepo.deleteByGoogleBookId(googleBookId);
+        List<Chapter> existing = chapterRepo.findByGoogleBookIdOrderByChapterIndex(googleBookId);
+        if (!existing.isEmpty()) {
+            return existing;
+        }
         chapters.forEach(c -> c.setGoogleBookId(googleBookId));
         return chapterRepo.saveAll(chapters);
     }
@@ -203,7 +206,10 @@ public class ApiController {
         Optional<BookRead> br = bookReadRepo.findById(bookReadId);
         if (br.isEmpty()) return Collections.emptyList();
         String googleBookId = br.get().getGoogleBookId();
-        chapterRepo.deleteByGoogleBookId(googleBookId);
+        List<Chapter> existing = chapterRepo.findByGoogleBookIdOrderByChapterIndex(googleBookId);
+        if (!existing.isEmpty()) {
+            return existing;
+        }
         chapters.forEach(c -> c.setGoogleBookId(googleBookId));
         return chapterRepo.saveAll(chapters);
     }

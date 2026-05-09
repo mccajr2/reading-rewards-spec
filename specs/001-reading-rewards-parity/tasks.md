@@ -71,12 +71,12 @@
 - [X] T025 [P] [US1] Implement verify-email screen with backend-driven status messaging in `frontend/src/features/auth/VerifyEmailPage.tsx`
 - [X] T026 [P] [US1] Implement login screen role-aware flow in `frontend/src/features/auth/LoginPage.tsx`
 - [X] T027 [P] [US1] Implement parent auth/session state handling in `frontend/src/features/auth/AuthContext.tsx`
-- [ ] T028 [US1] Implement parent dashboard with per-child cards and drill-down links in `frontend/src/features/parent/ParentDashboard.tsx`
+- [X] T028 [US1] Implement parent dashboard with per-child cards and drill-down links in `frontend/src/features/parent/ParentDashboard.tsx`
 - [X] T029 [US1] Update parent navigation items to expose dashboard and kid management flows in `frontend/src/features/nav/Nav.tsx`
-- [ ] T030 [US1] Document US1 endpoint contracts and payload examples in `specs/001-reading-rewards-parity/contracts/README.md`
+- [X] T030 [US1] Document US1 endpoint contracts and payload examples in `specs/001-reading-rewards-parity/contracts/README.md`
 - [X] T073 [P] [US1] Add backend integration tests for parent self reading-list add/list behavior in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
 - [X] T074 [P] [US1] Implement parent self reading-list add/list authorization behavior in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
-- [ ] T075 [P] [US1] Add parent self reading-list entry points in the parent dashboard UI in `frontend/src/features/parent/ParentDashboard.tsx`
+- [X] T075 [P] [US1] Add parent self reading-list entry points in the parent dashboard UI in `frontend/src/features/parent/ParentDashboard.tsx`
 - [X] T076 [US1] Add Playwright scenario for parent self reading-list positive path and child-boundary denial in `tests/e2e/parent.spec.ts`
 
 **Checkpoint**: User Story 1 is independently functional and testable.
@@ -105,14 +105,14 @@
 - [X] T039 [P] [US2] Implement chapter list/create/update (including explicit rename semantics) and bookRead-based chapter endpoints in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
 - [X] T040 [P] [US2] Implement chapter-read create/delete behavior with reward side effects in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
 - [X] T041 [P] [US2] Implement rewards summary/history/spend/payout plus credits alias endpoint in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
-- [ ] T042 [US2] Implement chapter seed-on-first-add and reuse-on-next-add domain behavior in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
+- [X] T042 [US2] Implement chapter seed-on-first-add and reuse-on-next-add domain behavior in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
 - [X] T043 [P] [US2] Implement child search page UX with robust network error handling in `frontend/src/features/books/SearchPage.tsx`
 - [X] T044 [P] [US2] Implement reading list chapter management and read/unread toggles in `frontend/src/features/books/ReadingListPage.tsx`
 - [X] T045 [P] [US2] Implement scanner/manual search integration behavior in `frontend/src/features/books/Scanner.tsx`
 - [X] T046 [P] [US2] Implement rewards and credits views for child account in `frontend/src/features/rewards/RewardsPage.tsx`
-- [ ] T047 [US2] Implement child history view wiring and pagination behavior in `frontend/src/features/books/HistoryPage.tsx`
-- [ ] T048 [US2] Update shared DTO typings for chapter/reward/history responses in `frontend/src/shared/api.ts`
-- [ ] T049 [US2] Document US2 endpoint contracts and Open Library notes in `specs/001-reading-rewards-parity/contracts/README.md`
+- [X] T047 [US2] Implement child history view wiring and pagination behavior in `frontend/src/features/books/HistoryPage.tsx`
+- [X] T048 [US2] Update shared DTO typings for chapter/reward/history responses in `frontend/src/shared/api.ts`
+- [X] T049 [US2] Document US2 endpoint contracts and Open Library notes in `specs/001-reading-rewards-parity/contracts/README.md`
 
 **Checkpoint**: User Story 2 is independently functional and testable.
 

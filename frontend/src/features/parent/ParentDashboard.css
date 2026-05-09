@@ -1,6 +1,56 @@
 .kids-section,
-.add-kid-section {
+.add-kid-section,
+.summary-cards-section,
+.quick-actions-section {
   margin-bottom: 2rem;
+}
+
+.quick-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.summary-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.kid-summary-card {
+  background: var(--color-surface, #1e1e2e);
+  border: 1px solid var(--color-border, #313244);
+  border-radius: 10px;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.kid-summary-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.kid-summary-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.kid-summary-username {
+  color: var(--color-muted, #a6adc8);
+  font-size: 0.85rem;
+}
+
+.kid-summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.7rem;
+  font-size: 0.9rem;
 }
 
 .kids-table {
