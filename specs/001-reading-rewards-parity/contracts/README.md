@@ -43,3 +43,26 @@ Notes:
 - Protected endpoints require Bearer JWT except configured public auth routes.
 - Parent login is blocked when account status is `UNVERIFIED`.
 - `GET /api/credits` is a legacy-parity alias that returns `{ cents, dollars }` derived from the same reward balance as `GET /api/rewards/summary`. It was retained to match the legacy app's route surface and is the primary balance indicator used by the child UI.
+
+US3 contract details (child detail + reversal):
+
+- `GET /api/parent/{childId}/child-detail`
+	- Auth: parent JWT required.
+	- `200 OK` when `{childId}` belongs to authenticated parent.
+	- `403 Forbidden` when caller is not a parent.
+	- `404 Not Found` when child does not belong to authenticated parent.
+	- Response body fields:
+		- `child`: `{ id, firstName, username }`
+		- `books[]`: each includes `{ bookReadId, googleBookId, title, authors, thumbnailUrl, startDate, endDate, inProgress, chapters[] }`
+		- `chapters[]`: each includes `{ id, index, name, isRead, chapterReadId?, earnedReward? }`
+		- `rewards[]`: each includes `{ id, type, amount, chapterReadId, note, createdAt }`
+		- rollup fields: `{ totalEarned, currentBalance }`
+
+- `POST /api/parent/{childId}/chapter-reads/{chapterReadId}/reverse`
+	- Auth: parent JWT required.
+	- `200 OK` when parent owns child and chapter-read belongs to that child.
+	- `403 Forbidden` when caller is not a parent.
+	- `404 Not Found` when child not owned by parent, or chapter-read is not the child’s.
+	- Side effects:
+		- deletes the targeted `chapter_reads` row.
+		- deletes reward rows linked by `reward.chapterReadId == {chapterReadId}` for the same child.

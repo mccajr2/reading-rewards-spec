@@ -2,7 +2,13 @@ package com.example.readingrewards.domain;
 
 import com.example.readingrewards.auth.model.User;
 import com.example.readingrewards.auth.repo.UserRepository;
+import com.example.readingrewards.auth.service.VerificationEmailService;
 import com.example.readingrewards.domain.model.Book;
+import com.example.readingrewards.domain.model.BookRead;
+import com.example.readingrewards.domain.model.Chapter;
+import com.example.readingrewards.domain.model.ChapterRead;
+import com.example.readingrewards.domain.model.Reward;
+import com.example.readingrewards.domain.model.RewardType;
 import com.example.readingrewards.domain.repo.BookReadRepository;
 import com.example.readingrewards.domain.repo.BookRepository;
 import com.example.readingrewards.domain.repo.ChapterReadRepository;
@@ -14,13 +20,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -29,6 +38,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class ApiControllerIntegrationTests {
+
+    @MockBean
+    private VerificationEmailService verificationEmailService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -88,6 +100,72 @@ class ApiControllerIntegrationTests {
 
         Map<?, ?> body = objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
         jwt = (String) body.get("token");
+    }
+
+    private User getCurrentParent() {
+        return userRepository.findByEmail("child-test@example.com").orElseThrow();
+    }
+
+    private String loginAndGetToken(String username, String password) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        Map<?, ?> body = objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
+        return body.get("token").toString();
+    }
+
+    private User createChildForCurrentParent(String username, String firstName) {
+        User parent = getCurrentParent();
+        User child = new User();
+        child.setUsername(username);
+        child.setFirstName(firstName);
+        child.setPassword(passwordEncoder.encode("kidpass"));
+        child.setRole(User.UserRole.CHILD);
+        child.setStatus("VERIFIED");
+        child.setParentId(parent.getId());
+        return userRepository.save(child);
+    }
+
+    private String seedChildReadingData(User child, String googleBookId) {
+        Book book = new Book();
+        book.setGoogleBookId(googleBookId);
+        book.setTitle("Child Book " + googleBookId);
+        book.setDescription("seeded");
+        book.setAuthors(List.of("Seed Author"));
+        book.setThumbnailUrl("");
+        bookRepository.save(book);
+
+        BookRead bookRead = new BookRead();
+        bookRead.setGoogleBookId(googleBookId);
+        bookRead.setUserId(child.getId());
+        bookRead.setStartDate(LocalDateTime.now().minusDays(1));
+        BookRead savedBookRead = bookReadRepository.save(bookRead);
+
+        Chapter chapter = new Chapter();
+        chapter.setGoogleBookId(googleBookId);
+        chapter.setName("Chapter 1");
+        chapter.setChapterIndex(0);
+        Chapter savedChapter = chapterRepository.save(chapter);
+
+        ChapterRead chapterRead = new ChapterRead();
+        chapterRead.setBookReadId(savedBookRead.getId());
+        chapterRead.setChapterId(savedChapter.getId());
+        chapterRead.setUserId(child.getId());
+        chapterRead.setCompletionDate(LocalDateTime.now());
+        ChapterRead savedChapterRead = chapterReadRepository.save(chapterRead);
+
+        Reward reward = new Reward();
+        reward.setType(RewardType.EARN);
+        reward.setUserId(child.getId());
+        reward.setChapterReadId(savedChapterRead.getId());
+        reward.setAmount(1.0);
+        reward.setNote("seed reward");
+        rewardRepository.save(reward);
+
+        return savedChapterRead.getId().toString();
     }
 
     @Test
@@ -280,6 +358,74 @@ class ApiControllerIntegrationTests {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(1))
             .andExpect(jsonPath("$[0].username").value("kiduser"));
+    }
+
+    @Test
+    void parentChildDetailReturnsPayloadAndEnforcesBoundaries() throws Exception {
+        User child = createChildForCurrentParent("kid-detail", "Jamie");
+        seedChildReadingData(child, "gbk-parent-detail");
+
+        mockMvc.perform(get("/api/parent/" + child.getId() + "/child-detail")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.child.id").value(child.getId().toString()))
+            .andExpect(jsonPath("$.child.username").value("kid-detail"))
+            .andExpect(jsonPath("$.books.length()").value(1))
+            .andExpect(jsonPath("$.books[0].chapters.length()").value(1))
+            .andExpect(jsonPath("$.books[0].chapters[0].isRead").value(true))
+            .andExpect(jsonPath("$.rewards.length()").value(1))
+            .andExpect(jsonPath("$.totalEarned").value(1.0));
+
+        User otherParent = new User();
+        otherParent.setEmail("other-parent@example.com");
+        otherParent.setPassword(passwordEncoder.encode("pass123"));
+        otherParent.setRole(User.UserRole.PARENT);
+        otherParent.setFirstName("Other");
+        otherParent.setStatus("VERIFIED");
+        userRepository.save(otherParent);
+        String otherParentJwt = loginAndGetToken("other-parent@example.com", "pass123");
+
+        mockMvc.perform(get("/api/parent/" + child.getId() + "/child-detail")
+                .header("Authorization", "Bearer " + otherParentJwt))
+            .andExpect(status().isNotFound());
+
+        String childJwt = loginAndGetToken("kid-detail", "kidpass");
+        mockMvc.perform(get("/api/parent/" + child.getId() + "/child-detail")
+                .header("Authorization", "Bearer " + childJwt))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void parentReverseChapterReadRemovesChapterReadAndRewardAndEnforcesOwnership() throws Exception {
+        User child = createChildForCurrentParent("kid-reverse", "Riley");
+        String chapterReadId = seedChildReadingData(child, "gbk-parent-reverse");
+
+        assertThat(chapterReadRepository.findByUserId(child.getId())).hasSize(1);
+        assertThat(rewardRepository.findByUserId(child.getId())).hasSize(1);
+
+        mockMvc.perform(post("/api/parent/" + child.getId() + "/chapter-reads/" + chapterReadId + "/reverse")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
+        assertThat(chapterReadRepository.findByUserId(child.getId())).isEmpty();
+        assertThat(rewardRepository.findByUserId(child.getId())).isEmpty();
+
+        String secondChapterReadId = seedChildReadingData(child, "gbk-parent-reverse-2");
+        User otherParent = new User();
+        otherParent.setEmail("not-owner@example.com");
+        otherParent.setPassword(passwordEncoder.encode("pass123"));
+        otherParent.setRole(User.UserRole.PARENT);
+        otherParent.setFirstName("NotOwner");
+        otherParent.setStatus("VERIFIED");
+        userRepository.save(otherParent);
+        String otherParentJwt = loginAndGetToken("not-owner@example.com", "pass123");
+
+        mockMvc.perform(post("/api/parent/" + child.getId() + "/chapter-reads/" + secondChapterReadId + "/reverse")
+                .header("Authorization", "Bearer " + otherParentJwt))
+            .andExpect(status().isNotFound());
+
+        assertThat(chapterReadRepository.findByUserId(child.getId())).hasSize(1);
+        assertThat(rewardRepository.findByUserId(child.getId())).hasSize(1);
     }
 
     @Test

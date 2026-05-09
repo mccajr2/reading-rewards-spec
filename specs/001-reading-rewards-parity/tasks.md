@@ -126,24 +126,24 @@
 
 ### Tests for User Story 3
 
-- [ ] T050 [P] [US3] Add backend integration tests for parent child-detail payload and authorization boundaries in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
-- [ ] T051 [P] [US3] Add backend integration tests for parent-triggered chapter-read reversal behavior in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
-- [ ] T052 [P] [US3] Add frontend tests for parent child-detail rendering and reward ledger visibility in `frontend/src/features/parent/ParentDashboard.test.tsx`
-- [ ] T053 [P] [US3] Add frontend tests for reversal action UX and post-reversal state refresh in `frontend/src/features/parent/ParentDashboard.test.tsx`
+- [X] T050 [P] [US3] Add backend integration tests for parent child-detail payload and authorization boundaries in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
+- [X] T051 [P] [US3] Add backend integration tests for parent-triggered chapter-read reversal behavior in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
+- [ ] T052 [P] [US3] Add frontend tests for parent child-detail rendering and reward ledger visibility in `frontend/src/features/parent/ParentSummary.test.tsx`
+- [ ] T053 [P] [US3] Add frontend tests for reversal action UX and post-reversal state refresh in `frontend/src/features/parent/ParentSummary.test.tsx`
 - [ ] T054 [US3] Add Playwright parent drill-down and reversal scenario in `tests/e2e/parent.spec.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T055 [P] [US3] Implement parent child-detail endpoint (books, chapters, rewards rollup) in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
+- [X] T055 [P] [US3] Implement parent child-detail endpoint (books, chapters, reward history/ledger, and summary rollups) in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
 - [X] T056 [P] [US3] Implement parent-triggered reverse chapter-read endpoint and service logic in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
-- [ ] T057 [P] [US3] Enforce parent-only access checks for child-detail and reversal endpoints in `backend/src/main/java/com/example/readingrewards/auth/config/JwtAuthFilter.java`
+- [X] T057 [P] [US3] Enforce parent-only access checks for child-detail and reversal endpoints in `backend/src/main/java/com/example/readingrewards/auth/config/JwtAuthFilter.java`
 - [X] T058 [P] [US3] Implement parent summary drill-down page with read-only child activity in `frontend/src/features/parent/ParentSummary.tsx`
 - [X] T059 [P] [US3] Implement reversal action controls in parent child-detail page in `frontend/src/features/parent/ParentSummary.tsx`
 - [X] T060 [US3] Wire parent child-detail route and guard behavior in `frontend/src/app/App.tsx`
 - [X] T061 [US3] Update parent summary page navigation to child detail routes in `frontend/src/features/parent/ParentSummary.tsx`
-- [ ] T062 [US3] Document US3 contracts (child-detail and reversal) in `specs/001-reading-rewards-parity/contracts/README.md`
+- [X] T062 [US3] Document US3 contracts (child-detail and reversal) in `specs/001-reading-rewards-parity/contracts/README.md`
 
-**Checkpoint**: User Story 3 is independently functional and testable.
+**Checkpoint**: User Story 3 backend and frontend implementation plus contracts are in place; frontend and E2E verification tasks (`T052`-`T054`) remain before full sign-off.
 
 ---
 
