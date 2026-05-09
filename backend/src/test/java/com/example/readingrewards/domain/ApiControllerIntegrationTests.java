@@ -361,6 +361,30 @@ class ApiControllerIntegrationTests {
     }
 
     @Test
+    void parentKidsSummaryReturnsDashboardCardPayload() throws Exception {
+        User kid = createChildForCurrentParent("kid-summary", "Taylor");
+        seedChildReadingData(kid, "gbk-summary-card");
+
+        mockMvc.perform(post("/api/rewards/spend")
+                .header("Authorization", "Bearer " + loginAndGetToken("kid-summary", "kidpass"))
+                .param("amount", "0.25")
+                .param("note", "Sticker"))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/parent/kids/summary")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.kids.length()").value(1))
+            .andExpect(jsonPath("$.kids[0].id").value(kid.getId().toString()))
+            .andExpect(jsonPath("$.kids[0].firstName").value("Taylor"))
+            .andExpect(jsonPath("$.kids[0].username").value("kid-summary"))
+            .andExpect(jsonPath("$.kids[0].booksRead").value(1))
+            .andExpect(jsonPath("$.kids[0].chaptersRead").value(1))
+            .andExpect(jsonPath("$.kids[0].totalEarned").value(1.0))
+            .andExpect(jsonPath("$.kids[0].currentBalance").value(0.75));
+    }
+
+    @Test
     void parentChildDetailReturnsPayloadAndEnforcesBoundaries() throws Exception {
         User child = createChildForCurrentParent("kid-detail", "Jamie");
         seedChildReadingData(child, "gbk-parent-detail");

@@ -54,10 +54,10 @@
 
 ### Tests for User Story 1
 
-- [ ] T014 [P] [US1] Add backend integration tests for parent auth lifecycle and kid management in `backend/src/test/java/com/example/readingrewards/auth/AuthControllerIntegrationTests.java`
-- [ ] T015 [P] [US1] Add backend integration tests for parent dashboard summary card payloads in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
-- [ ] T016 [P] [US1] Add frontend component tests for signup/login/verify flows in `frontend/src/features/auth/LoginPage.test.tsx`
-- [ ] T017 [P] [US1] Add frontend component tests for parent dashboard cards and drill-down navigation in `frontend/src/features/parent/ParentDashboard.test.tsx`
+- [X] T014 [P] [US1] Add backend integration tests for parent auth lifecycle and kid management in `backend/src/test/java/com/example/readingrewards/auth/AuthControllerIntegrationTests.java`
+- [X] T015 [P] [US1] Add backend integration tests for parent dashboard summary card payloads in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
+- [X] T016 [P] [US1] Add frontend component tests for signup/login/verify flows in `frontend/src/features/auth/LoginPage.test.tsx`
+- [X] T017 [P] [US1] Add frontend component tests for parent dashboard cards and drill-down navigation in `frontend/src/features/parent/ParentDashboard.test.tsx`
 - [X] T018 [US1] Add Playwright scenario for parent onboarding, kid creation, and dashboard card visibility in `tests/e2e/parent.spec.ts`
 
 ### Implementation for User Story 1
@@ -94,9 +94,9 @@
 - [ ] T031 [P] [US2] Add backend integration tests for search/add/finish/reread workflows in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
 - [ ] T032 [P] [US2] Add backend integration tests for chapter seed/reuse, explicit chapter rename behavior, and chapter-read reward side effects in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
 - [X] T033 [P] [US2] Add frontend tests for search/add book and chapter seeding prompt flow in `frontend/src/features/books/SearchPage.test.tsx`
-- [ ] T034 [P] [US2] Add frontend tests for reading list chapter state, chapter rename UX, and reward math display in `frontend/src/features/books/ReadingListPage.test.tsx`
-- [ ] T035 [P] [US2] Add frontend tests for rewards history and spend/payout actions in `frontend/src/features/rewards/RewardsPage.test.tsx`
-- [ ] T036 [US2] Add Playwright child journey for add/read/reward/finish/reread flow in `tests/e2e/reading.spec.ts`
+- [X] T034 [P] [US2] Add frontend tests for reading list chapter state, chapter rename UX, and reward math display in `frontend/src/features/books/ReadingListPage.test.tsx`
+- [X] T035 [P] [US2] Add frontend tests for rewards history and spend/payout actions in `frontend/src/features/rewards/RewardsPage.test.tsx`
+- [X] T036 [US2] Add Playwright child journey for add/read/reward/finish/reread flow in `tests/e2e/reading.spec.ts`
 
 ### Implementation for User Story 2
 

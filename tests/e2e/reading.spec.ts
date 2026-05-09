@@ -117,4 +117,34 @@ test.describe('Reading and rewards journey', () => {
     const { dollars } = await creditsRes.json();
     expect(dollars).toBe(1); // Only 1 credit, not 2
   });
+
+  test('child can finish and reread a book', async ({ request }) => {
+    const kidToken = await login(request, kidUsername, kidPassword);
+    const headers = { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' };
+
+    const addRes = await request.post('/api/books', { data: testBook, headers });
+    expect(addRes.ok()).toBeTruthy();
+    const bookRead = await addRes.json();
+
+    const inProgressBefore = await request.get('/api/bookreads/in-progress', { headers });
+    expect(inProgressBefore.ok()).toBeTruthy();
+    const beforeRows = await inProgressBefore.json();
+    expect(beforeRows.some((row: { bookReadId: string }) => row.bookReadId === bookRead.id)).toBeTruthy();
+
+    const finishRes = await request.post(`/api/books/${bookRead.googleBookId}/finish`, { headers });
+    expect(finishRes.ok()).toBeTruthy();
+
+    const inProgressAfterFinish = await request.get('/api/bookreads/in-progress', { headers });
+    expect(inProgressAfterFinish.ok()).toBeTruthy();
+    const afterFinishRows = await inProgressAfterFinish.json();
+    expect(afterFinishRows.some((row: { bookReadId: string }) => row.bookReadId === bookRead.id)).toBeFalsy();
+
+    const rereadRes = await request.post(`/api/books/${bookRead.googleBookId}/reread`, { headers });
+    expect(rereadRes.ok()).toBeTruthy();
+
+    const inProgressAfterReread = await request.get('/api/bookreads/in-progress', { headers });
+    expect(inProgressAfterReread.ok()).toBeTruthy();
+    const afterRereadRows = await inProgressAfterReread.json();
+    expect(afterRereadRows.some((row: { googleBookId: string }) => row.googleBookId === bookRead.googleBookId)).toBeTruthy();
+  });
 });
