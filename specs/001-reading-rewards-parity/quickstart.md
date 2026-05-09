@@ -83,20 +83,20 @@ Totals: 11 passed, 0 failed
 ## Latest test evidence
 
 ```text
-[backend] 2026-05-08 22:34 EDT
+[backend] 2026-05-09 local
 Command: cd backend && ./mvnw test
 Exit code: 0
-Totals: 26 passed, 0 failed, 0 errors, 0 skipped
+Totals: 32 passed, 0 failed, 0 errors, 0 skipped
 
-[frontend] 2026-05-08 22:35 EDT
+[frontend] 2026-05-09 local
 Command: cd frontend && npm test -- --run
 Exit code: 0
-Totals: 23 passed, 0 failed (8 test files passed)
+Totals: 31 passed, 0 failed (8 test files passed)
 
-[e2e] 2026-05-08 22:35 EDT
+[e2e] 2026-05-09 local
 Command: docker-compose up -d && npx playwright test --reporter=list
 Exit code: 0
-Totals: 12 passed, 0 failed
+Totals: 14 passed, 0 failed
 ```
 
 ## SC-004 isolation and traceability checklist

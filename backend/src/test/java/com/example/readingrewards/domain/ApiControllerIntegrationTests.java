@@ -204,7 +204,7 @@ class ApiControllerIntegrationTests {
     void searchAddFinishAndRereadWorkflowIsSupported() throws Exception {
         when(googleBooksService.search(any(), any(), any())).thenReturn(List.of(
                 new BookSummaryDto(
-                        "works/OL-SEARCH-1",
+                "OL-SEARCH-1",
                         "Searchable Book",
                         List.of("Search Author"),
                         "Search description",
@@ -218,7 +218,7 @@ class ApiControllerIntegrationTests {
                 .header("Authorization", "Bearer " + jwt))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(1))
-            .andExpect(jsonPath("$[0].googleBookId").value("works/OL-SEARCH-1"))
+            .andExpect(jsonPath("$[0].googleBookId").value("OL-SEARCH-1"))
             .andExpect(jsonPath("$[0].title").value("Searchable Book"));
 
         MvcResult addRes = mockMvc.perform(post("/api/books")
@@ -226,7 +226,7 @@ class ApiControllerIntegrationTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
-                      "googleBookId": "works/OL-SEARCH-1",
+                                            "googleBookId": "OL-SEARCH-1",
                       "title": "Searchable Book",
                       "authors": ["Search Author"],
                       "description": "Search description",
@@ -669,7 +669,7 @@ class ApiControllerIntegrationTests {
             .header("Authorization", "Bearer " + jwt)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
-                {"googleBookId":"works/OL82563W","title":"Shared Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                {"googleBookId":"OL82563W","title":"Shared Book","authors":["Auth"],"description":"","thumbnailUrl":""}
                 """))
             .andExpect(status().isOk())
             .andReturn();
@@ -709,7 +709,7 @@ class ApiControllerIntegrationTests {
             .header("Authorization", "Bearer " + secondJwt)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
-                {"googleBookId":"works/OL82563W","title":"Shared Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                {"googleBookId":"OL82563W","title":"Shared Book","authors":["Auth"],"description":"","thumbnailUrl":""}
                 """))
             .andExpect(status().isOk())
             .andReturn();

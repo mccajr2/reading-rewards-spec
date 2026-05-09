@@ -90,13 +90,13 @@ US2 contract details (reading + rewards):
 
 - `GET /api/search`
 	- Query params: any of `title`, `author`, `isbn`.
-	- Uses Open Library search API mapping (`key` -> `googleBookId` compatibility field).
+	- Uses Open Library search API mapping (`key` -> `googleBookId` compatibility field), normalized to slash-free IDs (example: `/works/OL82563W` becomes `OL82563W`).
 	- Returns an empty list when Open Library is unavailable.
 
 - `POST /api/books`
 	- Auth: child or parent JWT.
 	- Request JSON example:
-		- `{ "googleBookId": "works/OL82563W", "title": "Charlotte's Web", "authors": ["E.B. White"], "description": "...", "thumbnailUrl": "..." }`
+		- `{ "googleBookId": "OL82563W", "title": "Charlotte's Web", "authors": ["E.B. White"], "description": "...", "thumbnailUrl": "..." }`
 	- Creates or reuses the shared `book` record and creates a user-scoped `book_read` row.
 
 - `POST /api/books/{googleBookId}/chapters`
