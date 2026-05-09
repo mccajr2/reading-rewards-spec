@@ -55,7 +55,8 @@ public class GoogleBooksService {
             if (!(docObj instanceof Map<?, ?> doc)) continue;
 
             // Open Library keys start with "/" (e.g., "/works/OL15936512W"), strip it for clean URLs
-            String volumeId = doc.get("key") != null ? doc.get("key").toString().replaceFirst("^/", "") : null;
+            String rawKey = doc.get("key") != null ? doc.get("key").toString() : null;
+            String volumeId = normalizeProviderBookId(rawKey);
             String titleVal = doc.get("title") != null ? doc.get("title").toString() : null;
 
             List<String> authors = new ArrayList<>();
@@ -81,6 +82,18 @@ public class GoogleBooksService {
 
     private static String encodeParam(String s) {
         return s.replace(" ", "+").replace("&", "%26");
+    }
+
+    private static String normalizeProviderBookId(String rawKey) {
+        if (rawKey == null || rawKey.isBlank()) {
+            return null;
+        }
+        String cleaned = rawKey.replaceFirst("^/", "");
+        int slash = cleaned.lastIndexOf('/');
+        if (slash >= 0 && slash + 1 < cleaned.length()) {
+            return cleaned.substring(slash + 1);
+        }
+        return cleaned;
     }
 
     private static boolean isBlank(String s) { return s == null || s.isBlank(); }

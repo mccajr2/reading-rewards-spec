@@ -25,7 +25,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: readingrewards
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       SPRING_FLYWAY_ENABLED: "true"
-      JWT_SECRET: ${JWT_SECRET:-changeme-replace-in-production-with-256bit-secret}
+      JWT_SECRET: ${JWT_SECRET:-cmVhZGluZy1yZXdhcmRzLXNwZWMtZGV2LXNlY3JldC1rZXktMjAyNg==}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       BREVO_API_KEY: ${BREVO_API_KEY:-}
       SPRING_MAIL_FROM: ${SPRING_MAIL_FROM:-noreply@example.com}

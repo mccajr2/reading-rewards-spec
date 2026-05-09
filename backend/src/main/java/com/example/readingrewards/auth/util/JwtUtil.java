@@ -4,12 +4,14 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.DecodingException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
@@ -26,7 +28,20 @@ public class JwtUtil {
         if (secret == null || secret.isBlank()) {
             throw new IllegalStateException("JWT secret must be configured");
         }
-        this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+        this.key = Keys.hmacShaKeyFor(resolveSecretBytes(secret));
+    }
+
+    private byte[] resolveSecretBytes(String secret) {
+        try {
+            return Decoders.BASE64.decode(secret);
+        } catch (DecodingException ignored) {
+            // Support URL-safe base64 or plain-text secrets provided via env vars.
+            try {
+                return Decoders.BASE64URL.decode(secret);
+            } catch (DecodingException ignoredAgain) {
+                return secret.getBytes(StandardCharsets.UTF_8);
+            }
+        }
     }
 
     public String generateToken(String username) {

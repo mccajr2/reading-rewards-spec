@@ -5,7 +5,7 @@ import { signupAndVerify, uniqueEmail, uniqueUsername, createKid, login } from '
  * P1 Reading journey:
  * Parent creates a child account → child logs in → adds books, marks chapters read, earns credits.
  *
- * Note: We use a hard-coded book DTO to avoid dependency on the Google Books external API.
+ * Note: We use a hard-coded book DTO to avoid dependency on the Open Library external API.
  * API shape:
  *  - POST /api/books takes BookSummaryDto → returns { id (UUID), googleBookId, ... }
  *  - POST /api/books/{googleBookId}/chapters takes [{name, chapterIndex}] → returns chapters with UUIDs
@@ -13,7 +13,7 @@ import { signupAndVerify, uniqueEmail, uniqueUsername, createKid, login } from '
  *  - GET /api/credits returns { cents, dollars }  (2 chapters = $2.00)
  */
 
-/** A stable test book that does not require Google Books API */
+/** A stable test book that does not require Open Library API */
 function makeTestBook(suffix: string) {
   return {
     googleBookId: `e2e-test-charlottes-web-${suffix}`,
@@ -43,7 +43,7 @@ test.describe('Reading and rewards journey', () => {
   });
 
   test('child reading list shows added books', async ({ page, request }) => {
-    // Add book via API (bypasses Google Books external dependency)
+    // Add book via API (bypasses Open Library external dependency)
     const kidToken = await login(request, kidUsername, kidPassword);
     const headers = { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' };
     const addRes = await request.post('/api/books', { data: testBook, headers });
@@ -116,5 +116,35 @@ test.describe('Reading and rewards journey', () => {
     expect(creditsRes.ok()).toBeTruthy();
     const { dollars } = await creditsRes.json();
     expect(dollars).toBe(1); // Only 1 credit, not 2
+  });
+
+  test('child can finish and reread a book', async ({ request }) => {
+    const kidToken = await login(request, kidUsername, kidPassword);
+    const headers = { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' };
+
+    const addRes = await request.post('/api/books', { data: testBook, headers });
+    expect(addRes.ok()).toBeTruthy();
+    const bookRead = await addRes.json();
+
+    const inProgressBefore = await request.get('/api/bookreads/in-progress', { headers });
+    expect(inProgressBefore.ok()).toBeTruthy();
+    const beforeRows = await inProgressBefore.json();
+    expect(beforeRows.some((row: { bookReadId: string }) => row.bookReadId === bookRead.id)).toBeTruthy();
+
+    const finishRes = await request.post(`/api/books/${bookRead.googleBookId}/finish`, { headers });
+    expect(finishRes.ok()).toBeTruthy();
+
+    const inProgressAfterFinish = await request.get('/api/bookreads/in-progress', { headers });
+    expect(inProgressAfterFinish.ok()).toBeTruthy();
+    const afterFinishRows = await inProgressAfterFinish.json();
+    expect(afterFinishRows.some((row: { bookReadId: string }) => row.bookReadId === bookRead.id)).toBeFalsy();
+
+    const rereadRes = await request.post(`/api/books/${bookRead.googleBookId}/reread`, { headers });
+    expect(rereadRes.ok()).toBeTruthy();
+
+    const inProgressAfterReread = await request.get('/api/bookreads/in-progress', { headers });
+    expect(inProgressAfterReread.ok()).toBeTruthy();
+    const afterRereadRows = await inProgressAfterReread.json();
+    expect(afterRereadRows.some((row: { googleBookId: string }) => row.googleBookId === bookRead.googleBookId)).toBeTruthy();
   });
 });

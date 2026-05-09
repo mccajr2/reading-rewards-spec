@@ -23,13 +23,14 @@
 
 - **Purpose**: Represents a book selected for tracking.
 - **Core attributes**:
-  - `googleBookId`
+  - `externalBookId` (serialized as `googleBookId` in current API payloads for backward compatibility)
   - `title`
   - `authors`
   - `description`
   - `thumbnailUrl`
 - **Rules**:
-  - The external book identity is preserved through `googleBookId`.
+  - The external book identity is provider-agnostic and preserved as `externalBookId`.
+  - Current API contracts continue using the key `googleBookId` until a versioned contract update is approved.
   - Author ordering must remain stable for display parity.
 
 ## BookRead
@@ -38,7 +39,7 @@
 - **Core attributes**:
   - `id`
   - `userId`
-  - `googleBookId`
+  - `externalBookId` (serialized as `googleBookId` in current API payloads for backward compatibility)
   - `startDate`
   - `endDate`
 - **Derived attributes**:
@@ -53,7 +54,7 @@
 - **Purpose**: Represents a chapter definition for a tracked book.
 - **Core attributes**:
   - `id`
-  - `googleBookId`
+  - `externalBookId` (serialized as `googleBookId` in current API payloads for backward compatibility)
   - `chapterIndex`
   - `name`
 - **Rules**:

@@ -1,29 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
-import { fetchWithAuth } from '../../shared/api';
+import { fetchWithAuth, RewardHistoryItemDto, RewardsPageResponseDto, RewardSummaryDto } from '../../shared/api';
 import './RewardsPage.css';
-
-type RewardSummary = {
-  totalEarned: number;
-  totalPaidOut: number;
-  totalSpent: number;
-  currentBalance: number;
-};
-
-type Reward = {
-  id: string;
-  type: 'EARN' | 'PAYOUT' | 'SPEND';
-  amount: number;
-  note?: string;
-  createdAt: string;
-  chapter?: { id: string; name: string };
-  bookRead?: { book?: { title?: string } };
-};
 
 export function RewardsPage() {
   const { token } = useAuth();
-  const [summary, setSummary] = useState<RewardSummary>({ totalEarned: 0, totalPaidOut: 0, totalSpent: 0, currentBalance: 0 });
-  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [summary, setSummary] = useState<RewardSummaryDto>({ totalEarned: 0, totalPaidOut: 0, totalSpent: 0, currentBalance: 0 });
+  const [rewards, setRewards] = useState<RewardHistoryItemDto[]>([]);
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [totalCount, setTotalCount] = useState(0);
@@ -40,9 +23,15 @@ export function RewardsPage() {
   const loadRewards = async (p = page) => {
     const r = await fetchWithAuth(`/rewards?page=${p}&pageSize=${pageSize}`, token);
     if (r.ok) {
-      const data = await r.json();
-      setRewards(data.rewards ?? data);
-      setTotalCount(data.totalCount ?? (data.rewards ? data.rewards.length : data.length));
+      const data = (await r.json()) as RewardsPageResponseDto | RewardHistoryItemDto[];
+      if (Array.isArray(data)) {
+        setRewards(data);
+        setTotalCount(data.length);
+      } else {
+        const rows = data.rewards ?? [];
+        setRewards(rows);
+        setTotalCount(data.totalCount ?? rows.length);
+      }
     }
   };
 

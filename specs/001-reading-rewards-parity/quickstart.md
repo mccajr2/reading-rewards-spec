@@ -14,6 +14,15 @@
 3. Verify backend status flips from `UNVERIFIED` to `VERIFIED`.
 4. Log in at `/login` with the verified parent account.
 
+## Parent dashboard and reversal verification workflow
+
+1. Log in as a parent and navigate to `/parent/summary`.
+2. Confirm the per-child summary cards show: child name, books in progress, completed count, and current balance.
+3. Select a child card and confirm drill-down to `/parent/summary/:childId`.
+4. In child detail, verify books, chapter read states, and reward history are visible.
+5. Trigger a `Reverse` action on a read chapter and confirm the chapter switches to `Not read`.
+6. Confirm the associated reward entry is removed and totals/balance refresh accordingly.
+
 ## Local tool requirements
 
 - Java 21 runtime for the backend.
@@ -37,7 +46,89 @@ JAVA_HOME=/opt/homebrew/opt/openjdk ./mvnw test
 
 cd /Users/jasonmccarthy/projects/reading-rewards-spec/frontend
 npm test -- --run
+
+cd /Users/jasonmccarthy/projects/reading-rewards-spec
+npx --yes playwright test --reporter=list
 ```
+
+## Test evidence capture template
+
+For each test run (backend, frontend, E2E), record the following in this section:
+
+- Command: exact command executed
+- Timestamp: local run time
+- Exit code: `0` for pass, non-zero for fail
+- Totals: passed/failed/skipped counts
+- Failure details: failing test names and first actionable error (if any)
+
+Example entry format:
+
+```text
+[backend] 2026-05-08 20:15 local
+Command: cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk ./mvnw test
+Exit code: 0
+Totals: 16 passed, 0 failed, 0 skipped
+
+[frontend] 2026-05-08 20:17 local
+Command: cd frontend && npm test -- --run
+Exit code: 0
+Totals: 18 passed, 0 failed
+
+[e2e] 2026-05-08 20:20 local
+Command: npx --yes playwright test --reporter=list
+Exit code: 0
+Totals: 11 passed, 0 failed
+```
+
+## Latest test evidence
+
+```text
+[backend] 2026-05-09 local
+Command: cd backend && ./mvnw test
+Exit code: 0
+Totals: 32 passed, 0 failed, 0 errors, 0 skipped
+
+[frontend] 2026-05-09 local
+Command: cd frontend && npm test -- --run
+Exit code: 0
+Totals: 31 passed, 0 failed (8 test files passed)
+
+[e2e] 2026-05-09 local
+Command: docker-compose up -d && npx playwright test --reporter=list
+Exit code: 0
+Totals: 14 passed, 0 failed
+```
+
+## SC-004 isolation and traceability checklist
+
+Validate repository/toolchain isolation from legacy source while preserving behavior traceability.
+
+1. Confirm this repository root and branch:
+   ```bash
+   cd /Users/jasonmccarthy/projects/reading-rewards-spec
+   git rev-parse --show-toplevel
+   git branch --show-current
+   ```
+2. Confirm legacy repository remains separate:
+   ```bash
+   cd /Users/jasonmccarthy/projects/reading-rewards
+   git rev-parse --show-toplevel
+   ```
+3. Confirm no accidental nested Git repos between projects:
+   ```bash
+   find /Users/jasonmccarthy/projects -maxdepth 2 -name .git -type d
+   ```
+4. Confirm successor test/toolchain commands run from successor repo only:
+   ```bash
+   cd /Users/jasonmccarthy/projects/reading-rewards-spec/backend && ./mvnw test
+   cd /Users/jasonmccarthy/projects/reading-rewards-spec/frontend && npm test -- --run
+   cd /Users/jasonmccarthy/projects/reading-rewards-spec && npx playwright test --reporter=list
+   ```
+5. Confirm parity artifacts remain traceable in successor spec files:
+   ```bash
+   cd /Users/jasonmccarthy/projects/reading-rewards-spec
+   ls specs/001-reading-rewards-parity
+   ```
 
 ## Production email (Brevo)
 

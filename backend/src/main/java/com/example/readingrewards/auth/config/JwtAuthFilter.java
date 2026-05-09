@@ -25,6 +25,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         "/actuator/health"
     };
 
+    private static final String[] PARENT_ONLY_ENDPOINT_PREFIXES = {
+        "/api/parent/"
+    };
+
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService customUserDetailsService;
 
@@ -65,6 +69,31 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authToken);
         }
 
+        if (isParentOnlyEndpoint(path) && !hasParentAuthority()) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Parent role required\"}");
+            return;
+        }
+
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isParentOnlyEndpoint(String path) {
+        for (String prefix : PARENT_ONLY_ENDPOINT_PREFIXES) {
+            if (path.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasParentAuthority() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getAuthorities() == null) {
+            return false;
+        }
+        return auth.getAuthorities().stream()
+            .anyMatch(a -> "ROLE_PARENT".equals(a.getAuthority()));
     }
 }

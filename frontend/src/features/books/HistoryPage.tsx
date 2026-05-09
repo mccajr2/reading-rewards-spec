@@ -1,31 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
-import { fetchWithAuth } from '../../shared/api';
+import { fetchWithAuth, HistoryItemDto } from '../../shared/api';
 import './HistoryPage.css';
-
-type ChapterRead = {
-  id: string;
-  chapterId: string;
-  chapterName: string;
-  bookTitle: string;
-  completionDate: string;
-};
 
 export function HistoryPage() {
   const { token } = useAuth();
-  const [history, setHistory] = useState<ChapterRead[]>([]);
+  const [history, setHistory] = useState<HistoryItemDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
 
   useEffect(() => {
     const load = async () => {
       const res = await fetchWithAuth('/history', token);
-      if (res.ok) setHistory(await res.json());
+      if (res.ok) {
+        const rows = (await res.json()) as HistoryItemDto[];
+        rows.sort((a, b) => new Date(b.completionDate).getTime() - new Date(a.completionDate).getTime());
+        setHistory(rows);
+      }
       setLoading(false);
     };
     load();
   }, []);
 
-  const byDate = history.reduce<Record<string, ChapterRead[]>>((acc, item) => {
+  const totalPages = Math.max(1, Math.ceil(history.length / pageSize));
+  const start = (page - 1) * pageSize;
+  const pageHistory = history.slice(start, start + pageSize);
+
+  const byDate = pageHistory.reduce<Record<string, HistoryItemDto[]>>((acc, item) => {
     const d = item.completionDate ? new Date(item.completionDate).toLocaleDateString() : 'Unknown';
     if (!acc[d]) acc[d] = [];
     acc[d].push(item);
@@ -53,6 +55,18 @@ export function HistoryPage() {
           </ul>
         </div>
       ))}
+
+      {history.length > pageSize && (
+        <div className="history-pagination">
+          <button className="btn btn-secondary" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+            ← Prev
+          </button>
+          <span>{page} / {totalPages}</span>
+          <button className="btn btn-secondary" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

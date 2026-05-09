@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import { ReadingListPage } from './ReadingListPage';
@@ -73,5 +73,98 @@ describe('ReadingListPage', () => {
     );
 
     await waitFor(() => expect(screen.getByText(/no books/i)).toBeInTheDocument());
+  });
+
+  it('shows chapter state and progress math from read chapter ids', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-2',
+        googleBookId: 'g-2',
+        title: 'Wonder',
+        description: 'A story',
+        thumbnailUrl: '',
+        authors: ['R. J. Palacio'],
+        startDate: '2026-01-01',
+        readCount: 1,
+        readChapterIds: ['c-1'],
+      },
+    ];
+
+    const chapterRows = [
+      { id: 'c-1', name: 'Part One', chapterIndex: 0 },
+      { id: 'c-2', name: 'Part Two', chapterIndex: 1 },
+    ];
+
+    const chapterReads = [
+      { chapterId: 'c-1', completionDate: '2026-02-01T00:00:00Z' },
+    ];
+
+    vi.spyOn(api, 'fetchWithAuth').mockImplementation((path) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path === '/bookreads/br-2/chapters') return Promise.resolve(mockOkResponse(chapterRows));
+      if (path === '/bookreads/br-2/chapterreads') return Promise.resolve(mockOkResponse(chapterReads));
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText('Wonder')).toBeInTheDocument());
+    expect(screen.getByText('50%')).toBeInTheDocument();
+    expect(screen.getByText('Part One')).toBeInTheDocument();
+    expect(screen.getByText('Part Two')).toBeInTheDocument();
+  });
+
+  it('supports chapter rename UX and persists via API', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-3',
+        googleBookId: 'g-3',
+        title: 'Matilda',
+        description: '',
+        thumbnailUrl: '',
+        authors: ['Roald Dahl'],
+        startDate: '2026-01-01',
+        readCount: 0,
+        readChapterIds: [],
+      },
+    ];
+
+    const chapterRows = [
+      { id: 'c-rename', name: 'Chapter 1', chapterIndex: 0 },
+    ];
+
+    const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path === '/bookreads/br-3/chapters') return Promise.resolve(mockOkResponse(chapterRows));
+      if (path === '/bookreads/br-3/chapterreads') return Promise.resolve(mockOkResponse([]));
+      if (path === '/chapters/c-rename' && options?.method === 'PUT') {
+        return Promise.resolve(mockOkResponse({ id: 'c-rename', name: 'The New Name', chapterIndex: 0 }));
+      }
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    const chapterName = await screen.findByText('Chapter 1');
+    fireEvent.doubleClick(chapterName);
+
+    const editInput = await screen.findByDisplayValue('Chapter 1');
+    fireEvent.change(editInput, { target: { value: 'The New Name' } });
+    fireEvent.blur(editInput);
+
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(
+      '/chapters/c-rename',
+      'test-token',
+      expect.objectContaining({ method: 'PUT' })
+    ));
+    await waitFor(() => expect(screen.getByText('The New Name')).toBeInTheDocument());
   });
 });

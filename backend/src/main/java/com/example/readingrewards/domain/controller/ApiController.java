@@ -70,37 +70,48 @@ public class ApiController {
 
     @Transactional
     @GetMapping("/books")
-    public List<Map<String, Object>> getBooks(@AuthenticationPrincipal UserDetails userDetails) {
+    public List<BookSummaryDto.BookRollupDto> getBooks(@AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         List<BookRead> bookReads = bookReadRepo.findByUserId(user.getId());
-        Map<String, Map<String, Object>> bookMap = new LinkedHashMap<>();
+        Map<String, BookAccumulator> bookMap = new LinkedHashMap<>();
         for (BookRead br : bookReads) {
             Book book = br.getBook();
             if (book == null) continue;
             String id = book.getGoogleBookId();
-            Map<String, Object> m = bookMap.computeIfAbsent(id, k -> {
-                Map<String, Object> entry = new LinkedHashMap<>();
-                entry.put("googleBookId", book.getGoogleBookId());
-                entry.put("title", book.getTitle());
-                entry.put("description", book.getDescription());
-                entry.put("thumbnailUrl", book.getThumbnailUrl());
-                entry.put("authors", book.getAuthors());
-                entry.put("inProgress", br.isInProgress());
-                entry.put("readCount", 0);
-                entry.put("endDate", LocalDateTime.MIN);
-                return entry;
-            });
-            m.put("readCount", (int) m.get("readCount") + 1);
+            BookAccumulator accumulator = bookMap.computeIfAbsent(id, k -> new BookAccumulator(
+                    book.getGoogleBookId(),
+                    book.getTitle(),
+                    book.getDescription(),
+                    book.getThumbnailUrl(),
+                    book.getAuthors(),
+                    br.isInProgress(),
+                    0,
+                    LocalDateTime.MIN
+            ));
+            accumulator.readCount += 1;
             if (br.getEndDate() != null) {
-                LocalDateTime current = (LocalDateTime) m.get("endDate");
-                if (br.getEndDate().isAfter(current)) m.put("endDate", br.getEndDate());
+                LocalDateTime current = accumulator.endDate;
+                if (br.getEndDate().isAfter(current)) {
+                    accumulator.endDate = br.getEndDate();
+                }
             }
         }
-        return new ArrayList<>(bookMap.values());
+        return bookMap.values().stream()
+                .map(item -> new BookSummaryDto.BookRollupDto(
+                        item.googleBookId,
+                        item.title,
+                        item.description,
+                        item.thumbnailUrl,
+                        item.authors,
+                        item.inProgress,
+                        item.readCount,
+                        item.endDate
+                ))
+                .toList();
     }
 
     @PostMapping("/books")
-    public Map<String, Object> saveBook(@RequestBody BookSummaryDto dto, @AuthenticationPrincipal UserDetails userDetails) {
+    public BookSummaryDto.SavedBookDto saveBook(@RequestBody BookSummaryDto dto, @AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         Book book = bookRepo.findById(dto.getGoogleBookId()).orElseGet(Book::new);
         book.setGoogleBookId(dto.getGoogleBookId());
@@ -114,13 +125,13 @@ public class ApiController {
         br.setUserId(user.getId());
         br.setStartDate(LocalDateTime.now());
         BookRead savedBr = bookReadRepo.save(br);
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("id", savedBr.getId());
-        result.put("googleBookId", savedBr.getGoogleBookId());
-        result.put("title", book.getTitle());
-        result.put("userId", savedBr.getUserId());
-        result.put("startDate", savedBr.getStartDate());
-        return result;
+        return new BookSummaryDto.SavedBookDto(
+            savedBr.getId(),
+            savedBr.getGoogleBookId(),
+            book.getTitle(),
+            savedBr.getUserId(),
+            savedBr.getStartDate()
+        );
     }
 
     @PostMapping("/books/{googleBookId}/finish")
@@ -137,15 +148,15 @@ public class ApiController {
                 found = true;
             }
         }
-        return found ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+        return found ? ResponseEntity.ok().build() : notFound("In-progress book read not found for this user");
     }
 
     @PostMapping("/books/{googleBookId}/reread")
-    public ResponseEntity<BookRead> rereadBook(@PathVariable String googleBookId,
-                                               @AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<?> rereadBook(@PathVariable String googleBookId,
+                                        @AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         if (bookRepo.findById(googleBookId).isEmpty()) {
-            return ResponseEntity.notFound().build();
+            return notFound("Book not found");
         }
         BookRead br = new BookRead();
         br.setGoogleBookId(googleBookId);
@@ -161,7 +172,7 @@ public class ApiController {
         User user = getCurrentUser(userDetails);
         Optional<BookRead> opt = bookReadRepo.findById(bookReadId);
         if (opt.isEmpty() || !user.getId().equals(opt.get().getUserId())) {
-            return ResponseEntity.notFound().build();
+            return notFound("Book read not found for this user");
         }
         List<ChapterRead> chapterReads = chapterReadRepo.findByBookReadId(bookReadId);
         for (ChapterRead cr : chapterReads) {
@@ -192,7 +203,10 @@ public class ApiController {
     @PostMapping("/books/{googleBookId}/chapters")
     public List<Chapter> saveChapters(@PathVariable String googleBookId,
                                       @RequestBody List<Chapter> chapters) {
-        chapterRepo.deleteByGoogleBookId(googleBookId);
+        List<Chapter> existing = chapterRepo.findByGoogleBookIdOrderByChapterIndex(googleBookId);
+        if (!existing.isEmpty()) {
+            return existing;
+        }
         chapters.forEach(c -> c.setGoogleBookId(googleBookId));
         return chapterRepo.saveAll(chapters);
     }
@@ -203,18 +217,21 @@ public class ApiController {
         Optional<BookRead> br = bookReadRepo.findById(bookReadId);
         if (br.isEmpty()) return Collections.emptyList();
         String googleBookId = br.get().getGoogleBookId();
-        chapterRepo.deleteByGoogleBookId(googleBookId);
+        List<Chapter> existing = chapterRepo.findByGoogleBookIdOrderByChapterIndex(googleBookId);
+        if (!existing.isEmpty()) {
+            return existing;
+        }
         chapters.forEach(c -> c.setGoogleBookId(googleBookId));
         return chapterRepo.saveAll(chapters);
     }
 
     @PutMapping("/chapters/{id}")
-    public ResponseEntity<Chapter> renameChapter(@PathVariable UUID id,
-                                                 @RequestBody Map<String, String> body) {
+    public ResponseEntity<?> renameChapter(@PathVariable UUID id,
+                                           @RequestBody Map<String, String> body) {
         Optional<Chapter> opt = chapterRepo.findById(id);
-        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        if (opt.isEmpty()) return notFound("Chapter not found");
         String newName = body.get("name");
-        if (newName == null || newName.isBlank()) return ResponseEntity.badRequest().build();
+        if (newName == null || newName.isBlank()) return badRequest("Chapter name is required");
         Chapter chapter = opt.get();
         chapter.setName(newName.trim());
         return ResponseEntity.ok(chapterRepo.save(chapter));
@@ -258,7 +275,7 @@ public class ApiController {
         List<ChapterRead> reads = chapterReadRepo.findByUserId(user.getId()).stream()
                 .filter(r -> chapterId.equals(r.getChapterId()))
                 .collect(Collectors.toList());
-        if (reads.isEmpty()) return ResponseEntity.notFound().build();
+        if (reads.isEmpty()) return notFound("Chapter read not found for this user");
         ChapterRead cr = reads.get(0);
         List<Reward> rewards = rewardRepo.findByUserId(user.getId()).stream()
                 .filter(r -> cr.getId().equals(r.getChapterReadId()))
@@ -314,36 +331,28 @@ public class ApiController {
     // ---- Credits ----
 
     @GetMapping("/credits")
-    public Map<String, Object> credits(@AuthenticationPrincipal UserDetails userDetails) {
+    public BookSummaryDto.CreditsDto credits(@AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         List<Reward> rewards = rewardRepo.findByUserId(user.getId());
         int totalCents = (int) rewards.stream()
                 .filter(r -> r.getType() == RewardType.EARN)
                 .count() * 100;
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("cents", totalCents);
-        m.put("dollars", totalCents / 100.0);
-        return m;
+        return new BookSummaryDto.CreditsDto(totalCents, totalCents / 100.0);
     }
 
     // ---- Rewards ----
 
     @GetMapping("/rewards/summary")
-    public Map<String, Object> getRewardsSummary(@AuthenticationPrincipal UserDetails userDetails) {
+    public BookSummaryDto.RewardRollupDto getRewardsSummary(@AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         double earned = rewardRepo.getTotalEarnedByUserId(user.getId());
         double paidOut = rewardRepo.getTotalPaidOutByUserId(user.getId());
         double spent = rewardRepo.getTotalSpentByUserId(user.getId());
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("totalEarned", earned);
-        m.put("totalPaidOut", paidOut);
-        m.put("totalSpent", spent);
-        m.put("currentBalance", earned - paidOut - spent);
-        return m;
+        return new BookSummaryDto.RewardRollupDto(earned, paidOut, spent, earned - paidOut - spent);
     }
 
     @GetMapping("/rewards")
-    public Map<String, Object> getRewards(
+    public BookSummaryDto.RewardHistoryPageDto getRewards(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -354,16 +363,16 @@ public class ApiController {
         int total = allRewards.size();
         int from = Math.min((page - 1) * pageSize, total);
         int to = Math.min(from + pageSize, total);
-        List<Map<String, Object>> result = allRewards.subList(from, to)
-                .stream().map(this::rewardToMap).toList();
-        return Map.of("rewards", result, "totalCount", total);
+        List<BookSummaryDto.RewardHistoryItemDto> result = allRewards.subList(from, to)
+            .stream().map(this::rewardToDto).toList();
+        return new BookSummaryDto.RewardHistoryPageDto(result, total);
     }
 
     @PostMapping("/rewards/spend")
     public ResponseEntity<?> spendReward(@RequestParam double amount,
                                          @RequestParam String note,
                                          @AuthenticationPrincipal UserDetails userDetails) {
-        if (amount <= 0) return ResponseEntity.badRequest().body("Amount must be positive");
+        if (amount <= 0) return badRequest("Amount must be positive");
         User user = getCurrentUser(userDetails);
         Reward reward = new Reward();
         reward.setType(RewardType.SPEND);
@@ -377,7 +386,7 @@ public class ApiController {
     @PostMapping("/rewards/payout")
     public ResponseEntity<?> payoutReward(@RequestParam double amount,
                                           @AuthenticationPrincipal UserDetails userDetails) {
-        if (amount <= 0) return ResponseEntity.badRequest().body("Amount must be positive");
+        if (amount <= 0) return badRequest("Amount must be positive");
         User user = getCurrentUser(userDetails);
         Reward reward = new Reward();
         reward.setType(RewardType.PAYOUT);
@@ -388,44 +397,87 @@ public class ApiController {
         return ResponseEntity.ok().build();
     }
 
-    private Map<String, Object> rewardToMap(Reward reward) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", reward.getId());
-        m.put("type", reward.getType());
-        m.put("amount", reward.getAmount());
-        m.put("note", reward.getNote());
-        m.put("createdAt", reward.getCreatedAt());
+    private BookSummaryDto.RewardHistoryItemDto rewardToDto(Reward reward) {
+        UUID chapterReadId = null;
+        LocalDateTime completionDate = null;
+        BookSummaryDto.ChapterRefDto chapterDto = null;
+        BookSummaryDto.BookReadRefDto bookReadDto = null;
         if (reward.getType() == RewardType.EARN && reward.getChapterRead() != null) {
             ChapterRead cr = reward.getChapterRead();
-            m.put("chapterReadId", cr.getId());
-            m.put("completionDate", cr.getCompletionDate());
+            chapterReadId = cr.getId();
+            completionDate = cr.getCompletionDate();
             if (cr.getChapter() != null) {
                 Chapter ch = cr.getChapter();
-                m.put("chapter", Map.of(
-                    "id", ch.getId(),
-                    "name", ch.getName(),
-                    "chapterIndex", ch.getChapterIndex(),
-                    "bookGoogleBookId", ch.getGoogleBookId()
-                ));
+                chapterDto = new BookSummaryDto.ChapterRefDto(
+                        ch.getId(),
+                        ch.getName(),
+                        ch.getChapterIndex(),
+                        ch.getGoogleBookId()
+                );
             }
             if (cr.getBookRead() != null) {
                 BookRead br = cr.getBookRead();
-                Map<String, Object> brMap = new LinkedHashMap<>();
-                brMap.put("id", br.getId());
-                brMap.put("startDate", br.getStartDate());
-                brMap.put("endDate", br.getEndDate());
-                brMap.put("inProgress", br.isInProgress());
+                BookSummaryDto.BookRefDto bookDto = null;
                 if (br.getBook() != null) {
                     Book book = br.getBook();
-                    brMap.put("book", Map.of(
-                        "googleBookId", book.getGoogleBookId(),
-                        "title", book.getTitle(),
-                        "authors", book.getAuthors() != null ? book.getAuthors() : List.of()
-                    ));
+                    bookDto = new BookSummaryDto.BookRefDto(
+                            book.getGoogleBookId(),
+                            book.getTitle(),
+                            book.getAuthors() != null ? book.getAuthors() : List.of()
+                    );
                 }
-                m.put("bookRead", brMap);
+                bookReadDto = new BookSummaryDto.BookReadRefDto(
+                        br.getId(),
+                        br.getStartDate(),
+                        br.getEndDate(),
+                        br.isInProgress(),
+                        bookDto
+                );
             }
         }
-        return m;
+        return new BookSummaryDto.RewardHistoryItemDto(
+                reward.getId(),
+                reward.getType(),
+                reward.getAmount(),
+                reward.getNote(),
+                reward.getCreatedAt(),
+                chapterReadId,
+                completionDate,
+                chapterDto,
+                bookReadDto
+        );
     }
+
+    private ResponseEntity<ErrorResponse> badRequest(String message) {
+        return ResponseEntity.badRequest().body(new ErrorResponse("bad_request", message, 400));
+    }
+
+    private ResponseEntity<ErrorResponse> notFound(String message) {
+        return ResponseEntity.status(404).body(new ErrorResponse("not_found", message, 404));
+    }
+
+    private static final class BookAccumulator {
+        private final String googleBookId;
+        private final String title;
+        private final String description;
+        private final String thumbnailUrl;
+        private final List<String> authors;
+        private final boolean inProgress;
+        private int readCount;
+        private LocalDateTime endDate;
+
+        private BookAccumulator(String googleBookId, String title, String description, String thumbnailUrl,
+                                List<String> authors, boolean inProgress, int readCount, LocalDateTime endDate) {
+            this.googleBookId = googleBookId;
+            this.title = title;
+            this.description = description;
+            this.thumbnailUrl = thumbnailUrl;
+            this.authors = authors;
+            this.inProgress = inProgress;
+            this.readCount = readCount;
+            this.endDate = endDate;
+        }
+    }
+
+    private record ErrorResponse(String error, String message, int status) {}
 }

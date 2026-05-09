@@ -11,10 +11,14 @@ export function Nav() {
 
   const loadCredits = async () => {
     if (!token) return;
-    const res = await fetchWithAuth('/credits', token);
-    if (res.ok) {
-      const data = await res.json();
-      setCredits(data.dollars ?? 0);
+    try {
+      const res = await fetchWithAuth('/credits', token);
+      if (res.ok) {
+        const data = await res.json();
+        setCredits(data.dollars ?? 0);
+      }
+    } catch {
+      // Keep nav usable when API is unavailable (e.g., isolated frontend tests).
     }
   };
 
