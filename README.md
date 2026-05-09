@@ -34,6 +34,12 @@ Successor repository:
 - Node.js: 20+
 - Python: 3.12 (for local Spec Kit CLI in .venv)
 
+## Book Search Provider
+
+- The backend book search integration uses Open Library via `backend/src/main/java/com/example/readingrewards/domain/service/GoogleBooksService.java`.
+- Open Library is a free external dependency (no API key required for current usage).
+- Fallback behavior: if Open Library is unavailable or returns malformed data, the API returns an empty list rather than failing the request.
+
 ## Local Setup
 
 ### 1. Backend

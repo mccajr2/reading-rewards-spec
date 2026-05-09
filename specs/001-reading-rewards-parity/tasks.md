@@ -154,13 +154,13 @@
 - [X] T063 [P] Remove duplicate/contradictory lines introduced in clarified spec sections in `specs/001-reading-rewards-parity/spec.md`
 - [X] T064 [P] Align data model naming from `googleBookId` to provider-agnostic wording notes in `specs/001-reading-rewards-parity/data-model.md`
 - [X] T065 [P] Update quickstart with parent dashboard and reversal verification steps in `specs/001-reading-rewards-parity/quickstart.md`
-- [ ] T066 [P] Add Open Library dependency note and fallback behavior in `README.md`
-- [ ] T067 Run backend test suite and capture summary results in `specs/001-reading-rewards-parity/quickstart.md`
-- [ ] T068 Run frontend unit test suite and capture summary results in `specs/001-reading-rewards-parity/quickstart.md`
-- [ ] T069 Run Playwright E2E suite and capture summary results in `specs/001-reading-rewards-parity/quickstart.md`
-- [ ] T070 [P] Add backend unit tests for domain reward and chapter-read logic in `backend/src/test/java/com/example/readingrewards/domain/RewardLogicUnitTests.java`
-- [ ] T071 [P] Add backend unit tests for auth and JWT utility behavior in `backend/src/test/java/com/example/readingrewards/auth/JwtUtilUnitTests.java`
-- [ ] T072 [P] Add SC-004 isolation/traceability verification checklist with explicit validation commands in `specs/001-reading-rewards-parity/quickstart.md`
+- [X] T066 [P] Add Open Library dependency note and fallback behavior in `README.md`
+- [X] T067 Run backend test suite and capture summary results in `specs/001-reading-rewards-parity/quickstart.md`
+- [X] T068 Run frontend unit test suite and capture summary results in `specs/001-reading-rewards-parity/quickstart.md`
+- [X] T069 Run Playwright E2E suite and capture summary results in `specs/001-reading-rewards-parity/quickstart.md`
+- [X] T070 [P] Add backend unit tests for domain reward and chapter-read logic in `backend/src/test/java/com/example/readingrewards/domain/RewardLogicUnitTests.java`
+- [X] T071 [P] Add backend unit tests for auth and JWT utility behavior in `backend/src/test/java/com/example/readingrewards/auth/JwtUtilUnitTests.java`
+- [X] T072 [P] Add SC-004 isolation/traceability verification checklist with explicit validation commands in `specs/001-reading-rewards-parity/quickstart.md`
 
 ---
 

@@ -80,6 +80,56 @@ Exit code: 0
 Totals: 11 passed, 0 failed
 ```
 
+## Latest test evidence
+
+```text
+[backend] 2026-05-08 22:34 EDT
+Command: cd backend && ./mvnw test
+Exit code: 0
+Totals: 26 passed, 0 failed, 0 errors, 0 skipped
+
+[frontend] 2026-05-08 22:35 EDT
+Command: cd frontend && npm test -- --run
+Exit code: 0
+Totals: 23 passed, 0 failed (8 test files passed)
+
+[e2e] 2026-05-08 22:35 EDT
+Command: docker-compose up -d && npx playwright test --reporter=list
+Exit code: 0
+Totals: 12 passed, 0 failed
+```
+
+## SC-004 isolation and traceability checklist
+
+Validate repository/toolchain isolation from legacy source while preserving behavior traceability.
+
+1. Confirm this repository root and branch:
+   ```bash
+   cd /Users/jasonmccarthy/projects/reading-rewards-spec
+   git rev-parse --show-toplevel
+   git branch --show-current
+   ```
+2. Confirm legacy repository remains separate:
+   ```bash
+   cd /Users/jasonmccarthy/projects/reading-rewards
+   git rev-parse --show-toplevel
+   ```
+3. Confirm no accidental nested Git repos between projects:
+   ```bash
+   find /Users/jasonmccarthy/projects -maxdepth 2 -name .git -type d
+   ```
+4. Confirm successor test/toolchain commands run from successor repo only:
+   ```bash
+   cd /Users/jasonmccarthy/projects/reading-rewards-spec/backend && ./mvnw test
+   cd /Users/jasonmccarthy/projects/reading-rewards-spec/frontend && npm test -- --run
+   cd /Users/jasonmccarthy/projects/reading-rewards-spec && npx playwright test --reporter=list
+   ```
+5. Confirm parity artifacts remain traceable in successor spec files:
+   ```bash
+   cd /Users/jasonmccarthy/projects/reading-rewards-spec
+   ls specs/001-reading-rewards-parity
+   ```
+
 ## Production email (Brevo)
 
 In development and test environments, email verification is bypassed via the `DevAuthController` dev-only endpoint (`POST /api/auth/dev/verify?email=...`), which is disabled in the `prod` Spring profile.
