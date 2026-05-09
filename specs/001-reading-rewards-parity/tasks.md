@@ -37,8 +37,8 @@
 - [X] T007 Normalize parent/child capability rules in API contract notes in `specs/001-reading-rewards-parity/contracts/README.md`
 - [X] T008 [P] Add/confirm role boundary checks for parent vs child endpoints in `backend/src/main/java/com/example/readingrewards/auth/config/SecurityConfig.java`
 - [X] T009 [P] Ensure JWT secret parsing supports env-safe formats with secure fallback behavior in `backend/src/main/java/com/example/readingrewards/auth/util/JwtUtil.java`
-- [ ] T010 [P] Add shared error response mapping for authorization and validation failures in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
-- [ ] T011 [P] Align shared DTOs for book reads, chapter reads, and rewards rollups in `backend/src/main/java/com/example/readingrewards/domain/dto/BookSummaryDto.java`
+- [X] T010 [P] Add shared error response mapping for authorization and validation failures in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
+- [X] T011 [P] Align shared DTOs for book reads, chapter reads, and rewards rollups in `backend/src/main/java/com/example/readingrewards/domain/dto/BookSummaryDto.java`
 - [X] T012 [P] Add frontend auth guard utility for role-based route protection in `frontend/src/app/App.tsx`
 - [X] T013 Add route map alignment for parent/child navigation boundaries in `frontend/src/app/App.tsx`
 

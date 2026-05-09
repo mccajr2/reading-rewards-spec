@@ -1,6 +1,10 @@
 package com.example.readingrewards.domain.dto;
 
+import com.example.readingrewards.domain.model.RewardType;
+
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public class BookSummaryDto {
     private String googleBookId;
@@ -34,4 +38,63 @@ public class BookSummaryDto {
 
     public String getThumbnailUrl() { return thumbnailUrl; }
     public void setThumbnailUrl(String thumbnailUrl) { this.thumbnailUrl = thumbnailUrl; }
+
+    public record BookRollupDto(
+        String googleBookId,
+        String title,
+        String description,
+        String thumbnailUrl,
+        List<String> authors,
+        boolean inProgress,
+        int readCount,
+        LocalDateTime endDate
+    ) {}
+
+    public record SavedBookDto(
+        UUID id,
+        String googleBookId,
+        String title,
+        UUID userId,
+        LocalDateTime startDate
+    ) {}
+
+    public record CreditsDto(int cents, double dollars) {}
+
+    public record RewardRollupDto(
+        double totalEarned,
+        double totalPaidOut,
+        double totalSpent,
+        double currentBalance
+    ) {}
+
+    public record RewardHistoryPageDto(List<RewardHistoryItemDto> rewards, int totalCount) {}
+
+    public record RewardHistoryItemDto(
+        UUID id,
+        RewardType type,
+        double amount,
+        String note,
+        LocalDateTime createdAt,
+        UUID chapterReadId,
+        LocalDateTime completionDate,
+        ChapterRefDto chapter,
+        BookReadRefDto bookRead
+    ) {}
+
+    public record ChapterRefDto(
+        UUID id,
+        String name,
+        Integer chapterIndex,
+        String bookGoogleBookId
+    ) {}
+
+    public record BookReadRefDto(
+        UUID id,
+        LocalDateTime startDate,
+        LocalDateTime endDate,
+        boolean inProgress,
+        BookRefDto book
+    ) {}
+
+    public record BookRefDto(String googleBookId, String title, List<String> authors) {}
 }
