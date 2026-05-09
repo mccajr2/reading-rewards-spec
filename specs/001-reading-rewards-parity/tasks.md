@@ -20,11 +20,11 @@
 **Purpose**: Align toolchain, environment templates, and test harnesses for the rebuilt repo.
 
 - [ ] T001 Update environment templates for JWT/Brevo/frontend URL parity in `.env.example`
-- [ ] T002 Update compose defaults for backend/frontend runtime env alignment in `docker-compose.yml`
-- [ ] T003 [P] Verify backend build/test toolchain setup for Java 21 in `backend/pom.xml`
-- [ ] T004 [P] Verify frontend build/test toolchain setup for Vite/Vitest in `frontend/package.json`
-- [ ] T005 [P] Validate Playwright base URL and project config in `playwright.config.ts`
-- [ ] T006 [P] Refresh quickstart run/test commands and env prerequisites in `specs/001-reading-rewards-parity/quickstart.md`
+- [X] T002 Update compose defaults for backend/frontend runtime env alignment in `docker-compose.yml`
+- [X] T003 [P] Verify backend build/test toolchain setup for Java 21 in `backend/pom.xml`
+- [X] T004 [P] Verify frontend build/test toolchain setup for Vite/Vitest in `frontend/package.json`
+- [X] T005 [P] Validate Playwright base URL and project config in `playwright.config.ts`
+- [X] T006 [P] Refresh quickstart run/test commands and env prerequisites in `specs/001-reading-rewards-parity/quickstart.md`
 
 ---
 
@@ -34,13 +34,13 @@
 
 **CRITICAL**: No user story work should begin until this phase is complete.
 
-- [ ] T007 Normalize parent/child capability rules in API contract notes in `specs/001-reading-rewards-parity/contracts/README.md`
-- [ ] T008 [P] Add/confirm role boundary checks for parent vs child endpoints in `backend/src/main/java/com/example/readingrewards/auth/config/SecurityConfig.java`
-- [ ] T009 [P] Ensure JWT secret parsing supports env-safe formats with secure fallback behavior in `backend/src/main/java/com/example/readingrewards/auth/util/JwtUtil.java`
+- [X] T007 Normalize parent/child capability rules in API contract notes in `specs/001-reading-rewards-parity/contracts/README.md`
+- [X] T008 [P] Add/confirm role boundary checks for parent vs child endpoints in `backend/src/main/java/com/example/readingrewards/auth/config/SecurityConfig.java`
+- [X] T009 [P] Ensure JWT secret parsing supports env-safe formats with secure fallback behavior in `backend/src/main/java/com/example/readingrewards/auth/util/JwtUtil.java`
 - [ ] T010 [P] Add shared error response mapping for authorization and validation failures in `backend/src/main/java/com/example/readingrewards/domain/controller/ApiController.java`
 - [ ] T011 [P] Align shared DTOs for book reads, chapter reads, and rewards rollups in `backend/src/main/java/com/example/readingrewards/domain/dto/BookSummaryDto.java`
-- [ ] T012 [P] Add frontend auth guard utility for role-based route protection in `frontend/src/app/App.tsx`
-- [ ] T013 Add route map alignment for parent/child navigation boundaries in `frontend/src/app/App.tsx`
+- [X] T012 [P] Add frontend auth guard utility for role-based route protection in `frontend/src/app/App.tsx`
+- [X] T013 Add route map alignment for parent/child navigation boundaries in `frontend/src/app/App.tsx`
 
 **Checkpoint**: Foundation complete. User stories can now be implemented and tested independently.
 
