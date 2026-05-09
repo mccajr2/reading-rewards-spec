@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { signupAndVerify, uniqueEmail, uniqueUsername, login } from './helpers';
+import { signupAndVerify, uniqueEmail, uniqueUsername, login, createKid } from './helpers';
 
 /**
  * P1 Parent journey:
@@ -66,5 +66,70 @@ test.describe('Parent dashboard journey', () => {
     expect(body.kids[0]).toHaveProperty('firstName');
     expect(body.kids[0]).toHaveProperty('username');
     expect(body.kids[0]).toHaveProperty('currentBalance');
+  });
+
+  test('parent can drill down into child detail and reverse a chapter read', async ({ page, request }) => {
+    const parentToken = await login(request, parentEmail, password);
+    const headers = { Authorization: `Bearer ${parentToken}` };
+
+    const kidUsername = uniqueUsername('kidrev');
+    await createKid(request, parentToken, kidUsername, 'ReversalKid', 'KidPass1!');
+    const kidsRes = await request.get('/api/parent/kids', { headers });
+    expect(kidsRes.ok()).toBeTruthy();
+    const kids = await kidsRes.json();
+    const kid = kids.find((k: { username: string }) => k.username === kidUsername);
+    expect(kid).toBeTruthy();
+
+    const kidToken = await login(request, kidUsername, 'KidPass1!');
+    const kidHeaders = {
+      Authorization: `Bearer ${kidToken}`,
+      'Content-Type': 'application/json',
+    };
+
+    const bookDto = {
+      googleBookId: `e2e-parent-reverse-${Date.now()}`,
+      title: 'Parent Reversal Book',
+      authors: ['E2E Author'],
+      description: 'seed',
+      thumbnailUrl: '',
+    };
+
+    const addBookRes = await request.post('/api/books', { data: bookDto, headers: kidHeaders });
+    expect(addBookRes.ok()).toBeTruthy();
+    const bookRead = await addBookRes.json();
+
+    const addChaptersRes = await request.post(`/api/books/${bookRead.googleBookId}/chapters`, {
+      data: [{ name: 'Chapter 1', chapterIndex: 0 }],
+      headers: kidHeaders,
+    });
+    expect(addChaptersRes.ok()).toBeTruthy();
+    const chapters = await addChaptersRes.json();
+
+    const markReadRes = await request.post(`/api/bookreads/${bookRead.id}/chapters/${chapters[0].id}/read`, { headers: kidHeaders });
+    expect(markReadRes.ok()).toBeTruthy();
+
+    await page.goto('/login');
+    await page.getByLabel('Username or Email').fill(parentEmail);
+    await page.getByLabel('Password').fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
+
+    await page.goto('/parent/summary');
+    await expect(page.getByRole('heading', { name: /children's summary/i })).toBeVisible();
+
+    await page.getByRole('button', { name: /view details for reversalkid/i }).click();
+    await expect(page.getByRole('heading', { name: /child detail/i })).toBeVisible();
+    await expect(page.getByText(/chapter 1/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /reverse/i })).toBeVisible();
+
+    await page.getByRole('button', { name: /reverse/i }).click();
+    await page.getByRole('button', { name: /confirm/i }).click();
+    await expect(page.getByText(/not read/i)).toBeVisible({ timeout: 5_000 });
+
+    const detailRes = await request.get(`/api/parent/${kid.id}/child-detail`, { headers });
+    expect(detailRes.ok()).toBeTruthy();
+    const detail = await detailRes.json();
+    expect(detail.rewards.length).toBe(0);
+    expect(detail.books[0].chapters[0].isRead).toBeFalsy();
   });
 });

@@ -128,9 +128,9 @@
 
 - [X] T050 [P] [US3] Add backend integration tests for parent child-detail payload and authorization boundaries in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
 - [X] T051 [P] [US3] Add backend integration tests for parent-triggered chapter-read reversal behavior in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
-- [ ] T052 [P] [US3] Add frontend tests for parent child-detail rendering and reward ledger visibility in `frontend/src/features/parent/ParentSummary.test.tsx`
-- [ ] T053 [P] [US3] Add frontend tests for reversal action UX and post-reversal state refresh in `frontend/src/features/parent/ParentSummary.test.tsx`
-- [ ] T054 [US3] Add Playwright parent drill-down and reversal scenario in `tests/e2e/parent.spec.ts`
+- [X] T052 [P] [US3] Add frontend tests for parent child-detail rendering and reward ledger visibility in `frontend/src/features/parent/ParentSummary.test.tsx`
+- [X] T053 [P] [US3] Add frontend tests for reversal action UX and post-reversal state refresh in `frontend/src/features/parent/ParentSummary.test.tsx`
+- [X] T054 [US3] Add Playwright parent drill-down and reversal scenario in `tests/e2e/parent.spec.ts`
 
 ### Implementation for User Story 3
 
@@ -151,9 +151,9 @@
 
 **Purpose**: Cross-story hardening, cleanup, and validation.
 
-- [ ] T063 [P] Remove duplicate/contradictory lines introduced in clarified spec sections in `specs/001-reading-rewards-parity/spec.md`
-- [ ] T064 [P] Align data model naming from `googleBookId` to provider-agnostic wording notes in `specs/001-reading-rewards-parity/data-model.md`
-- [ ] T065 [P] Update quickstart with parent dashboard and reversal verification steps in `specs/001-reading-rewards-parity/quickstart.md`
+- [X] T063 [P] Remove duplicate/contradictory lines introduced in clarified spec sections in `specs/001-reading-rewards-parity/spec.md`
+- [X] T064 [P] Align data model naming from `googleBookId` to provider-agnostic wording notes in `specs/001-reading-rewards-parity/data-model.md`
+- [X] T065 [P] Update quickstart with parent dashboard and reversal verification steps in `specs/001-reading-rewards-parity/quickstart.md`
 - [ ] T066 [P] Add Open Library dependency note and fallback behavior in `README.md`
 - [ ] T067 Run backend test suite and capture summary results in `specs/001-reading-rewards-parity/quickstart.md`
 - [ ] T068 Run frontend unit test suite and capture summary results in `specs/001-reading-rewards-parity/quickstart.md`

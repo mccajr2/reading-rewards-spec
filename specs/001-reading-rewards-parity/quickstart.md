@@ -14,6 +14,15 @@
 3. Verify backend status flips from `UNVERIFIED` to `VERIFIED`.
 4. Log in at `/login` with the verified parent account.
 
+## Parent dashboard and reversal verification workflow
+
+1. Log in as a parent and navigate to `/parent/summary`.
+2. Confirm the per-child summary cards show: child name, books in progress, completed count, and current balance.
+3. Select a child card and confirm drill-down to `/parent/summary/:childId`.
+4. In child detail, verify books, chapter read states, and reward history are visible.
+5. Trigger a `Reverse` action on a read chapter and confirm the chapter switches to `Not read`.
+6. Confirm the associated reward entry is removed and totals/balance refresh accordingly.
+
 ## Local tool requirements
 
 - Java 21 runtime for the backend.

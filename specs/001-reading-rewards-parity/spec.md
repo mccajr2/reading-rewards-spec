@@ -25,7 +25,7 @@
 
 ### User Story 1 - Parent account lifecycle and dashboard work end-to-end (Priority: P1)
 
-A parent can sign up, verify their email address, log in, manage child accounts, and view a dashboard showing all children's reading progress and reward data without losing any behavior currently supported by the legacy app. Parent accounts are admin-only for child management but can optionally add their own books to a separate parent reading list.
+A parent can sign up, verify their email address, log in, manage child accounts, and view a dashboard showing all children's reading progress and reward data without losing any behavior currently supported by the legacy app. Parent accounts are primarily administrative for child management/reporting and can optionally add books only to their own separate parent reading list.
 
 **Why this priority**: Parent onboarding, child management, and reporting are the administrative entry points for the product. If this flow breaks, the rest of the system is unusable for families.
 
