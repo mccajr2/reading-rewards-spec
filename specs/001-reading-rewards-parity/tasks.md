@@ -19,7 +19,7 @@
 
 **Purpose**: Align toolchain, environment templates, and test harnesses for the rebuilt repo.
 
-- [ ] T001 Update environment templates for JWT/Brevo/frontend URL parity in `.env.example`
+- [X] T001 Update environment templates for JWT/Brevo/frontend URL parity in `.env.example`
 - [X] T002 Update compose defaults for backend/frontend runtime env alignment in `docker-compose.yml`
 - [X] T003 [P] Verify backend build/test toolchain setup for Java 21 in `backend/pom.xml`
 - [X] T004 [P] Verify frontend build/test toolchain setup for Vite/Vitest in `frontend/package.json`
