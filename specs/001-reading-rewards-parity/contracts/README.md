@@ -14,6 +14,8 @@ Implemented endpoints summary:
 	- `POST /api/parent/kids`
 	- `POST /api/parent/reset-child-password`
 	- `GET /api/parent/kids/summary`
+	- `GET /api/parent/{childId}/child-detail`
+	- `POST /api/parent/{childId}/chapter-reads/{chapterReadId}/reverse`
 - Books and reading progress
 	- `GET /api/search`
 	- `GET /api/books`

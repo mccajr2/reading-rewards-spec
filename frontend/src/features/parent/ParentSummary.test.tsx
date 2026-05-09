@@ -25,21 +25,35 @@ describe('ParentSummary drill-down wiring', () => {
   });
 
   it('navigates from summary list into child detail route', async () => {
-    vi.spyOn(api, 'fetchWithAuth').mockResolvedValue(
-      mockOkResponse({
-        kids: [
-          {
+    vi.spyOn(api, 'fetchWithAuth')
+      .mockResolvedValueOnce(
+        mockOkResponse({
+          kids: [
+            {
+              id: 'kid-1',
+              firstName: 'Jamie',
+              username: 'jamie',
+              booksRead: 2,
+              chaptersRead: 10,
+              totalEarned: 3.5,
+              currentBalance: 1.5,
+            },
+          ],
+        })
+      )
+      .mockResolvedValueOnce(
+        mockOkResponse({
+          child: {
             id: 'kid-1',
             firstName: 'Jamie',
             username: 'jamie',
-            booksRead: 2,
-            chaptersRead: 10,
-            totalEarned: 3.5,
-            currentBalance: 1.5,
           },
-        ],
-      })
-    );
+          books: [],
+          rewards: [],
+          totalEarned: 3.5,
+          currentBalance: 1.5,
+        })
+      );
 
     render(
       <MemoryRouter initialEntries={['/parent/summary']}>

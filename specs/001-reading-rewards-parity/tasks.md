@@ -135,12 +135,12 @@
 ### Implementation for User Story 3
 
 - [ ] T055 [P] [US3] Implement parent child-detail endpoint (books, chapters, rewards rollup) in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
-- [ ] T056 [P] [US3] Implement parent-triggered reverse chapter-read endpoint and service logic in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
+- [X] T056 [P] [US3] Implement parent-triggered reverse chapter-read endpoint and service logic in `backend/src/main/java/com/example/readingrewards/domain/controller/ParentController.java`
 - [ ] T057 [P] [US3] Enforce parent-only access checks for child-detail and reversal endpoints in `backend/src/main/java/com/example/readingrewards/auth/config/JwtAuthFilter.java`
-- [ ] T058 [P] [US3] Implement parent summary drill-down page with read-only child activity in `frontend/src/features/parent/ParentSummary.tsx`
-- [ ] T059 [P] [US3] Implement reversal action controls in parent child-detail page in `frontend/src/features/parent/ParentSummary.tsx`
-- [ ] T060 [US3] Wire parent child-detail route and guard behavior in `frontend/src/app/App.tsx`
-- [ ] T061 [US3] Update parent summary page navigation to child detail routes in `frontend/src/features/parent/ParentSummary.tsx`
+- [X] T058 [P] [US3] Implement parent summary drill-down page with read-only child activity in `frontend/src/features/parent/ParentSummary.tsx`
+- [X] T059 [P] [US3] Implement reversal action controls in parent child-detail page in `frontend/src/features/parent/ParentSummary.tsx`
+- [X] T060 [US3] Wire parent child-detail route and guard behavior in `frontend/src/app/App.tsx`
+- [X] T061 [US3] Update parent summary page navigation to child detail routes in `frontend/src/features/parent/ParentSummary.tsx`
 - [ ] T062 [US3] Document US3 contracts (child-detail and reversal) in `specs/001-reading-rewards-parity/contracts/README.md`
 
 **Checkpoint**: User Story 3 is independently functional and testable.
