@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: reading-rewards-spec-backend
+    env: docker
+    plan: free
+    image:
+      url: ghcr.io/mccajr2/reading-rewards-spec/backend:latest
+    autoDeploy: false
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USER
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+  - type: web
+    name: reading-rewards-spec-frontend
+    env: docker
+    plan: free
+    image:
+      url: ghcr.io/mccajr2/reading-rewards-spec/frontend:latest
+    autoDeploy: false
+    healthCheckPath: /

@@ -16,3 +16,7 @@ build/
 .env
 .env.*
 !.env.example
+
+Thumbs.db
+*.tmp
+*.swp
