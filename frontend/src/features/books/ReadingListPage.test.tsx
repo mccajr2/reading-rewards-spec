@@ -57,6 +57,8 @@ describe('ReadingListPage', () => {
       </MemoryRouter>
     );
 
+    await waitFor(() => expect(screen.getByRole('heading', { name: /your reading list/i })).toBeInTheDocument());
+    expect(screen.getByLabelText(/your reading list .* page guidance/i)).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("Charlotte's Web")).toBeInTheDocument());
   });
 

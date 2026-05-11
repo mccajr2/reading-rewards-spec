@@ -33,10 +33,7 @@ describe('SearchPage chapter seeding', () => {
     });
   });
 
-  it('prompts for chapter count and seeds chapters when none exist', async () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('3');
-    vi.spyOn(window, 'alert').mockImplementation(() => undefined);
-
+  it('opens a chapter count modal and seeds chapters when none exist', async () => {
     const fetchMock = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
       if (path.startsWith('/search?')) {
         return Promise.resolve(okJson([
@@ -67,13 +64,19 @@ describe('SearchPage chapter seeding', () => {
       </MemoryRouter>
     );
 
+    expect(screen.getByRole('heading', { name: /find your next book/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/find your next book .* page guidance/i)).toBeInTheDocument();
+
     fireEvent.change(screen.getByPlaceholderText(/title/i), { target: { value: 'Harry Potter' } });
     fireEvent.click(screen.getByRole('button', { name: /search/i }));
 
     await waitFor(() => expect(screen.getByText(/harry potter and the philosopher's stone/i)).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /add to reading list/i }));
 
-    await waitFor(() => expect(window.prompt).toHaveBeenCalledWith('How many chapters are in this book?'));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/chapter count/i), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: /save chapters/i }));
+
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         '/bookreads/br-1/chapters',
@@ -84,8 +87,7 @@ describe('SearchPage chapter seeding', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/reading-list', { state: { newGoogleBookId: 'works/OL82563W' } });
   });
 
-  it('reuses existing shared chapters without prompting', async () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('5');
+  it('reuses existing shared chapters without opening the chapter count modal', async () => {
     const fetchMock = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
       if (path.startsWith('/search?')) {
         return Promise.resolve(okJson([
@@ -123,7 +125,7 @@ describe('SearchPage chapter seeding', () => {
     fireEvent.click(screen.getByRole('button', { name: /add to reading list/i }));
 
     await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
-    expect(window.prompt).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith(
       '/bookreads/br-2/chapters',
       'test-token',

@@ -6,7 +6,7 @@ export default defineConfig({
   retries: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000',
     // Backend is proxied through nginx at /api/
     extraHTTPHeaders: {
       Accept: 'application/json',
@@ -20,6 +20,18 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  // The Docker stack must already be running. Run: docker-compose up -d
-  // Then: npm run test:e2e
+  webServer: [
+    {
+      command: 'cd backend && FRONTEND_URL=http://localhost:3000 ./mvnw spring-boot:run',
+      url: 'http://localhost:8080/actuator/health',
+      reuseExistingServer: true,
+      timeout: 240_000,
+    },
+    {
+      command: 'cd frontend && npm run build && npm run preview -- --host localhost --port 3000',
+      url: 'http://localhost:3000/login',
+      reuseExistingServer: true,
+      timeout: 180_000,
+    },
+  ],
 });

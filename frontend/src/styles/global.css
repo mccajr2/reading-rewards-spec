@@ -1,9 +1,21 @@
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
-  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
-  color: #1f2933;
+  font-family: var(--font-family-base);
+  color: var(--color-text-primary);
   background:
     radial-gradient(circle at top left, rgba(250, 204, 21, 0.35), transparent 30%),
     linear-gradient(180deg, #fffaf0 0%, #f4efe2 100%);
+
+  /* Compatibility aliases for existing page styles before full page migration. */
+  --color-surface: var(--color-background);
+  --color-text: var(--color-text-primary);
+  --color-muted: var(--color-text-secondary);
+  --color-hover: var(--color-background-alt);
 }
 
 * {
@@ -159,8 +171,8 @@ h1 {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #11111b;
-  color: #cdd6f4;
+  background: var(--color-background-alt);
+  color: var(--color-text-primary);
 }
 
 .page-content {
@@ -178,29 +190,18 @@ h1 {
 .page h1 {
   font-size: 1.75rem;
   margin: 0 0 1.25rem;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
 }
 
 .page h2 {
   font-size: 1.25rem;
   margin: 0 0 0.75rem;
-  color: #cdd6f4;
-}
-
-/* ── Variables ── */
-:root {
-  --color-surface: #1e1e2e;
-  --color-border: #313244;
-  --color-text: #cdd6f4;
-  --color-muted: #a6adc8;
-  --color-accent: #cba6f7;
-  --color-hover: #313244;
-  --color-success: #a6e3a1;
+  color: var(--color-text-primary);
 }
 
 /* ── Shared utilities ── */
 .muted {
-  color: var(--color-muted, #a6adc8);
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
 }
 
@@ -218,23 +219,23 @@ h1 {
 
 /* ── Inputs ── */
 .input {
-  background: #1e1e2e;
-  border: 1px solid #313244;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 0.55rem 0.75rem;
   font: inherit;
   font-size: 0.95rem;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   outline: none;
   transition: border-color 0.15s;
 }
 
 .input:focus {
-  border-color: #cba6f7;
+  border-color: var(--color-primary);
 }
 
 .input::placeholder {
-  color: #585b70;
+  color: var(--color-text-secondary);
 }
 
 /* ── Buttons ── */
@@ -255,8 +256,8 @@ h1 {
 }
 
 .btn-primary {
-  background: #cba6f7;
-  color: #1e1e2e;
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -264,11 +265,11 @@ h1 {
 }
 
 .btn-secondary {
-  background: #313244;
-  color: #cdd6f4;
-  border: 1px solid #45475a;
+  background: var(--color-background-alt);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #45475a;
+  background: var(--color-primary-light);
 }

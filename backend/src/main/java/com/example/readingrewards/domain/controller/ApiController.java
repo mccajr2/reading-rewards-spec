@@ -120,6 +120,20 @@ public class ApiController {
         book.setThumbnailUrl(dto.getThumbnailUrl());
         book.setAuthors(dto.getAuthors() != null ? dto.getAuthors() : List.of());
         bookRepo.save(book);
+        Optional<BookRead> existingInProgress = bookReadRepo.findByUserIdAndGoogleBookIdAndEndDateIsNull(
+            user.getId(),
+            book.getGoogleBookId()
+        );
+        if (existingInProgress.isPresent()) {
+            BookRead existing = existingInProgress.get();
+            return new BookSummaryDto.SavedBookDto(
+                existing.getId(),
+                existing.getGoogleBookId(),
+                book.getTitle(),
+                existing.getUserId(),
+                existing.getStartDate()
+            );
+        }
         BookRead br = new BookRead();
         br.setGoogleBookId(book.getGoogleBookId());
         br.setUserId(user.getId());
@@ -351,6 +365,7 @@ public class ApiController {
         return new BookSummaryDto.RewardRollupDto(earned, paidOut, spent, earned - paidOut - spent);
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/rewards")
     public BookSummaryDto.RewardHistoryPageDto getRewards(
             @RequestParam(defaultValue = "1") int page,

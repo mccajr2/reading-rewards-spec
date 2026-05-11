@@ -16,6 +16,7 @@ function mockOkResponse(data: unknown): Response {
 
 describe('RewardsPage', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
       token: 'test-token',
       user: { id: '1', role: 'CHILD', firstName: 'Jamie' },
@@ -24,7 +25,7 @@ describe('RewardsPage', () => {
     });
   });
 
-  it('renders rewards heading', () => {
+  it('renders child rewards shop guidance heading', () => {
     vi.spyOn(api, 'fetchWithAuth').mockResolvedValue(mockOkResponse({ totalEarned: 0, totalPaidOut: 0, totalSpent: 0, currentBalance: 0 }));
 
     render(
@@ -33,7 +34,27 @@ describe('RewardsPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('heading', { name: /rewards/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /your rewards shop/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/your rewards shop .* page guidance/i)).toBeInTheDocument();
+  });
+
+  it('renders parent rewards settings guidance heading for parent role', () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      token: 'test-token',
+      user: { id: '2', role: 'PARENT', firstName: 'Alex' },
+      login: vi.fn(),
+      logout: vi.fn(),
+    });
+    vi.spyOn(api, 'fetchWithAuth').mockResolvedValue(mockOkResponse({ totalEarned: 0, totalPaidOut: 0, totalSpent: 0, currentBalance: 0 }));
+
+    render(
+      <MemoryRouter>
+        <RewardsPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('heading', { name: /rewards settings/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/rewards settings page guidance/i)).toBeInTheDocument();
   });
 
   it('displays balance from summary response', async () => {

@@ -65,11 +65,11 @@ describe('ParentSummary drill-down wiring', () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => expect(screen.getByText("Children's Summary")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /manage child accounts/i })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: /view details for jamie/i }));
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /child detail/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /child account details/i })).toBeInTheDocument());
     expect(screen.getByText('Jamie')).toBeInTheDocument();
     expect(screen.getByText(/username: jamie/i)).toBeInTheDocument();
   });
@@ -143,7 +143,7 @@ describe('ParentSummary drill-down wiring', () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /child detail/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /child account details/i })).toBeInTheDocument());
     expect(screen.getByText('Charlotte\'s Web')).toBeInTheDocument();
     expect(screen.getByText(/chapters \(1\/1 read\)/i)).toBeInTheDocument();
     expect(screen.getByText('EARN')).toBeInTheDocument();
@@ -253,7 +253,7 @@ describe('ParentSummary drill-down wiring', () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /child detail/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /child account details/i })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: /reverse/i }));
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));

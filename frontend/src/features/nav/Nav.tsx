@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth } from '../../shared/api';
-import './Nav.css';
+import { Navigation, type NavigationItem } from '../../components/shared';
 
 export function Nav() {
   const { user, logout, token } = useAuth();
@@ -28,27 +28,22 @@ export function Nav() {
     return () => { delete (window as any).updateCredits; };
   }, [token]);
 
-  const isActive = (path: string) => location.pathname === path ? 'nav-link active' : 'nav-link';
+  const items: NavigationItem[] = [
+    { label: 'Search', to: '/search' },
+    { label: 'My Books', to: '/reading-list' },
+    { label: 'History', to: '/history' },
+    { label: 'Rewards', to: '/rewards' },
+    { label: 'Manage Kids', to: '/parent', visible: user?.role === 'PARENT' }
+  ];
 
   return (
-    <nav className="app-nav">
-      <div className="nav-left">
-        <span className="nav-brand">📚 Reading Rewards</span>
-        <Link className={isActive('/search')} to="/search">Search</Link>
-        <Link className={isActive('/reading-list')} to="/reading-list">My Books</Link>
-        <Link className={isActive('/history')} to="/history">History</Link>
-        <Link className={isActive('/rewards')} to="/rewards">Rewards</Link>
-        {user?.role === 'PARENT' && (
-          <Link className={isActive('/parent')} to="/parent">Manage Kids</Link>
-        )}
-      </div>
-      <div className="nav-right">
-        {credits !== null && (
-          <span className="credits-badge">${credits.toFixed(2)}</span>
-        )}
-        <span className="nav-username">{user?.firstName ?? user?.username ?? user?.email}</span>
-        <button className="nav-logout" onClick={logout}>Logout</button>
-      </div>
-    </nav>
+    <Navigation
+      brand="Reading Rewards"
+      items={items}
+      activePath={location.pathname}
+      creditsText={credits !== null ? `$${credits.toFixed(2)}` : undefined}
+      userText={user?.firstName ?? user?.username ?? user?.email ?? undefined}
+      onLogout={logout}
+    />
   );
 }

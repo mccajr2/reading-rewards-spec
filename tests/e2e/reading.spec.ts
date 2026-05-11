@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { signupAndVerify, uniqueEmail, uniqueUsername, createKid, login } from './helpers';
+import { apiUrl, signupAndVerify, uniqueEmail, uniqueUsername, createKid, login } from './helpers';
 
 /**
  * P1 Reading journey:
@@ -46,7 +46,7 @@ test.describe('Reading and rewards journey', () => {
     // Add book via API (bypasses Open Library external dependency)
     const kidToken = await login(request, kidUsername, kidPassword);
     const headers = { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' };
-    const addRes = await request.post('/api/books', { data: testBook, headers });
+    const addRes = await request.post(apiUrl('/books'), { data: testBook, headers });
     expect(addRes.ok()).toBeTruthy();
 
     // Log in via UI and navigate to reading list
@@ -65,29 +65,32 @@ test.describe('Reading and rewards journey', () => {
     const headers = { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' };
 
     // Add book directly (no external API dependency)
-    const addRes = await request.post('/api/books', { data: testBook, headers });
+    const addRes = await request.post(apiUrl('/books'), { data: testBook, headers });
     expect(addRes.ok()).toBeTruthy();
     const bookRead = await addRes.json(); // { id, googleBookId, userId, startDate }
 
     // Add 2 chapters to the book
-    const chaptersRes = await request.post(`/api/books/${bookRead.googleBookId}/chapters`, {
+    const chaptersRes = await request.post(apiUrl(`/books/${bookRead.googleBookId}/chapters`), {
       data: [
         { name: 'Chapter 1', chapterIndex: 0 },
         { name: 'Chapter 2', chapterIndex: 1 },
       ],
       headers,
     });
-    expect(chaptersRes.ok()).toBeTruthy();
+    expect(
+      chaptersRes.ok(),
+      `chapters create failed: ${chaptersRes.status()} ${await chaptersRes.text()}`
+    ).toBeTruthy();
     const [ch1, ch2] = await chaptersRes.json();
 
     // Mark both chapters read
-    const r1 = await request.post(`/api/bookreads/${bookRead.id}/chapters/${ch1.id}/read`, { headers });
+    const r1 = await request.post(apiUrl(`/bookreads/${bookRead.id}/chapters/${ch1.id}/read`), { headers });
     expect(r1.ok()).toBeTruthy();
-    const r2 = await request.post(`/api/bookreads/${bookRead.id}/chapters/${ch2.id}/read`, { headers });
+    const r2 = await request.post(apiUrl(`/bookreads/${bookRead.id}/chapters/${ch2.id}/read`), { headers });
     expect(r2.ok()).toBeTruthy();
 
     // Verify credits earned: 2 chapters = $2.00
-    const creditsRes = await request.get('/api/credits', { headers });
+    const creditsRes = await request.get(apiUrl('/credits'), { headers });
     expect(creditsRes.ok()).toBeTruthy();
     const { dollars } = await creditsRes.json();
     expect(dollars).toBe(2);
@@ -97,22 +100,25 @@ test.describe('Reading and rewards journey', () => {
     const kidToken = await login(request, kidUsername, kidPassword);
     const headers = { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' };
 
-    const addRes = await request.post('/api/books', { data: testBook, headers });
+    const addRes = await request.post(apiUrl('/books'), { data: testBook, headers });
     expect(addRes.ok()).toBeTruthy();
     const bookRead = await addRes.json();
 
-    const chaptersRes = await request.post(`/api/books/${bookRead.googleBookId}/chapters`, {
+    const chaptersRes = await request.post(apiUrl(`/books/${bookRead.googleBookId}/chapters`), {
       data: [{ name: 'Chapter 1', chapterIndex: 0 }],
       headers,
     });
-    expect(chaptersRes.ok()).toBeTruthy();
+    expect(
+      chaptersRes.ok(),
+      `chapters create failed: ${chaptersRes.status()} ${await chaptersRes.text()}`
+    ).toBeTruthy();
     const [ch] = await chaptersRes.json();
 
     // Mark read twice — should be idempotent
-    await request.post(`/api/bookreads/${bookRead.id}/chapters/${ch.id}/read`, { headers });
-    await request.post(`/api/bookreads/${bookRead.id}/chapters/${ch.id}/read`, { headers });
+    await request.post(apiUrl(`/bookreads/${bookRead.id}/chapters/${ch.id}/read`), { headers });
+    await request.post(apiUrl(`/bookreads/${bookRead.id}/chapters/${ch.id}/read`), { headers });
 
-    const creditsRes = await request.get('/api/credits', { headers });
+    const creditsRes = await request.get(apiUrl('/credits'), { headers });
     expect(creditsRes.ok()).toBeTruthy();
     const { dollars } = await creditsRes.json();
     expect(dollars).toBe(1); // Only 1 credit, not 2
@@ -122,27 +128,30 @@ test.describe('Reading and rewards journey', () => {
     const kidToken = await login(request, kidUsername, kidPassword);
     const headers = { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' };
 
-    const addRes = await request.post('/api/books', { data: testBook, headers });
+    const addRes = await request.post(apiUrl('/books'), { data: testBook, headers });
     expect(addRes.ok()).toBeTruthy();
     const bookRead = await addRes.json();
 
-    const inProgressBefore = await request.get('/api/bookreads/in-progress', { headers });
+    const inProgressBefore = await request.get(apiUrl('/bookreads/in-progress'), { headers });
     expect(inProgressBefore.ok()).toBeTruthy();
     const beforeRows = await inProgressBefore.json();
     expect(beforeRows.some((row: { bookReadId: string }) => row.bookReadId === bookRead.id)).toBeTruthy();
 
-    const finishRes = await request.post(`/api/books/${bookRead.googleBookId}/finish`, { headers });
-    expect(finishRes.ok()).toBeTruthy();
+    const finishRes = await request.post(apiUrl(`/books/${bookRead.googleBookId}/finish`), { headers });
+    expect(
+      finishRes.ok(),
+      `finish failed: ${finishRes.status()} ${await finishRes.text()}`
+    ).toBeTruthy();
 
-    const inProgressAfterFinish = await request.get('/api/bookreads/in-progress', { headers });
+    const inProgressAfterFinish = await request.get(apiUrl('/bookreads/in-progress'), { headers });
     expect(inProgressAfterFinish.ok()).toBeTruthy();
     const afterFinishRows = await inProgressAfterFinish.json();
     expect(afterFinishRows.some((row: { bookReadId: string }) => row.bookReadId === bookRead.id)).toBeFalsy();
 
-    const rereadRes = await request.post(`/api/books/${bookRead.googleBookId}/reread`, { headers });
+    const rereadRes = await request.post(apiUrl(`/books/${bookRead.googleBookId}/reread`), { headers });
     expect(rereadRes.ok()).toBeTruthy();
 
-    const inProgressAfterReread = await request.get('/api/bookreads/in-progress', { headers });
+    const inProgressAfterReread = await request.get(apiUrl('/bookreads/in-progress'), { headers });
     expect(inProgressAfterReread.ok()).toBeTruthy();
     const afterRereadRows = await inProgressAfterReread.json();
     expect(afterRereadRows.some((row: { googleBookId: string }) => row.googleBookId === bookRead.googleBookId)).toBeTruthy();

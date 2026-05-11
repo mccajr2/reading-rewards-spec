@@ -54,6 +54,6 @@ describe('App routing', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole('heading', { name: /my reading list/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /your reading list/i })).toBeInTheDocument();
   });
 });

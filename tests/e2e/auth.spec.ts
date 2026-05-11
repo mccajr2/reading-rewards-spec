@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { signupAndVerify, uniqueEmail } from './helpers';
+import { apiUrl, signupAndVerify, uniqueEmail } from './helpers';
 
 /**
  * P1 Auth journeys:
@@ -39,7 +39,7 @@ test.describe('Auth flows', () => {
   test('unverified parent cannot log in', async ({ page, request }) => {
     const email = uniqueEmail('unverified');
     // Sign up but do NOT force-verify
-    const res = await request.post('/api/auth/signup', {
+    const res = await request.post(apiUrl('/auth/signup'), {
       data: { email, password: 'Password1!', firstName: 'Unverified', lastName: 'User' },
     });
     expect(res.ok()).toBeTruthy();

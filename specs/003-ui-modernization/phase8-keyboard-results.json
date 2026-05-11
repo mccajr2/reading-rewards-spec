@@ -1,0 +1,168 @@
+{
+  "generatedAt": "2026-05-11T20:14:09.567Z",
+  "probes": [
+    {
+      "route": "/login",
+      "role": "none",
+      "focusablesSeen": 8,
+      "focusLog": [
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null
+        },
+        {
+          "tag": "button",
+          "text": "Sign in",
+          "ariaLabel": null
+        },
+        {
+          "tag": "a",
+          "text": "Sign up",
+          "ariaLabel": null
+        },
+        {
+          "tag": "body",
+          "text": "LoginUse parent email or child username to sign in to your a",
+          "ariaLabel": null
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null
+        },
+        {
+          "tag": "button",
+          "text": "Sign in",
+          "ariaLabel": null
+        }
+      ]
+    },
+    {
+      "route": "/reading-list",
+      "role": "CHILD",
+      "focusablesSeen": 8,
+      "focusLog": [
+        {
+          "tag": "a",
+          "text": "Search",
+          "ariaLabel": null
+        },
+        {
+          "tag": "button",
+          "text": "Logout",
+          "ariaLabel": null
+        },
+        {
+          "tag": "a",
+          "text": "Search for a book",
+          "ariaLabel": null
+        },
+        {
+          "tag": "body",
+          "text": "Reading RewardsSearchMy BooksHistoryRewards$0.00JamieLogoutY",
+          "ariaLabel": null
+        },
+        {
+          "tag": "a",
+          "text": "Search",
+          "ariaLabel": null
+        },
+        {
+          "tag": "button",
+          "text": "Logout",
+          "ariaLabel": null
+        },
+        {
+          "tag": "a",
+          "text": "Search for a book",
+          "ariaLabel": null
+        },
+        {
+          "tag": "body",
+          "text": "Reading RewardsSearchMy BooksHistoryRewards$0.00JamieLogoutY",
+          "ariaLabel": null
+        }
+      ]
+    },
+    {
+      "route": "/parent",
+      "role": "PARENT",
+      "focusablesSeen": 8,
+      "focusLog": [
+        {
+          "tag": "a",
+          "text": "Search",
+          "ariaLabel": null
+        },
+        {
+          "tag": "button",
+          "text": "Logout",
+          "ariaLabel": null
+        },
+        {
+          "tag": "button",
+          "text": "Add Book To My Reading List",
+          "ariaLabel": null
+        },
+        {
+          "tag": "button",
+          "text": "View My Reading List",
+          "ariaLabel": null
+        },
+        {
+          "tag": "button",
+          "text": "Open Summary",
+          "ariaLabel": "Open summary for Jamie"
+        },
+        {
+          "tag": "button",
+          "text": "View Details",
+          "ariaLabel": "View details for Jamie"
+        },
+        {
+          "tag": "button",
+          "text": "Reset Password",
+          "ariaLabel": null
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null
+        }
+      ]
+    }
+  ],
+  "arrowChecks": [
+    {
+      "role": "CHILD",
+      "route": "/reading-list",
+      "activeAfterArrow": {
+        "tag": "button",
+        "text": "Logout"
+      }
+    },
+    {
+      "role": "PARENT",
+      "route": "/parent",
+      "activeAfterArrow": {
+        "tag": "button",
+        "text": "Logout"
+      }
+    }
+  ],
+  "escapeCheck": {
+    "openBeforeEscape": true,
+    "dialogCountAfterEscape": 0
+  }
+}

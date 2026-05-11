@@ -56,7 +56,7 @@ A child can search for books, add a book, manage chapters, mark chapters as read
 2. **Given** an in-progress book with unread chapters, **When** the child marks a chapter as read, **Then** the read state is stored and an earn-type reward is recorded for that chapter.
 3. **Given** a chapter read entry exists for a child, **When** the child removes that read marker, **Then** the associated chapter-read state and reward side effect are reversed consistently.
 4. **Given** a child finishes a book and later chooses reread, **When** the reread action succeeds, **Then** a new in-progress reading record is created without deleting the prior completed history.
-5. **Given** a child adds a book that has no saved chapter list, **When** the add flow asks for chapter count, **Then** the system seeds default chapter names (`Chapter 1..N`) that are shared for future readers of the same book.
+5. **Given** a child adds a book that has no saved chapter list, **When** the add flow opens an in-app dialog asking for chapter count, **Then** the system seeds default chapter names (`Chapter 1..N`) that are shared for future readers of the same book.
 6. **Given** chapter definitions already exist for a book, **When** another child adds that same book, **Then** the existing shared chapter definitions are reused without re-seeding.
 
 ---
@@ -94,7 +94,7 @@ Parents can drill into any child's account to see all reading progress and rewar
 - **FR-002**: The system MUST allow authenticated parents to create and manage child accounts that authenticate by username and password.
 - **FR-003**: The system MUST preserve the current route-level authorization boundaries between unauthenticated users, parents, and children.
 - **FR-004**: The system MUST support book search by title, author, and ISBN and allow authenticated children to add books to their reading list. Parents can optionally search and add books to their own separate reading list.
-- **FR-005**: The system MUST preserve chapter management, chapter rename, chapter-read creation, and chapter-read reversal behavior, including add-time chapter-count seeding for new books and shared chapter reuse for subsequent readers.
+- **FR-005**: The system MUST preserve chapter management, chapter rename, chapter-read creation, and chapter-read reversal behavior, including add-time chapter-count seeding for new books through the application UI (not a browser-native prompt) and shared chapter reuse for subsequent readers.
 - **FR-006**: The system MUST create and summarize reward entries with the same earn, spend, and payout semantics used by the legacy app unless an approved spec explicitly changes them.
 - **FR-007**: The system MUST support finishing and rereading books while preserving existing reading history.
 - **FR-008**: The system MUST expose parent summary and child history views that match the legacy app's information model. Specifically, parent dashboard MUST display per-child summary cards (name, books-in-progress count, finished books count, current reward balance) and allow drill-down into each child's detail view.

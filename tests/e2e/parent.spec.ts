@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { signupAndVerify, uniqueEmail, uniqueUsername, login, createKid } from './helpers';
+import { apiUrl, signupAndVerify, uniqueEmail, uniqueUsername, login, createKid } from './helpers';
 
 /**
  * P1 Parent journey:
@@ -31,7 +31,7 @@ test.describe('Parent dashboard journey', () => {
 
     // Navigate to parent dashboard
     await page.goto('/parent');
-    await expect(page.getByRole('heading', { name: /manage kids/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /your dashboard/i })).toBeVisible();
 
     // Add a child using the form
     const kidUsername = uniqueUsername('kid');
@@ -41,7 +41,7 @@ test.describe('Parent dashboard journey', () => {
     await page.getByRole('button', { name: /add kid/i }).click();
 
     // Child should appear in the list
-    await expect(page.getByText('Junior')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Junior').first()).toBeVisible({ timeout: 5_000 });
   });
 
   test('parent can view kids summary via API', async ({ request }) => {
@@ -50,14 +50,14 @@ test.describe('Parent dashboard journey', () => {
 
     // Add a child via API
     const kidUsername = uniqueUsername('kidapi');
-    const addRes = await request.post('/api/parent/kids', {
+    const addRes = await request.post(apiUrl('/parent/kids'), {
       data: { username: kidUsername, firstName: 'ApiKid', password: 'KidPass1!' },
       headers,
     });
     expect(addRes.ok()).toBeTruthy();
 
     // Get summary
-    const summaryRes = await request.get('/api/parent/kids/summary', { headers });
+    const summaryRes = await request.get(apiUrl('/parent/kids/summary'), { headers });
     expect(summaryRes.ok()).toBeTruthy();
     const body = await summaryRes.json();
     // Response shape: { kids: [{id, firstName, username, booksRead, ...}] }
@@ -74,7 +74,7 @@ test.describe('Parent dashboard journey', () => {
 
     const kidUsername = uniqueUsername('kidrev');
     await createKid(request, parentToken, kidUsername, 'ReversalKid', 'KidPass1!');
-    const kidsRes = await request.get('/api/parent/kids', { headers });
+    const kidsRes = await request.get(apiUrl('/parent/kids'), { headers });
     expect(kidsRes.ok()).toBeTruthy();
     const kids = await kidsRes.json();
     const kid = kids.find((k: { username: string }) => k.username === kidUsername);
@@ -94,18 +94,21 @@ test.describe('Parent dashboard journey', () => {
       thumbnailUrl: '',
     };
 
-    const addBookRes = await request.post('/api/books', { data: bookDto, headers: kidHeaders });
+    const addBookRes = await request.post(apiUrl('/books'), { data: bookDto, headers: kidHeaders });
     expect(addBookRes.ok()).toBeTruthy();
     const bookRead = await addBookRes.json();
 
-    const addChaptersRes = await request.post(`/api/books/${bookRead.googleBookId}/chapters`, {
+    const addChaptersRes = await request.post(apiUrl(`/books/${bookRead.googleBookId}/chapters`), {
       data: [{ name: 'Chapter 1', chapterIndex: 0 }],
       headers: kidHeaders,
     });
-    expect(addChaptersRes.ok()).toBeTruthy();
+    expect(
+      addChaptersRes.ok(),
+      `chapters create failed: ${addChaptersRes.status()} ${await addChaptersRes.text()}`
+    ).toBeTruthy();
     const chapters = await addChaptersRes.json();
 
-    const markReadRes = await request.post(`/api/bookreads/${bookRead.id}/chapters/${chapters[0].id}/read`, { headers: kidHeaders });
+    const markReadRes = await request.post(apiUrl(`/bookreads/${bookRead.id}/chapters/${chapters[0].id}/read`), { headers: kidHeaders });
     expect(markReadRes.ok()).toBeTruthy();
 
     await page.goto('/login');
@@ -115,10 +118,10 @@ test.describe('Parent dashboard journey', () => {
     await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
 
     await page.goto('/parent/summary');
-    await expect(page.getByRole('heading', { name: /children's summary/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /manage child accounts/i })).toBeVisible();
 
     await page.getByRole('button', { name: /view details for reversalkid/i }).click();
-    await expect(page.getByRole('heading', { name: /child detail/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /child account details/i })).toBeVisible();
     await expect(page.getByText(/chapter 1/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /reverse/i })).toBeVisible();
 
@@ -126,7 +129,7 @@ test.describe('Parent dashboard journey', () => {
     await page.getByRole('button', { name: /confirm/i }).click();
     await expect(page.getByText(/not read/i)).toBeVisible({ timeout: 5_000 });
 
-    const detailRes = await request.get(`/api/parent/${kid.id}/child-detail`, { headers });
+    const detailRes = await request.get(apiUrl(`/parent/${kid.id}/child-detail`), { headers });
     expect(detailRes.ok()).toBeTruthy();
     const detail = await detailRes.json();
     expect(detail.rewards.length).toBe(0);
@@ -145,7 +148,7 @@ test.describe('Parent dashboard journey', () => {
       thumbnailUrl: '',
     };
 
-    const addParentBookRes = await request.post('/api/books', { data: ownBook, headers: parentHeaders });
+    const addParentBookRes = await request.post(apiUrl('/books'), { data: ownBook, headers: parentHeaders });
     expect(addParentBookRes.ok()).toBeTruthy();
 
     const kidUsername = uniqueUsername('kidbound');
@@ -172,7 +175,7 @@ test.describe('Parent dashboard journey', () => {
     await expect(page.getByText('Parent Personal Book')).toHaveCount(0);
 
     const kidToken = await login(request, kidUsername, 'KidPass1!');
-    const kidBooksRes = await request.get('/api/books', {
+    const kidBooksRes = await request.get(apiUrl('/books'), {
       headers: { Authorization: `Bearer ${kidToken}` },
     });
     expect(kidBooksRes.ok()).toBeTruthy();

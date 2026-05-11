@@ -105,6 +105,7 @@ US2 contract details (reading + rewards):
 
 - `POST /api/bookreads/{bookReadId}/chapters`
 	- Same seed/reuse rule as above, but addressed by `bookReadId`.
+	- Intended UI behavior: the app opens an in-app chapter-count dialog when a newly added book has no shared chapters yet.
 
 - `PUT /api/chapters/{id}`
 	- Request JSON example: `{ "name": "Renamed Chapter" }`

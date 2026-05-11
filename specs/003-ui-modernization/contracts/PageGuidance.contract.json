@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PageGuidance Component Contract",
+  "type": "object",
+  "description": "Props interface for the PageGuidance wrapper component that renders page title, description, and instructions",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Page title (e.g., 'Your Reading List')",
+      "examples": ["Your Dashboard", "Find Your Next Book", "Manage Child Accounts"]
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of what the page is for. Parent pages: professional tone. Child pages: fun tone.",
+      "examples": [
+        "This is your personal list of books you're reading or want to read.",
+        "Here's your reading list! 📚 Keep track of books you've read and want to read soon."
+      ]
+    },
+    "instructions": {
+      "type": "string",
+      "description": "How to use this page. Clear, actionable, step-by-step or task-oriented.",
+      "examples": [
+        "Click 'Add Book' to search for a new book. Click on any book to update your progress.",
+        "Enter your email and password. If you don't have an account, click 'Sign Up'."
+      ]
+    },
+    "tone": {
+      "type": "string",
+      "enum": ["parent", "child"],
+      "description": "Audience tone. 'parent' for professional/adult audience; 'child' for 7-12 year old audience.",
+      "examples": ["parent", "child"]
+    },
+    "icon": {
+      "type": "string",
+      "description": "Optional: Lucide React icon name (e.g., 'BookOpen', 'Gift', 'Settings'). Only for child pages to add visual interest.",
+      "examples": ["BookOpen", "Gift", "Settings", "Search"],
+      "default": null
+    }
+  },
+  "required": ["title", "description", "instructions", "tone"],
+  "examples": [
+    {
+      "title": "Your Reading List",
+      "description": "This is your personal list of books you're reading or want to read.",
+      "instructions": "Click 'Add Book' to search for a new book, or click on any book to log your progress.",
+      "tone": "child",
+      "icon": "BookOpen"
+    },
+    {
+      "title": "Your Dashboard",
+      "description": "Here's a snapshot of each child's reading progress, rewards earned, and milestones reached.",
+      "instructions": "Click on any child's card to view detailed progress, or use the menu to manage accounts.",
+      "tone": "parent"
+    }
+  ]
+}
