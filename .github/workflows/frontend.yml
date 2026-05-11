@@ -84,4 +84,9 @@ jobs:
             VITE_API_URL=${{ secrets.VITE_API_URL }}
 
       - name: Trigger Render frontend deploy
+        if: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL != '' }}
         run: curl -fsS -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}"
+
+      - name: Skip Render frontend deploy hook (not configured)
+        if: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL == '' }}
+        run: echo "RENDER_FRONTEND_DEPLOY_HOOK_URL is not set. Skipping deploy hook trigger."
