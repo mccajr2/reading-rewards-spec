@@ -8,6 +8,7 @@ import com.example.readingrewards.auth.model.User;
 import com.example.readingrewards.auth.repo.UserRepository;
 import com.example.readingrewards.auth.service.VerificationEmailService;
 import com.example.readingrewards.auth.util.JwtUtil;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,13 +38,13 @@ public class AuthController {
     private String frontendUrl;
 
     public AuthController(
-        VerificationEmailService verificationEmailService,
+        ObjectProvider<VerificationEmailService> verificationEmailServiceProvider,
         AuthenticationManager authenticationManager,
         UserRepository userRepository,
         JwtUtil jwtUtil,
         PasswordEncoder passwordEncoder
     ) {
-        this.verificationEmailService = verificationEmailService;
+        this.verificationEmailService = verificationEmailServiceProvider.getIfAvailable(() -> (to, subject, htmlContent) -> true);
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;

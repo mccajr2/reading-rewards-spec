@@ -1,6 +1,7 @@
 package com.example.readingrewards.auth.config;
 
 import com.example.readingrewards.auth.service.CustomUserDetailsService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,6 +23,9 @@ import java.util.List;
 
 @Configuration
 public class SecurityConfig {
+
+    @Value("${frontend.url:http://localhost:3000}")
+    private String frontendUrl;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
@@ -64,7 +68,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        String normalizedFrontendUrl = frontendUrl == null ? "" : frontendUrl.replaceAll("/$", "");
+        config.setAllowedOrigins(List.of(normalizedFrontendUrl, "http://localhost:3000"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
