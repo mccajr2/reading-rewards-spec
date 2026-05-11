@@ -5,13 +5,25 @@
   margin-bottom: 1.5rem;
 }
 
+@media (max-width: 900px) {
+  .rewards-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 600px) {
-  .rewards-summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .rewards-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-card {
+    padding: 0.85rem;
+  }
 }
 
 .summary-card {
-  background: var(--color-surface, #1e1e2e);
-  border: 1px solid var(--color-border, #313244);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 1rem;
   display: flex;
@@ -20,12 +32,12 @@
 }
 
 .summary-card.highlight {
-  border-color: var(--color-accent, #cba6f7);
+  border-color: var(--color-accent);
 }
 
 .summary-label {
   font-size: 0.8rem;
-  color: var(--color-muted, #a6adc8);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -35,10 +47,10 @@
   font-weight: 700;
 }
 
-.summary-value.earn { color: #a6e3a1; }
-.summary-value.payout { color: #89b4fa; }
-.summary-value.spend { color: #fab387; }
-.summary-value.balance { color: var(--color-accent, #cba6f7); }
+.summary-value.earn { color: var(--color-success); }
+.summary-value.payout { color: var(--color-primary); }
+.summary-value.spend { color: var(--color-warning); }
+.summary-value.balance { color: var(--color-warning); }
 
 .rewards-actions {
   display: flex;
@@ -70,13 +82,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid var(--color-border, #313244);
+  border-bottom: 1px solid var(--color-border);
   border-radius: 4px;
 }
 
-.reward-item.earn { border-left: 3px solid #a6e3a1; }
-.reward-item.payout { border-left: 3px solid #89b4fa; }
-.reward-item.spend { border-left: 3px solid #fab387; }
+.reward-item.earn { border-left: 3px solid var(--color-success); }
+.reward-item.payout { border-left: 3px solid var(--color-primary); }
+.reward-item.spend { border-left: 3px solid var(--color-warning); }
 
 .reward-type {
   font-size: 0.75rem;
@@ -88,7 +100,7 @@
 
 .reward-desc {
   font-size: 0.85rem;
-  color: var(--color-muted, #a6adc8);
+  color: var(--color-text-secondary);
 }
 
 .reward-right {
@@ -104,7 +116,7 @@
 
 .reward-date {
   font-size: 0.75rem;
-  color: var(--color-muted, #a6adc8);
+  color: var(--color-text-secondary);
 }
 
 .pagination {
@@ -112,4 +124,16 @@
   align-items: center;
   gap: 1rem;
   justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .reward-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .reward-right {
+    align-items: flex-start;
+  }
 }

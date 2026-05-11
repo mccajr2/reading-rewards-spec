@@ -12,7 +12,11 @@
 
 import { APIRequestContext } from '@playwright/test';
 
-const API = 'http://localhost:3000/api';
+const API_BASE = process.env.PLAYWRIGHT_API_URL ?? 'http://localhost:8080/api';
+
+export function apiUrl(path: string): string {
+  return `${API_BASE}${path}`;
+}
 
 /** Create a unique email for a test run to avoid collisions. */
 export function uniqueEmail(prefix = 'testuser'): string {
@@ -35,13 +39,13 @@ export async function signupAndVerify(
   firstName: string,
   lastName = 'TestUser'
 ) {
-  const res = await request.post(`${API}/auth/signup`, {
+  const res = await request.post(apiUrl('/auth/signup'), {
     data: { email, password, firstName, lastName },
   });
   if (!res.ok()) throw new Error(`Signup failed: ${res.status()} ${await res.text()}`);
 
   // Force-verify without needing a real email (dev endpoint, disabled in prod)
-  const verify = await request.post(`${API}/auth/dev/verify?email=${encodeURIComponent(email)}`);
+  const verify = await request.post(apiUrl(`/auth/dev/verify?email=${encodeURIComponent(email)}`));
   if (!verify.ok()) throw new Error(`Force-verify failed: ${verify.status()} ${await verify.text()}`);
 }
 
@@ -54,7 +58,7 @@ export async function login(
   username: string,
   password: string
 ): Promise<string> {
-  const res = await request.post(`${API}/auth/login`, {
+  const res = await request.post(apiUrl('/auth/login'), {
     data: { username, password },
   });
   if (!res.ok()) throw new Error(`Login failed: ${res.status()} ${await res.text()}`);
@@ -73,7 +77,7 @@ export async function createKid(
   firstName: string,
   password: string
 ): Promise<string> {
-  const res = await request.post(`${API}/parent/kids`, {
+  const res = await request.post(apiUrl('/parent/kids'), {
     data: { username, firstName, password },
     headers: { Authorization: `Bearer ${parentToken}` },
   });

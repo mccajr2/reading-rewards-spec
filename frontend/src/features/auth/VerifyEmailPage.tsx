@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getText } from '../../shared/api';
+import { Card, CardContent, PageGuidance } from '../../components/shared';
 
 export function VerifyEmailPage() {
   const [params] = useSearchParams();
@@ -28,14 +29,21 @@ export function VerifyEmailPage() {
 
   return (
     <main className="auth-shell">
-      <section className="auth-card">
-        <h1>Email Verification</h1>
-        <p>{message}</p>
-        <p className="auth-links">
-          {status === 'success' ? 'Continue to ' : 'Return to '}
-          <Link to="/login">login</Link>
-        </p>
-      </section>
+      <Card className="auth-card">
+        <CardContent>
+          <PageGuidance
+            title="Email Verification"
+            description="Complete your account verification to continue using Reading Rewards."
+            instructions="Use the link sent to your email, then continue to login."
+            tone="parent"
+          />
+          <p>{message}</p>
+          <p className="auth-links">
+            {status === 'success' ? 'Continue to ' : 'Return to '}
+            <Link to="/login">login</Link>
+          </p>
+        </CardContent>
+      </Card>
     </main>
   );
 }

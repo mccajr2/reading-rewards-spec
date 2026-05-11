@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth } from '../../shared/api';
+import { Button, Input, PageGuidance } from '../../components/shared';
 import './ReadingListPage.css';
 
 type BookReadProgress = {
@@ -150,7 +151,22 @@ export function ReadingListPage() {
 
   const handleAddChapters = async (googleBookId: string, raw: string) => {
     const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-    const payload = lines.map((name, i) => ({ name, chapterIndex: i }));
+    let payload = lines.map((name, i) => ({ name, chapterIndex: i + 1 }));
+
+    // Support entering a single number (e.g. "12") to generate Chapter 1..N.
+    if (lines.length === 1 && /^\d+$/.test(lines[0])) {
+      const count = parseInt(lines[0], 10);
+      payload = Array.from({ length: count }, (_, idx) => ({
+        name: `Chapter ${idx + 1}`,
+        chapterIndex: idx + 1,
+      }));
+    }
+
+    if (payload.length === 0) {
+      window.alert('Enter chapter names (one per line) or a chapter count.');
+      return;
+    }
+
     const res = await fetchWithAuth(`/books/${googleBookId}/chapters`, token, {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -166,7 +182,12 @@ export function ReadingListPage() {
 
   return (
     <div className="page reading-list-page">
-      <h1>My Reading List</h1>
+      <PageGuidance
+        title="Your Reading List 📚"
+        description="This is your personal library. Keep track of books you are reading now and books you have started."
+        instructions="Check off chapters as you finish them and watch your progress grow. The more you read, the more rewards you can earn."
+        tone="child"
+      />
       {bookReads.length === 0 && (
         <p className="muted">No books in progress. <a href="/search">Search for a book</a> to get started.</p>
       )}
@@ -196,25 +217,26 @@ export function ReadingListPage() {
                   </div>
                 )}
               </div>
-              <button className="btn btn-danger-sm" onClick={() => handleDeleteBookRead(br)} title="Remove book">✕</button>
+              <Button variant="secondary" size="sm" className="btn-danger-sm" onClick={() => handleDeleteBookRead(br)} title="Remove book">
+                ✕
+              </Button>
             </div>
 
             {chapList.length === 0 && (
               <div className="chapter-add">
-                <p className="muted">No chapters yet. Add them one per line:</p>
+                <p className="muted">No chapters yet. Enter a chapter count (e.g. 12) or add chapter names one per line:</p>
                 <textarea
                   className="input chapter-textarea"
-                  placeholder="Chapter 1&#10;Chapter 2&#10;Chapter 3"
+                  placeholder="12&#10;or&#10;Chapter 1&#10;Chapter 2&#10;Chapter 3"
                   value={(chapterInput as any)[br.googleBookId] ?? ''}
                   onChange={e => setChapterInput(prev => ({ ...prev, [br.googleBookId]: e.target.value }))}
                   rows={5}
                 />
-                <button
-                  className="btn btn-primary"
+                <Button
                   onClick={() => handleAddChapters(br.googleBookId, (chapterInput as any)[br.googleBookId] ?? '')}
                 >
                   Save Chapters
-                </button>
+                </Button>
               </div>
             )}
 
@@ -232,7 +254,7 @@ export function ReadingListPage() {
                       disabled={isRead && !isMostRecent}
                     />
                     {ed?.editing ? (
-                      <input
+                      <Input
                         className="input input-inline"
                         value={ed.value}
                         autoFocus

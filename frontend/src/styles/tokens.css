@@ -1,0 +1,30 @@
+@layer base {
+  :root {
+    --color-primary: #2563eb;
+    --color-primary-light: #eff6ff;
+    --color-accent: #fbbf24;
+    --color-accent-light: #fffbeb;
+    --color-success: #16a34a;
+    --color-warning: #ea580c;
+    --color-error: #dc2626;
+    --color-text-primary: #111827;
+    --color-text-secondary: #4b5563;
+    --color-border: #e5e7eb;
+    --color-background: #ffffff;
+    --color-background-alt: #f9fafb;
+
+    --font-family-base: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 0.75rem;
+    --spacing-base: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+    --shadow-base: 0 1px 3px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px rgb(0 0 0 / 0.1);
+  }
+}

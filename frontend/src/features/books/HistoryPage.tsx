@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth, HistoryItemDto } from '../../shared/api';
+import { Button, PageGuidance } from '../../components/shared';
 import './HistoryPage.css';
 
 export function HistoryPage() {
@@ -40,7 +41,12 @@ export function HistoryPage() {
 
   return (
     <div className="page history-page">
-      <h1>Reading History</h1>
+      <PageGuidance
+        title="Log Your Reading 📖"
+        description="Track your completed reading sessions and see how far you have come."
+        instructions="Great job! Keep reading and check this page to review your progress over time."
+        tone="child"
+      />
       {history.length === 0 && <p className="muted">No history yet. Start reading!</p>}
       {sortedDates.map(date => (
         <div key={date} className="history-group">
@@ -58,13 +64,13 @@ export function HistoryPage() {
 
       {history.length > pageSize && (
         <div className="history-pagination">
-          <button className="btn btn-secondary" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+          <Button variant="secondary" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
             ← Prev
-          </button>
+          </Button>
           <span>{page} / {totalPages}</span>
-          <button className="btn btn-secondary" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+          <Button variant="secondary" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
             Next →
-          </button>
+          </Button>
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { postJson } from '../../shared/api';
+import { Button, FormField } from '../../components/shared';
 
 export function SignupPage() {
   const [email, setEmail] = useState('');
@@ -33,32 +34,26 @@ export function SignupPage() {
         <h1>Parent Signup</h1>
         <p>Create a parent account and verify by email before login.</p>
 
-        <label>
-          Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </label>
+        <FormField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
 
-        <label>
-          First Name
-          <input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
-        </label>
+        <FormField label="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
 
-        <label>
-          Last Name
-          <input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
-        </label>
+        <FormField label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
 
-        <label>
-          Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </label>
+        <FormField
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
         {message ? <p className="success-text">{message}</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
 
-        <button className="primary-button" type="submit">
+        <Button type="submit">
           Create account
-        </button>
+        </Button>
 
         <p className="auth-links">
           Already have an account? <Link to="/login">Login</Link>

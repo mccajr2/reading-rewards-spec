@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth } from '../../shared/api';
+import { Button, PageGuidance } from '../../components/shared';
 import './ParentDashboard.css';
 
 type KidSummary = {
@@ -128,7 +129,12 @@ export function ParentSummary() {
   if (childId) {
     return (
       <div className="page">
-        <h1>Child Detail</h1>
+        <PageGuidance
+          title="Child Account Details"
+          description="Review a child's reading activity, chapter history, and reward transactions in detail."
+          instructions="Use Reverse on chapter reads when corrections are required, then return to account management when finished."
+          tone="parent"
+        />
         {detailLoading ? (
           <p>Loading…</p>
         ) : !childDetail ? (
@@ -140,20 +146,22 @@ export function ParentSummary() {
 
             <div>
               <h3>Summary</h3>
-              <table className="kids-table">
-                <thead>
-                  <tr>
-                    <th>Total Earned</th>
-                    <th>Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>${childDetail.totalEarned.toFixed(2)}</td>
-                    <td>${childDetail.currentBalance.toFixed(2)}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="table-scroll">
+                <table className="kids-table">
+                  <thead>
+                    <tr>
+                      <th>Total Earned</th>
+                      <th>Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>${childDetail.totalEarned.toFixed(2)}</td>
+                      <td>${childDetail.currentBalance.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {childDetail.books.length > 0 && (
@@ -169,55 +177,62 @@ export function ParentSummary() {
                     {book.chapters.length > 0 && (
                       <div>
                         <h5>Chapters ({book.chapters.filter(ch => ch.isRead).length}/{book.chapters.length} read)</h5>
-                        <table className="kids-table" style={{ fontSize: '0.9rem' }}>
-                          <thead>
-                            <tr>
-                              <th>Chapter</th>
-                              <th>Status</th>
-                              <th>Reward</th>
-                              <th>Action</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {book.chapters.map((chapter) => (
-                              <tr key={chapter.id}>
-                                <td>{chapter.index + 1}. {chapter.name}</td>
-                                <td>{chapter.isRead ? '✓ Read' : 'Not read'}</td>
-                                <td>{chapter.earnedReward ? `$${chapter.earnedReward.toFixed(2)}` : '—'}</td>
-                                <td>
-                                  {chapter.isRead && chapter.chapterReadId && (
-                                    <>
-                                      {showConfirm === chapter.chapterReadId ? (
-                                        <div style={{ fontSize: '0.8rem' }}>
-                                          <button
-                                            className="btn btn-danger btn-sm"
-                                            onClick={() => handleReverse(chapter.chapterReadId!)}
-                                            style={{ marginRight: '0.5rem' }}
-                                          >
-                                            Confirm
-                                          </button>
-                                          <button
-                                            className="btn btn-secondary btn-sm"
-                                            onClick={() => setShowConfirm(null)}
-                                          >
-                                            Cancel
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <button
-                                          className="btn btn-warning btn-sm"
-                                          onClick={() => setShowConfirm(chapter.chapterReadId!)}
-                                        >
-                                          Reverse
-                                        </button>
-                                      )}
-                                    </>
-                                  )}
-                                </td>
+                        <div className="table-scroll">
+                          <table className="kids-table" style={{ fontSize: '0.9rem' }}>
+                            <thead>
+                              <tr>
+                                <th>Chapter</th>
+                                <th>Status</th>
+                                <th>Reward</th>
+                                <th>Action</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {book.chapters.map((chapter) => (
+                                <tr key={chapter.id}>
+                                  <td>{chapter.index + 1}. {chapter.name}</td>
+                                  <td>{chapter.isRead ? '✓ Read' : 'Not read'}</td>
+                                  <td>{chapter.earnedReward ? `$${chapter.earnedReward.toFixed(2)}` : '—'}</td>
+                                  <td>
+                                    {chapter.isRead && chapter.chapterReadId && (
+                                      <>
+                                        {showConfirm === chapter.chapterReadId ? (
+                                          <div className="table-actions" style={{ fontSize: '0.8rem' }}>
+                                            <Button
+                                              variant="secondary"
+                                              size="sm"
+                                              className="btn-danger"
+                                              onClick={() => handleReverse(chapter.chapterReadId!)}
+                                              style={{ marginRight: '0.5rem' }}
+                                            >
+                                              Confirm
+                                            </Button>
+                                            <Button
+                                              variant="secondary"
+                                              size="sm"
+                                              onClick={() => setShowConfirm(null)}
+                                            >
+                                              Cancel
+                                            </Button>
+                                          </div>
+                                        ) : (
+                                          <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            className="btn-warning"
+                                            onClick={() => setShowConfirm(chapter.chapterReadId!)}
+                                          >
+                                            Reverse
+                                          </Button>
+                                        )}
+                                      </>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -228,79 +243,91 @@ export function ParentSummary() {
             {childDetail.rewards.length > 0 && (
               <div>
                 <h3>Reward History</h3>
-                <table className="kids-table" style={{ fontSize: '0.9rem' }}>
-                  <thead>
-                    <tr>
-                      <th>Type</th>
-                      <th>Amount</th>
-                      <th>Date</th>
-                      <th>Note</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {childDetail.rewards.map((reward) => (
-                      <tr key={reward.id}>
-                        <td>{reward.type}</td>
-                        <td>${reward.amount.toFixed(2)}</td>
-                        <td>{new Date(reward.createdAt).toLocaleDateString()}</td>
-                        <td className="muted">{reward.note || '—'}</td>
+                <div className="table-scroll">
+                  <table className="kids-table" style={{ fontSize: '0.9rem' }}>
+                    <thead>
+                      <tr>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                        <th>Note</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {childDetail.rewards.map((reward) => (
+                        <tr key={reward.id}>
+                          <td>{reward.type}</td>
+                          <td>${reward.amount.toFixed(2)}</td>
+                          <td>{new Date(reward.createdAt).toLocaleDateString()}</td>
+                          <td className="muted">{reward.note || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
         )}
-        <button className="btn btn-secondary" onClick={() => navigate('/parent/summary')}>
+        <Button variant="secondary" onClick={() => navigate('/parent/summary')}>
           Back to Summary
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="page">
-      <h1>Children's Summary</h1>
+      <PageGuidance
+        title="Manage Child Accounts"
+        description="Create or manage accounts for each of your children. Review progress totals and open details for each child."
+        instructions="Select View Details for account-level history, or return to the dashboard to add and update child accounts."
+        tone="parent"
+      />
       {loading ? (
         <p>Loading…</p>
       ) : kids.length === 0 ? (
         <p className="muted">No children found.</p>
       ) : (
-        <table className="kids-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Username</th>
-              <th>Books Read</th>
-              <th>Chapters Read</th>
-              <th>Total Earned</th>
-              <th>Balance</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {kids.map(kid => (
-              <tr key={kid.id}>
-                <td>{kid.firstName}</td>
-                <td>{kid.username}</td>
-                <td>{kid.booksRead}</td>
-                <td>{kid.chaptersRead}</td>
-                <td>${kid.totalEarned.toFixed(2)}</td>
-                <td>${kid.currentBalance.toFixed(2)}</td>
-                <td>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => navigate(`/parent/summary/${kid.id}`)}
-                    aria-label={`View details for ${kid.firstName}`}
-                  >
-                    View Details
-                  </button>
-                </td>
+        <div className="table-scroll">
+          <table className="kids-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Books Read</th>
+                <th>Chapters Read</th>
+                <th>Total Earned</th>
+                <th>Balance</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {kids.map(kid => (
+                <tr key={kid.id}>
+                  <td>{kid.firstName}</td>
+                  <td>{kid.username}</td>
+                  <td>{kid.booksRead}</td>
+                  <td>{kid.chaptersRead}</td>
+                  <td>${kid.totalEarned.toFixed(2)}</td>
+                  <td>${kid.currentBalance.toFixed(2)}</td>
+                  <td>
+                    <div className="table-actions">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => navigate(`/parent/summary/${kid.id}`)}
+                        aria-label={`View details for ${kid.firstName}`}
+                      >
+                        View Details
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

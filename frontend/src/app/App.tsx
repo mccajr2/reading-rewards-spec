@@ -30,9 +30,11 @@ function ParentOnlyRoute({ children }: { children: ReactNode }) {
 
 function AuthenticatedLayout() {
   return (
-    <div className="app-layout">
-      <Nav />
-      <div className="page-content">
+    <div className="app-layout grid min-h-screen grid-cols-1 bg-background-alt text-text-primary md:grid-cols-3">
+      <div className="md:col-span-3">
+        <Nav />
+      </div>
+      <div className="page-content md:col-span-3">
         <Routes>
           <Route path="/" element={<Navigate to="/reading-list" replace />} />
           <Route path="/search" element={<SearchPage />} />

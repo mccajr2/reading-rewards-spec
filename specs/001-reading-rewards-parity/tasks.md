@@ -93,7 +93,7 @@
 
 - [X] T031 [P] [US2] Add backend integration tests for search/add/finish/reread workflows in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
 - [X] T032 [P] [US2] Add backend integration tests for chapter seed/reuse, explicit chapter rename behavior, and chapter-read reward side effects in `backend/src/test/java/com/example/readingrewards/domain/ApiControllerIntegrationTests.java`
-- [X] T033 [P] [US2] Add frontend tests for search/add book and chapter seeding prompt flow in `frontend/src/features/books/SearchPage.test.tsx`
+- [X] T033 [P] [US2] Add frontend tests for search/add book and chapter seeding modal flow in `frontend/src/features/books/SearchPage.test.tsx`
 - [X] T034 [P] [US2] Add frontend tests for reading list chapter state, chapter rename UX, and reward math display in `frontend/src/features/books/ReadingListPage.test.tsx`
 - [X] T035 [P] [US2] Add frontend tests for rewards history and spend/payout actions in `frontend/src/features/rewards/RewardsPage.test.tsx`
 - [X] T036 [US2] Add Playwright child journey for add/read/reward/finish/reread flow in `tests/e2e/reading.spec.ts`

@@ -1,0 +1,68 @@
+{
+  "generatedAt": "2026-05-11T20:13:07.554Z",
+  "totalPages": 10,
+  "totalViolations": 0,
+  "colorContrastIssueCount": 0,
+  "pages": [
+    {
+      "role": "unauth",
+      "route": "/login",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "role": "unauth",
+      "route": "/signup",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "role": "unauth",
+      "route": "/verify-email",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "role": "child",
+      "route": "/reading-list",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "role": "child",
+      "route": "/search",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "role": "child",
+      "route": "/history",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "role": "child",
+      "route": "/rewards",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "role": "parent",
+      "route": "/parent",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "role": "parent",
+      "route": "/parent/summary",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "role": "parent",
+      "route": "/rewards",
+      "violationCount": 0,
+      "violations": []
+    }
+  ]
+}

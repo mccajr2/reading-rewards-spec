@@ -4,7 +4,7 @@
 
 .history-date {
   font-size: 0.85rem;
-  color: var(--color-muted, #a6adc8);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0.5rem;
@@ -20,8 +20,8 @@
   display: flex;
   gap: 1rem;
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--color-border, #313244);
-  background: var(--color-surface, #1e1e2e);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background);
   border-radius: 4px;
   margin-bottom: 0.25rem;
 }
@@ -32,7 +32,7 @@
 }
 
 .history-chapter {
-  color: var(--color-muted, #a6adc8);
+  color: var(--color-text-secondary);
 }
 
 .history-pagination {

@@ -31,7 +31,7 @@ describe('ParentDashboard', () => {
     });
   });
 
-  it('renders manage kids heading', async () => {
+  it('renders parent dashboard guidance heading', async () => {
     vi.spyOn(api, 'fetchWithAuth').mockResolvedValue(mockOkResponse([]));
 
     render(
@@ -40,7 +40,8 @@ describe('ParentDashboard', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('heading', { name: /manage kids/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /your dashboard/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/your dashboard page guidance/i)).toBeInTheDocument();
   });
 
   it('displays child names returned from the API', async () => {

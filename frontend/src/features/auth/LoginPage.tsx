@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { Button, FormField, PageGuidance } from '../../components/shared';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -28,24 +29,35 @@ export function LoginPage() {
   return (
     <main className="auth-shell">
       <form className="auth-card" onSubmit={onSubmit}>
-        <h1>Login</h1>
-        <p>Use parent email or child username to sign in.</p>
+        <PageGuidance
+          title="Login"
+          description="Use parent email or child username to sign in to your account."
+          instructions="Enter your login details and select Sign in to continue."
+          tone="parent"
+        />
 
-        <label>
-          Username or Email
-          <input value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </label>
+        <FormField
+          label="Username or Email"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+          autoComplete="username"
+        />
 
-        <label>
-          Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </label>
+        <FormField
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="current-password"
+        />
 
         {error ? <p className="error-text">{error}</p> : null}
 
-        <button className="primary-button" type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading}>
           {loading ? 'Signing in...' : 'Sign in'}
-        </button>
+        </Button>
 
         <p className="auth-links">
           New parent account? <Link to="/signup">Sign up</Link>

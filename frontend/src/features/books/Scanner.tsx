@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } from '@zxing/library';
+import { Button } from '../../components/shared';
 
 interface ScannerProps {
   onResult: (isbnOrUpc: string) => void;
@@ -15,7 +15,7 @@ export function Scanner({ onResult, disabled }: ScannerProps) {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
-  const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const readerRef = useRef<{ reset: () => void } | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const stopScanner = () => {
@@ -29,6 +29,7 @@ export function Scanner({ onResult, disabled }: ScannerProps) {
 
   const startScanner = async () => {
     setError('');
+    const { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } = await import('@zxing/library');
     const hints = new Map();
     hints.set(DecodeHintType.POSSIBLE_FORMATS, [
       BarcodeFormat.EAN_13,
@@ -72,22 +73,24 @@ export function Scanner({ onResult, disabled }: ScannerProps) {
   return (
     <div className="scanner-container">
       {!scanning ? (
-        <button
+        <Button
           type="button"
-          className="btn btn-secondary scanner-btn"
+          variant="secondary"
+          className="scanner-btn"
           onClick={startScanner}
           disabled={disabled}
         >
           📷 Scan Barcode
-        </button>
+        </Button>
       ) : (
-        <button
+        <Button
           type="button"
-          className="btn btn-secondary scanner-btn"
+          variant="secondary"
+          className="scanner-btn"
           onClick={stopScanner}
         >
           ✕ Stop Scanner
-        </button>
+        </Button>
       )}
       <video
         ref={videoRef}

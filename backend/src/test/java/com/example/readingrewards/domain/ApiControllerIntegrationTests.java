@@ -201,6 +201,50 @@ class ApiControllerIntegrationTests {
     }
 
     @Test
+    void addBookDoesNotCreateDuplicateInProgressEntryForSameUser() throws Exception {
+        MvcResult firstAdd = mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "googleBookId": "book123",
+                      "title": "Test Book",
+                      "authors": ["Author One"],
+                      "description": "A desc",
+                      "thumbnailUrl": "http://img.example.com/thumb.jpg"
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String firstBookReadId = objectMapper.readTree(firstAdd.getResponse().getContentAsString())
+            .get("id")
+            .asText();
+
+        MvcResult secondAdd = mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "googleBookId": "book123",
+                      "title": "Test Book",
+                      "authors": ["Author One"],
+                      "description": "A desc",
+                      "thumbnailUrl": "http://img.example.com/thumb.jpg"
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String secondBookReadId = objectMapper.readTree(secondAdd.getResponse().getContentAsString())
+            .get("id")
+            .asText();
+
+        assertThat(secondBookReadId).isEqualTo(firstBookReadId);
+        assertThat(bookReadRepository.findAll()).hasSize(1);
+    }
+
+    @Test
     void searchAddFinishAndRereadWorkflowIsSupported() throws Exception {
         when(googleBooksService.search(any(), any(), any())).thenReturn(List.of(
                 new BookSummaryDto(

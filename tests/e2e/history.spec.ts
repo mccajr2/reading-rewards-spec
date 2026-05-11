@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { signupAndVerify, uniqueEmail, uniqueUsername, createKid, login } from './helpers';
+import { apiUrl, signupAndVerify, uniqueEmail, uniqueUsername, createKid, login } from './helpers';
 
 /**
  * P2 History and rewards journey (US3 gap G3):
@@ -28,7 +28,7 @@ test.describe('Child history and rewards pages', () => {
     const headers = { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' };
     const googleBookId = `e2e-history-book-${Date.now()}`;
 
-    const addRes = await request.post('/api/books', {
+    const addRes = await request.post(apiUrl('/books'), {
       data: {
         googleBookId,
         title: 'History Test Book',
@@ -41,16 +41,19 @@ test.describe('Child history and rewards pages', () => {
     expect(addRes.ok()).toBeTruthy();
     const bookRead = await addRes.json();
 
-    const chapRes = await request.post(`/api/books/${googleBookId}/chapters`, {
+    const chapRes = await request.post(apiUrl(`/books/${googleBookId}/chapters`), {
       data: [{ name: 'Chapter One', chapterIndex: 0 }],
       headers,
     });
-    expect(chapRes.ok()).toBeTruthy();
+    expect(
+      chapRes.ok(),
+      `chapters create failed: ${chapRes.status()} ${await chapRes.text()}`
+    ).toBeTruthy();
     const chapters = await chapRes.json();
     const chapterId = chapters[0].id;
 
     const markRes = await request.post(
-      `/api/bookreads/${bookRead.id}/chapters/${chapterId}/read`,
+      apiUrl(`/bookreads/${bookRead.id}/chapters/${chapterId}/read`),
       { headers }
     );
     expect(markRes.ok()).toBeTruthy();
@@ -63,7 +66,7 @@ test.describe('Child history and rewards pages', () => {
     await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
 
     await page.goto('/history');
-    await expect(page.getByRole('heading', { name: /reading history/i })).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('heading', { name: /log your reading/i })).toBeVisible({ timeout: 5_000 });
     await expect(page.getByText('History Test Book')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByText('Chapter One')).toBeVisible({ timeout: 5_000 });
   });
@@ -74,7 +77,7 @@ test.describe('Child history and rewards pages', () => {
     const headers = { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' };
     const googleBookId = `e2e-rewards-book-${Date.now()}`;
 
-    const addRes = await request.post('/api/books', {
+    const addRes = await request.post(apiUrl('/books'), {
       data: {
         googleBookId,
         title: 'Rewards Test Book',
@@ -87,15 +90,18 @@ test.describe('Child history and rewards pages', () => {
     expect(addRes.ok()).toBeTruthy();
     const bookRead = await addRes.json();
 
-    const chapRes = await request.post(`/api/books/${googleBookId}/chapters`, {
+    const chapRes = await request.post(apiUrl(`/books/${googleBookId}/chapters`), {
       data: [{ name: 'Chapter One', chapterIndex: 0 }],
       headers,
     });
-    expect(chapRes.ok()).toBeTruthy();
+    expect(
+      chapRes.ok(),
+      `chapters create failed: ${chapRes.status()} ${await chapRes.text()}`
+    ).toBeTruthy();
     const chapters = await chapRes.json();
     const chapterId = chapters[0].id;
 
-    await request.post(`/api/bookreads/${bookRead.id}/chapters/${chapterId}/read`, { headers });
+    await request.post(apiUrl(`/bookreads/${bookRead.id}/chapters/${chapterId}/read`), { headers });
 
     // Log in via UI and navigate to rewards page
     await page.goto('/login');
@@ -105,7 +111,7 @@ test.describe('Child history and rewards pages', () => {
     await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
 
     await page.goto('/rewards');
-    await expect(page.getByRole('heading', { name: /rewards/i })).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('heading', { name: /your rewards shop/i })).toBeVisible({ timeout: 5_000 });
     // One chapter read = $1.00 earned
     await expect(page.getByText('$1.00').first()).toBeVisible({ timeout: 5_000 });
   });

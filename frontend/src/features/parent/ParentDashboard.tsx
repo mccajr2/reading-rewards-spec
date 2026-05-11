@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth } from '../../shared/api';
+import { Button, Input, Modal, PageGuidance } from '../../components/shared';
 import './ParentDashboard.css';
 
 type Kid = {
@@ -40,12 +41,12 @@ export function ParentDashboard() {
     loadKidSummaries();
   }, []);
 
-  const loadKids = async () => {
+  async function loadKids() {
     const r = await fetchWithAuth('/parent/kids', token);
     if (r.ok) setKids(await r.json());
-  };
+  }
 
-  const loadKidSummaries = async () => {
+  async function loadKidSummaries() {
     const r = await fetchWithAuth('/parent/kids/summary', token);
     if (!r.ok) {
       setKidSummaries([]);
@@ -53,7 +54,7 @@ export function ParentDashboard() {
     }
     const payload = await r.json();
     setKidSummaries(Array.isArray(payload?.kids) ? payload.kids : []);
-  };
+  }
 
   const handleAddKid = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,18 +91,23 @@ export function ParentDashboard() {
 
   return (
     <div className="page parent-dashboard">
-      <h1>Manage Kids</h1>
+      <PageGuidance
+        title="Your Dashboard"
+        description="Here's a snapshot of each child's reading progress. You can see books read, rewards earned, and upcoming milestones at a glance."
+        instructions="Click on any child's card to view detailed progress, or use the sections below to manage accounts and settings."
+        tone="parent"
+      />
 
       <section className="quick-actions-section">
         <h2>Your Reading</h2>
         <p className="muted">Use your own parent account reading list without affecting child activity.</p>
         <div className="quick-actions-row">
-          <button className="btn btn-secondary" onClick={() => navigate('/search')}>
+          <Button variant="secondary" onClick={() => navigate('/search')}>
             Add Book To My Reading List
-          </button>
-          <button className="btn btn-secondary" onClick={() => navigate('/reading-list')}>
+          </Button>
+          <Button variant="secondary" onClick={() => navigate('/reading-list')}>
             View My Reading List
-          </button>
+          </Button>
         </div>
       </section>
 
@@ -123,13 +129,14 @@ export function ParentDashboard() {
                   <span>Earned: <strong>${kid.totalEarned.toFixed(2)}</strong></span>
                   <span>Balance: <strong>${kid.currentBalance.toFixed(2)}</strong></span>
                 </div>
-                <button
-                  className="btn btn-secondary btn-sm"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => navigate(`/parent/summary/${kid.id}`)}
                   aria-label={`Open summary for ${kid.firstName}`}
                 >
                   Open Summary
-                </button>
+                </Button>
               </article>
             ))}
           </div>
@@ -141,64 +148,73 @@ export function ParentDashboard() {
         {kids.length === 0 ? (
           <p className="muted">No kids yet. Add one below.</p>
         ) : (
-          <table className="kids-table">
-            <thead>
-              <tr>
-                <th>First Name</th>
-                <th>Username</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {kids.map(kid => (
-                <tr key={kid.id}>
-                  <td>{kid.firstName}</td>
-                  <td>{kid.username}</td>
-                  <td>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => navigate(`/parent/summary/${kid.id}`)}
-                      aria-label={`View details for ${kid.firstName}`}
-                    >
-                      View Details
-                    </button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => { setResetTarget(kid.username); setResetMsg(''); setNewPassword(''); }}>
-                      Reset Password
-                    </button>
-                  </td>
+          <div className="table-scroll">
+            <table className="kids-table">
+              <thead>
+                <tr>
+                  <th>First Name</th>
+                  <th>Username</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {kids.map(kid => (
+                  <tr key={kid.id}>
+                    <td>{kid.firstName}</td>
+                    <td>{kid.username}</td>
+                    <td>
+                      <div className="table-actions">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => navigate(`/parent/summary/${kid.id}`)}
+                          aria-label={`View details for ${kid.firstName}`}
+                        >
+                          View Details
+                        </Button>
+                        <Button variant="secondary" size="sm" onClick={() => { setResetTarget(kid.username); setResetMsg(''); setNewPassword(''); }}>
+                          Reset Password
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
       <section className="add-kid-section">
         <h2>Add a New Kid</h2>
         <form className="add-kid-form" onSubmit={handleAddKid}>
-          <input className="input" type="text" placeholder="Username" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} required />
-          <input className="input" type="text" placeholder="First Name" value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} required />
-          <input className="input" type="password" placeholder="Password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
+          <Input className="input" type="text" placeholder="Username" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} required />
+          <Input className="input" type="text" placeholder="First Name" value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} required />
+          <Input className="input" type="password" placeholder="Password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
           {error && <p className="error-msg">{error}</p>}
           {success && <p className="success-msg">{success}</p>}
-          <button type="submit" className="btn btn-primary">Add Kid</button>
+          <Button type="submit">Add Kid</Button>
         </form>
       </section>
 
       {resetTarget && (
-        <div className="modal-overlay" onClick={() => setResetTarget(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+        <Modal
+          open={Boolean(resetTarget)}
+          onOpenChange={(open) => {
+            if (!open) setResetTarget(null);
+          }}
+          title="Reset Password"
+        >
+          <form className="modal" onSubmit={handleResetPassword}>
             <h3>Reset Password for {resetTarget}</h3>
-            <form onSubmit={handleResetPassword}>
-              <input className="input" type="password" placeholder="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
-              {resetMsg && <p className={resetMsg.includes('success') ? 'success-msg' : 'error-msg'}>{resetMsg}</p>}
-              <div className="modal-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => setResetTarget(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Reset Password</button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <Input className="input" type="password" placeholder="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+            {resetMsg && <p className={resetMsg.includes('success') ? 'success-msg' : 'error-msg'}>{resetMsg}</p>}
+            <div className="modal-actions">
+              <Button type="button" variant="secondary" onClick={() => setResetTarget(null)}>Cancel</Button>
+              <Button type="submit">Reset Password</Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );
