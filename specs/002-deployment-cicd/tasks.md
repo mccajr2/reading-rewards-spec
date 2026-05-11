@@ -32,9 +32,9 @@ description: "Task list for Render Deployment with GitHub Actions CI/CD"
 
 **⚠️ CRITICAL**: GitHub Actions workflows will fail at the GHCR login, curl, or docker build-arg steps if these are not set up first.
 
-- [ ] T003 Add three GitHub repository secrets in GitHub → Settings → Secrets → Actions: `RENDER_BACKEND_DEPLOY_HOOK_URL` (Render Deploy Hook URL for backend service), `RENDER_FRONTEND_DEPLOY_HOOK_URL` (Render Deploy Hook URL for frontend service), `VITE_API_URL` (value: `https://reading-rewards-spec-backend.onrender.com/api`)
-- [ ] T004 [P] Create two Render web services in the Render dashboard using `render.yaml` as reference: `reading-rewards-spec-backend` (Docker, image from GHCR backend URL, free plan) and `reading-rewards-spec-frontend` (Docker, image from GHCR frontend URL, free plan) — copy Deploy Hook URLs for T003
-- [ ] T005 [P] Set Render environment variables for the backend service in Render dashboard: `SPRING_PROFILES_ACTIVE=prod`, `DATABASE_URL=jdbc:postgresql://...` (Neon JDBC URL with `jdbc:` prefix — see research.md §4), `DATABASE_USER`, `DATABASE_PASSWORD`, `FRONTEND_URL=https://reading-rewards-spec-frontend.onrender.com`
+- [X] T003 Add three GitHub repository secrets in GitHub → Settings → Secrets → Actions: `RENDER_BACKEND_DEPLOY_HOOK_URL` (Render Deploy Hook URL for backend service), `RENDER_FRONTEND_DEPLOY_HOOK_URL` (Render Deploy Hook URL for frontend service), `VITE_API_URL` (value: `https://reading-rewards-spec-backend.onrender.com/api`)
+- [X] T004 [P] Create two Render web services in the Render dashboard using `render.yaml` as reference: `reading-rewards-spec-backend` (Docker, image from GHCR backend URL, free plan) and `reading-rewards-spec-frontend` (Docker, image from GHCR frontend URL, free plan) — copy Deploy Hook URLs for T003
+- [X] T005 [P] Set Render environment variables for the backend service in Render dashboard: `SPRING_PROFILES_ACTIVE=prod`, `DATABASE_URL=jdbc:postgresql://...` (Neon JDBC URL with `jdbc:` prefix — see research.md §4), `DATABASE_USER`, `DATABASE_PASSWORD`, `FRONTEND_URL=https://reading-rewards-spec-frontend.onrender.com`
 
 **Checkpoint**: GitHub Secrets configured, Render services created, Render env vars set — workflow execution can now proceed
 
@@ -65,7 +65,7 @@ description: "Task list for Render Deployment with GitHub Actions CI/CD"
 
 - [X] T008 [US2] Add `build-and-push` job to `.github/workflows/backend.yml` — `needs: test`, `if: github.ref == 'refs/heads/main' && github.event_name == 'push'`, `permissions: packages: write, contents: read`; steps: `docker/login-action@v3` with `registry: ghcr.io` and `username: ${{ github.actor }}` and `password: ${{ secrets.GITHUB_TOKEN }}`; `docker/metadata-action@v5` with `images: ghcr.io/${{ github.repository }}/backend` and `tags: type=sha,prefix=sha-` plus `type=raw,value=latest`; `docker/build-push-action@v5` with `context: ./backend`, `push: true`, tags from metadata action; `curl -fsS -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}"` (FR-005, FR-006, FR-007, FR-008, FR-015)
 - [X] T009 [P] [US2] Add `build-and-push` job to `.github/workflows/frontend.yml` — same structure as T008 but `images: ghcr.io/${{ github.repository }}/frontend`, `context: ./frontend`, and add `build-args: VITE_API_URL=${{ secrets.VITE_API_URL }}` to the build-push action step; curl posts to `${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}` (FR-005, FR-006, FR-007, FR-008, FR-011, FR-015)
-- [ ] T010 [P] [US2] After first successful GHCR push (triggered by merging main): set both GHCR packages to Public visibility in GitHub → Packages → reading-rewards-spec/backend → Package settings → Change visibility → Public; repeat for `reading-rewards-spec/frontend` — required so Render can pull without auth (research.md §6, FR-009)
+- [X] T010 [P] [US2] After first successful GHCR push (triggered by merging main): set both GHCR packages to Public visibility in GitHub → Packages → reading-rewards-spec/backend → Package settings → Change visibility → Public; repeat for `reading-rewards-spec/frontend` — required so Render can pull without auth (research.md §6, FR-009)
 
 **Checkpoint**: Merge triggers `build-and-push`; GHCR shows new tagged images; Render deployment completes; `/actuator/health` and `/` return 200; frontend API calls reach backend via VITE_API_URL (SC-006, SC-007, SC-008)
 
@@ -81,8 +81,8 @@ description: "Task list for Render Deployment with GitHub Actions CI/CD"
 
 > **Note**: Path triggers were included in T006 and T007 as part of the `on` block configuration. Verify correctness of path filters — no additional file changes needed unless the `on.paths` values require adjustment.
 
-- [ ] T011 [US3] Verify path filter correctness in `.github/workflows/backend.yml` — confirm `on.push.paths` and `on.pull_request.paths` both contain exactly `['backend/**', '.github/workflows/backend.yml']`; push a frontend-only commit to a test branch and open a PR to confirm backend workflow does NOT appear in PR checks (FR-003, SC-009)
-- [ ] T012 [P] [US3] Verify path filter correctness in `.github/workflows/frontend.yml` — confirm `on.push.paths` and `on.pull_request.paths` both contain exactly `['frontend/**', '.github/workflows/frontend.yml']`; push a backend-only commit to a test branch and confirm frontend workflow does NOT appear in PR checks (FR-004, SC-009)
+- [X] T011 [US3] Verify path filter correctness in `.github/workflows/backend.yml` — confirm `on.push.paths` and `on.pull_request.paths` both contain exactly `['backend/**', '.github/workflows/backend.yml']`; push a frontend-only commit to a test branch and open a PR to confirm backend workflow does NOT appear in PR checks (FR-003, SC-009)
+- [X] T012 [P] [US3] Verify path filter correctness in `.github/workflows/frontend.yml` — confirm `on.push.paths` and `on.pull_request.paths` both contain exactly `['frontend/**', '.github/workflows/frontend.yml']`; push a backend-only commit to a test branch and confirm frontend workflow does NOT appear in PR checks (FR-004, SC-009)
 
 **Checkpoint**: Path filtering is confirmed correct — backend and frontend workflows trigger independently based on which files changed
 
@@ -108,9 +108,9 @@ description: "Task list for Render Deployment with GitHub Actions CI/CD"
 
 **Purpose**: End-to-end validation and cleanup after all phases are complete.
 
-- [ ] T016 Run full end-to-end pipeline: open a real PR with a minor change, verify checks appear and pass within 10 minutes (SC-002), merge to main, verify Docker images tagged `sha-[SHA]` and `latest` appear in GHCR within 15 minutes (SC-003), Render services deploy and report healthy (SC-004, SC-005, SC-006)
-- [ ] T017 [P] Verify Neon database connectivity and Flyway migrations: check Render backend deployment logs for `Successfully applied N migration(s)` from Flyway on startup; query Neon database to confirm schema tables exist (SC-008, FR-016b)
-- [ ] T018 [P] Verify CORS and API connectivity: open the deployed frontend URL, perform a login or data-fetch action, confirm the network request to `VITE_API_URL` returns HTTP 200 and the UI renders data (FR-017, SC-007)
+- [X] T016 Run full end-to-end pipeline: open a real PR with a minor change, verify checks appear and pass within 10 minutes (SC-002), merge to main, verify Docker images tagged `sha-[SHA]` and `latest` appear in GHCR within 15 minutes (SC-003), Render services deploy and report healthy (SC-004, SC-005, SC-006)
+- [X] T017 [P] Verify Neon database connectivity and Flyway migrations: check Render backend deployment logs for `Successfully applied N migration(s)` from Flyway on startup; query Neon database to confirm schema tables exist (SC-008, FR-016b)
+- [X] T018 [P] Verify CORS and API connectivity: open the deployed frontend URL, perform a login or data-fetch action, confirm the network request to `VITE_API_URL` returns HTTP 200 and the UI renders data (FR-017, SC-007)
 - [X] T019 [P] Replace `[GITHUB_USERNAME]` placeholder in `render.yaml` with your actual lowercase GitHub username in both `image.url` fields (plan §1.4 note) — confirm with `git grep GITHUB_USERNAME` returning zero matches before final commit
 
 ---

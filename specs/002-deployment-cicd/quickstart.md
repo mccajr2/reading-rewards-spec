@@ -38,9 +38,8 @@ This guide walks through the one-time setup required to activate GitHub Actions 
 3. Choose **Deploy an existing image from a registry**
 4. Set the image URL to:
    ```
-   ghcr.io/[GITHUB_USERNAME]/reading-rewards-spec/backend:latest
+  ghcr.io/mccajr2/reading-rewards-spec/backend:latest
    ```
-   Replace `[GITHUB_USERNAME]` with your GitHub username (lowercase).
 5. Configure the backend service:
    - **Name**: `reading-rewards-spec-backend`
    - **Plan**: Free
@@ -52,9 +51,10 @@ This guide walks through the one-time setup required to activate GitHub Actions 
      - `DATABASE_PASSWORD` = your Neon password
      - `FRONTEND_URL` = `https://reading-rewards-spec-frontend.onrender.com` (set after creating frontend service)
 6. Repeat for the frontend service:
-   - **Image URL**: `ghcr.io/[GITHUB_USERNAME]/reading-rewards-spec/frontend:latest`
+  - **Image URL**: `ghcr.io/mccajr2/reading-rewards-spec/frontend:latest`
    - **Name**: `reading-rewards-spec-frontend`
    - **Plan**: Free
+  - **Service URL**: `https://reading-rewards-spec-frontend.onrender.com`
    - No environment variables needed (VITE_API_URL is baked in at build time)
 7. For each service, navigate to **Settings → Deploy Hook** and copy the URL.
 
@@ -346,19 +346,19 @@ services:
 
 ## Verification Checklist
 
-- [ ] Neon database provisioned; JDBC URL constructed with `jdbc:` prefix
-- [ ] Render backend service created with correct GHCR image URL and env vars
-- [ ] Render frontend service created with correct GHCR image URL
-- [ ] Render deploy hook URLs copied for both services
-- [ ] GitHub Secrets set: `RENDER_BACKEND_DEPLOY_HOOK_URL`, `RENDER_FRONTEND_DEPLOY_HOOK_URL`, `VITE_API_URL`
-- [ ] `application-prod.yml` created and committed
-- [ ] `.github/workflows/backend.yml` created and committed
-- [ ] `.github/workflows/frontend.yml` created and committed
-- [ ] `render.yaml` created with `[GITHUB_USERNAME]` replaced
-- [ ] GitHub Actions workflows triggered and passed on first push
-- [ ] GHCR packages set to Public visibility
-- [ ] Render services deployed and health checks passing
-- [ ] Frontend loads at Render URL and API calls succeed
+- [ ] Backend Render env var `SPRING_PROFILES_ACTIVE` is set to `prod`
+- [ ] Backend Render env var `DATABASE_URL` is set to Neon JDBC URL with `jdbc:` prefix
+- [ ] Backend Render env var `DATABASE_USER` is set to Neon DB user
+- [ ] Backend Render env var `DATABASE_PASSWORD` is set to Neon DB password
+- [ ] Backend Render env var `FRONTEND_URL` is set to `https://reading-rewards-spec-frontend.onrender.com`
+- [ ] GitHub secret `VITE_API_URL` is set to `https://reading-rewards-spec-backend.onrender.com/api`
+- [ ] GitHub secret `RENDER_BACKEND_DEPLOY_HOOK_URL` is set to backend Render Deploy Hook URL
+- [ ] GitHub secret `RENDER_FRONTEND_DEPLOY_HOOK_URL` is set to frontend Render Deploy Hook URL
+- [ ] GHCR image `ghcr.io/mccajr2/reading-rewards-spec/backend:latest` is Public
+- [ ] GHCR image `ghcr.io/mccajr2/reading-rewards-spec/frontend:latest` is Public
+- [ ] Backend health check responds at `https://reading-rewards-spec-backend.onrender.com/actuator/health`
+- [ ] Frontend app responds at `https://reading-rewards-spec-frontend.onrender.com`
+- [ ] Frontend network calls target `https://reading-rewards-spec-backend.onrender.com/api`
 
 ---
 
