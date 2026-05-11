@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Accessibility Compliance Contract",
+  "type": "object",
+  "description": "WCAG 2.1 AA accessibility requirements for all components and pages",
+  "properties": {
+    "keyboard_navigation": {
+      "type": "object",
+      "description": "All interactive elements must be keyboard accessible",
+      "properties": {
+        "tab_order": {
+          "type": "string",
+          "description": "Elements focusable via Tab key in logical order (left-to-right, top-to-bottom)"
+        },
+        "focus_indicator": {
+          "type": "string",
+          "description": "Visible focus ring when tabbed to (min 2px, color contrast ≥3:1)"
+        },
+        "escape_key": {
+          "type": "string",
+          "description": "Modals and popovers close on Escape key"
+        },
+        "enter_key": {
+          "type": "string",
+          "description": "Buttons and links activate on Enter key"
+        },
+        "arrow_keys": {
+          "type": "string",
+          "description": "Menu items, radio groups, and tabs navigate with Arrow keys"
+        }
+      }
+    },
+    "screen_reader": {
+      "type": "object",
+      "description": "Content accessible to screen readers (NVDA, VoiceOver, JAWS)",
+      "properties": {
+        "semantic_html": {
+          "type": "string",
+          "description": "Use semantic elements: <button>, <input>, <label>, <nav>, <main>, <footer>"
+        },
+        "aria_labels": {
+          "type": "string",
+          "description": "Form fields have <label> or aria-label; buttons have text or aria-label"
+        },
+        "aria_describedby": {
+          "type": "string",
+          "description": "Error messages linked to form fields via aria-describedby"
+        },
+        "aria_live": {
+          "type": "string",
+          "description": "Dynamic content updates announced via aria-live='polite' (e.g., success messages)"
+        },
+        "aria_hidden": {
+          "type": "string",
+          "description": "Decorative icons and visual-only elements marked aria-hidden='true'"
+        }
+      }
+    },
+    "color_contrast": {
+      "type": "object",
+      "description": "Text color contrast must meet WCAG AA standards",
+      "properties": {
+        "normal_text": {
+          "type": "string",
+          "description": "Normal text (≥14px): contrast ratio ≥4.5:1"
+        },
+        "large_text": {
+          "type": "string",
+          "description": "Large text (≥18px bold or ≥24px normal): contrast ratio ≥3:1"
+        },
+        "graphics": {
+          "type": "string",
+          "description": "Icons and graphical elements: contrast ratio ≥3:1"
+        }
+      }
+    },
+    "touch_targets": {
+      "type": "object",
+      "description": "Interactive elements must be large enough for touch",
+      "properties": {
+        "minimum_size": {
+          "type": "string",
+          "description": "Minimum 44px × 44px (CSS class: min-h-11 min-w-11)"
+        },
+        "spacing": {
+          "type": "string",
+          "description": "At least 8px gap between adjacent touch targets"
+        }
+      }
+    },
+    "color_not_sole": {
+      "type": "object",
+      "description": "Color must not be the only way to convey information",
+      "properties": {
+        "error_fields": {
+          "type": "string",
+          "description": "Error fields marked with text label AND icon/visual indicator"
+        },
+        "status_indicators": {
+          "type": "string",
+          "description": "Status (success, error, warning) conveyed via color + text/icon"
+        },
+        "links": {
+          "type": "string",
+          "description": "Links visually distinct from plain text (underline, icon, or bold)"
+        }
+      }
+    },
+    "responsive": {
+      "type": "object",
+      "description": "Content and functionality accessible at all viewport sizes",
+      "properties": {
+        "text_sizing": {
+          "type": "string",
+          "description": "Text remains readable at 200% zoom on mobile (no horizontal scroll)"
+        },
+        "text_spacing": {
+          "type": "string",
+          "description": "Line height ≥1.5; letter-spacing ≥0.12em; paragraph spacing ≥2em"
+        },
+        "viewport": {
+          "type": "string",
+          "description": "No fixed viewports; responsive design from 320px+ (mobile-first)"
+        }
+      }
+    }
+  },
+  "required": [
+    "keyboard_navigation",
+    "screen_reader",
+    "color_contrast",
+    "touch_targets"
+  ],
+  "testing": {
+    "automated": [
+      "axe-core browser extension (manual audit)",
+      "jest + @axe-core/react (automated CI tests)",
+      "Lighthouse audit (Chrome DevTools)"
+    ],
+    "manual": [
+      "VoiceOver (Mac) screen reader test",
+      "NVDA (Windows) screen reader test",
+      "Keyboard-only navigation (no mouse)"
+    ],
+    "success_criteria": [
+      "Zero critical violations in axe audit",
+      "95% of components pass automated accessibility tests",
+      "Manual screen reader test confirms all content readable"
+    ]
+  }
+}
