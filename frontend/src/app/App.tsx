@@ -8,7 +8,7 @@ import { Nav } from '../features/nav/Nav';
 import { SearchPage } from '../features/books/SearchPage';
 import { ReadingListPage } from '../features/books/ReadingListPage';
 import { HistoryPage } from '../features/books/HistoryPage';
-import { RewardsPage } from '../features/rewards/RewardsPage';
+import { ChildRewardsPage } from '../pages/ChildRewards/ChildRewardsPage';
 import { ManageFamilyRewardsPage } from '../pages/ParentRewards/ManageFamilyRewardsPage';
 import { ParentDashboard } from '../features/parent/ParentDashboard';
 import { ParentSummary } from '../features/parent/ParentSummary';
@@ -64,7 +64,7 @@ function AuthenticatedLayout() {
             path="/child/rewards"
             element={(
               <ChildOnlyRoute>
-                <RewardsPage />
+                <ChildRewardsPage />
               </ChildOnlyRoute>
             )}
           />

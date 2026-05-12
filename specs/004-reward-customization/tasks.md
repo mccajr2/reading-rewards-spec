@@ -268,15 +268,15 @@
 
 ### Tests for User Story 10
 
-- [ ] T084 [P] [US10] Add backend unit test for money/time/custom formatting and aggregation rules in backend/src/test/java/com/example/readingrewards/unit/reward/RewardTypeFormattingServiceTest.java
-- [ ] T085 [P] [US10] Add frontend visual and behavior test for multi-type rewards rendering in frontend/src/components/rewards/__tests__/RewardsTypeDisplay.test.tsx
+- [X] T084 [P] [US10] Add backend unit test for money/time/custom formatting and aggregation rules in backend/src/test/java/com/example/readingrewards/unit/reward/RewardTypeFormattingServiceTest.java
+- [X] T085 [P] [US10] Add frontend visual and behavior test for multi-type rewards rendering in frontend/src/components/rewards/__tests__/RewardsTypeDisplay.test.tsx
 
 ### Implementation for User Story 10
 
-- [ ] T086 [US10] Implement reward-type formatting and aggregation service in backend/src/main/java/com/example/readingrewards/domain/service/reward/RewardTypeFormattingService.java
-- [ ] T087 [US10] Implement by-reward-type summary in child balance response DTO mapping in backend/src/main/java/com/example/readingrewards/domain/dto/reward/ChildRewardBalanceDto.java
-- [ ] T088 [US10] Build consolidated reward type cards with distinct visual styles in frontend/src/components/rewards/RewardsTypeCards.tsx
-- [ ] T089 [US10] Integrate multi-type cards into child rewards page in frontend/src/pages/ChildRewards/ChildRewardsPage.tsx
+- [X] T086 [US10] Implement reward-type formatting and aggregation service in backend/src/main/java/com/example/readingrewards/domain/service/reward/RewardTypeFormattingService.java
+- [X] T087 [US10] Implement by-reward-type summary in child balance response DTO mapping in backend/src/main/java/com/example/readingrewards/domain/dto/reward/ChildRewardBalanceDto.java
+- [X] T088 [US10] Build consolidated reward type cards with distinct visual styles in frontend/src/components/rewards/RewardsTypeCards.tsx
+- [X] T089 [US10] Integrate multi-type cards into child rewards page in frontend/src/pages/ChildRewards/ChildRewardsPage.tsx
 
 **Checkpoint**: Consolidated rewards page handles all supported reward types with clear and accurate presentation.
 

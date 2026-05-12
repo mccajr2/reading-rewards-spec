@@ -2,8 +2,10 @@ package com.example.readingrewards.domain.controller;
 
 import com.example.readingrewards.auth.model.User;
 import com.example.readingrewards.auth.repo.UserRepository;
+import com.example.readingrewards.domain.dto.reward.ChildRewardBalanceDto;
 import com.example.readingrewards.domain.model.reward.RewardAccumulation;
 import com.example.readingrewards.domain.repo.reward.RewardAccumulationRepository;
+import com.example.readingrewards.domain.service.reward.RewardTypeFormattingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,10 +25,16 @@ public class ChildRewardBalanceController {
 
     private final UserRepository userRepository;
     private final RewardAccumulationRepository rewardAccumulationRepository;
+    private final RewardTypeFormattingService rewardTypeFormattingService;
 
-    public ChildRewardBalanceController(UserRepository userRepository, RewardAccumulationRepository rewardAccumulationRepository) {
+    public ChildRewardBalanceController(
+        UserRepository userRepository,
+        RewardAccumulationRepository rewardAccumulationRepository,
+        RewardTypeFormattingService rewardTypeFormattingService
+    ) {
         this.userRepository = userRepository;
         this.rewardAccumulationRepository = rewardAccumulationRepository;
+        this.rewardTypeFormattingService = rewardTypeFormattingService;
     }
 
     @GetMapping("/balance")
@@ -39,23 +47,14 @@ public class ChildRewardBalanceController {
         BigDecimal totalPaid = rewardAccumulationRepository.sumAmountByChildId(child.getId(), RewardAccumulation.AccumulationStatus.PAID);
         BigDecimal available = totalEarned.subtract(totalPaid);
 
-        Map<String, Object> summary = new LinkedHashMap<>();
-        summary.put("totalEarned", totalEarned);
-        summary.put("totalPaid", totalPaid);
-        summary.put("availableBalance", available);
+        List<RewardAccumulation> accumulations = rewardAccumulationRepository.findByChildIdOrderByCreatedAtDesc(child.getId());
+        List<ChildRewardBalanceDto.RewardTypeSummaryDto> byType = rewardTypeFormattingService.summarizeByType(accumulations);
 
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("childId", child.getId());
-        response.put("balance", summary);
-        response.put("byRewardType", List.of(Map.of(
-            "rewardType", "MONEY",
-            "description", "Cash Rewards",
-            "totalEarned", totalEarned,
-            "totalPaid", totalPaid,
-            "availableBalance", available,
-            "currency", "USD"
-        )));
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(new ChildRewardBalanceDto(
+            child.getId(),
+            new ChildRewardBalanceDto.BalanceDto(totalEarned, totalPaid, available),
+            byType
+        ));
     }
 
     @GetMapping("/history")

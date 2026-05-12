@@ -5,13 +5,16 @@ import com.example.readingrewards.domain.model.BookRead;
 import com.example.readingrewards.domain.model.ChapterRead;
 import com.example.readingrewards.domain.model.reward.RewardAccumulation;
 import com.example.readingrewards.domain.model.reward.RewardSelection;
+import com.example.readingrewards.domain.model.reward.RewardTemplate;
 import com.example.readingrewards.domain.repo.ChapterReadRepository;
 import com.example.readingrewards.domain.repo.reward.RewardAccumulationRepository;
 import com.example.readingrewards.domain.repo.reward.RewardSelectionRepository;
+import com.example.readingrewards.domain.repo.reward.RewardTemplateRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -21,17 +24,20 @@ public class RewardAccumulationService {
     private final RewardAccumulationRepository rewardAccumulationRepository;
     private final ChapterReadRepository chapterReadRepository;
     private final RewardCalculationService rewardCalculationService;
+    private final RewardTemplateRepository rewardTemplateRepository;
 
     public RewardAccumulationService(
         RewardSelectionRepository rewardSelectionRepository,
         RewardAccumulationRepository rewardAccumulationRepository,
         ChapterReadRepository chapterReadRepository,
-        RewardCalculationService rewardCalculationService
+        RewardCalculationService rewardCalculationService,
+        RewardTemplateRepository rewardTemplateRepository
     ) {
         this.rewardSelectionRepository = rewardSelectionRepository;
         this.rewardAccumulationRepository = rewardAccumulationRepository;
         this.chapterReadRepository = chapterReadRepository;
         this.rewardCalculationService = rewardCalculationService;
+        this.rewardTemplateRepository = rewardTemplateRepository;
     }
 
     public RewardAccumulation recordBookCompletion(User child, BookRead bookRead) {
@@ -57,17 +63,20 @@ public class RewardAccumulationService {
 
         int unitCount = resolveUnitCount(selection, bookReadId);
         BigDecimal amount = rewardCalculationService.calculateAmount(selection.getLockedAmount(), unitCount);
+        RewardTemplate.RewardType rewardType = rewardTemplateRepository.findById(Objects.requireNonNull(selection.getRewardTemplateId()))
+            .map(RewardTemplate::getRewardType)
+            .orElse(RewardTemplate.RewardType.MONEY);
 
         RewardAccumulation accumulation = new RewardAccumulation();
         accumulation.setChildId(childId);
         accumulation.setBookReadId(bookReadId);
         accumulation.setRewardTemplateId(selection.getRewardTemplateId());
-        accumulation.setRewardType(com.example.readingrewards.domain.model.reward.RewardTemplate.RewardType.MONEY);
+        accumulation.setRewardType(rewardType);
         accumulation.setUnitCount(unitCount);
         accumulation.setAmountEarned(amount);
         accumulation.setCalculationNote(
             rewardCalculationService.formatCalculationNote(
-                com.example.readingrewards.domain.model.reward.RewardTemplate.RewardType.MONEY,
+                rewardType,
                 selection.getLockedAmount(),
                 unitCount
             )

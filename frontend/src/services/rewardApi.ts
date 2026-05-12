@@ -77,7 +77,15 @@ export type ChildRewardBalanceResponse = {
     totalPaid: number;
     availableBalance: number;
   };
-  byRewardType: Array<Record<string, unknown>>;
+  byRewardType: Array<{
+    rewardType: RewardType;
+    description: string;
+    totalEarned: number;
+    totalPaid: number;
+    availableBalance: number;
+    unitLabel: string;
+    accent: 'money' | 'time' | 'custom';
+  }>;
 };
 
 export type ChildRewardHistoryResponse = {
