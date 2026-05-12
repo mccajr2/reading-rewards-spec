@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth, RewardHistoryItemDto, RewardsPageResponseDto, RewardSummaryDto } from '../../shared/api';
+import { MessageCenter } from '../../components/rewards/MessageCenter';
 import { RewardBalance, type RewardBalanceRow, type RewardBalanceSummary } from '../../components/rewards/RewardBalance';
 import { PayoutReminder } from '../../components/rewards/PayoutReminder';
 import { getChildRewardBalance, getChildRewardHistory } from '../../services/rewardApi';
-import { sendChildPayoutReminder } from '../../services/messageApi';
+import {
+  listChildInboxMessages,
+  markChildInboxMessageRead,
+  sendChildPayoutReminder,
+  type RewardMessage,
+} from '../../services/messageApi';
 import { Button, Card, CardContent, Input, PageGuidance, Pagination } from '../../components/shared';
 import './RewardsPage.css';
 
@@ -21,6 +27,7 @@ export function RewardsPage() {
   const [loading, setLoading] = useState(false);
   const [rewardBalance, setRewardBalance] = useState<RewardBalanceSummary | null>(null);
   const [rewardHistory, setRewardHistory] = useState<RewardBalanceRow[]>([]);
+  const [childMessages, setChildMessages] = useState<RewardMessage[]>([]);
 
   const handleSendReminder = async (payload: { pendingAmount: number; note?: string; emailEnabled?: boolean }) => {
     await sendChildPayoutReminder(payload);
@@ -72,10 +79,30 @@ export function RewardsPage() {
         createdAt: row.createdAt,
       }));
       setRewardHistory(rows);
+      await loadChildMessages();
     } catch {
       // Keep legacy rewards page usable if reward customization endpoints are unavailable.
       setRewardBalance(null);
       setRewardHistory([]);
+      setChildMessages([]);
+    }
+  };
+
+  const loadChildMessages = async () => {
+    try {
+      const data = await listChildInboxMessages();
+      setChildMessages(data.messages ?? []);
+    } catch {
+      setChildMessages([]);
+    }
+  };
+
+  const handleMarkChildMessageRead = async (messageId: string) => {
+    try {
+      await markChildInboxMessageRead(messageId);
+      await loadChildMessages();
+    } catch {
+      // Keep rewards page resilient if message endpoints are temporarily unavailable.
     }
   };
 
@@ -142,6 +169,7 @@ export function RewardsPage() {
         <>
           <RewardBalance summary={rewardBalance} history={rewardHistory} />
           <PayoutReminder pendingAmount={rewardBalance.availableBalance} onSend={handleSendReminder} />
+          <MessageCenter messages={childMessages} onMarkRead={handleMarkChildMessageRead} />
         </>
       )}
 

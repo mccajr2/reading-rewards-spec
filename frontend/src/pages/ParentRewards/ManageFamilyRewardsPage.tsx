@@ -12,12 +12,14 @@ import {
   type RewardTemplateDraft,
 } from '../../services/rewardApi';
 import { CannedRewardCatalog } from '../../components/parent/CannedRewardCatalog';
+import { EncouragementComposer } from '../../components/parent/EncouragementComposer';
 import { ParentPayoutsPanel, type ParentAccumulationRow } from '../../components/parent/ParentPayoutsPanel';
 import { PayoutReminderInbox } from '../../components/parent/PayoutReminderInbox';
 import { PerChildOverrides } from '../../components/parent/PerChildOverrides';
 import { RewardTemplateBuilder } from '../../components/parent/RewardTemplateBuilder';
 import {
   listParentPayoutReminders,
+  sendParentEncouragement,
   markParentPayoutReminderRead,
   type RewardMessage,
 } from '../../services/messageApi';
@@ -88,6 +90,14 @@ export function ManageFamilyRewardsPage() {
     }
   }
 
+  async function handleSendEncouragement(payload: { childId: string; messageText: string }) {
+    try {
+      await sendParentEncouragement(payload);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send encouragement');
+    }
+  }
+
   useEffect(() => {
     void loadRewards();
     void loadReminders();
@@ -142,6 +152,11 @@ export function ManageFamilyRewardsPage() {
       </ul>
 
       <PerChildOverrides groups={state.perChildRewards} onCreate={handleCreatePerChild} />
+
+      <EncouragementComposer
+        children={state.perChildRewards.map((group) => ({ childId: group.childId, childName: group.childName }))}
+        onSend={handleSendEncouragement}
+      />
 
       {state.perChildRewards.length > 0 && (
         <section>

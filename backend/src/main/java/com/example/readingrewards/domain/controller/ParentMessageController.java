@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @RestController
@@ -74,6 +75,38 @@ public class ParentMessageController {
             .orElseGet(() -> ResponseEntity.status(404).body("Message not found"));
     }
 
+    @PostMapping("/encouragement")
+    public ResponseEntity<?> sendEncouragement(
+        @AuthenticationPrincipal UserDetails principal,
+        @RequestBody EncouragementRequest request
+    ) {
+        User parent = resolveParent(principal);
+        if (parent == null) {
+            return ResponseEntity.status(403).body("Not authorized");
+        }
+        if (request.childId() == null || request.messageText() == null || request.messageText().isBlank()) {
+            return ResponseEntity.badRequest().body("Child and message text are required");
+        }
+
+        User child = userRepository.findById(Objects.requireNonNull(request.childId())).orElse(null);
+        if (child == null || child.getRole() != User.UserRole.CHILD) {
+            return ResponseEntity.badRequest().body("Child account not found");
+        }
+        if (child.getParentId() == null || !child.getParentId().equals(parent.getId())) {
+            return ResponseEntity.status(403).body("Not authorized for this child");
+        }
+
+        Message message = new Message();
+        message.setSenderId(parent.getId());
+        message.setRecipientId(child.getId());
+        message.setMessageType(Message.MessageType.ENCOURAGEMENT);
+        message.setMessageText(request.messageText().trim());
+        message.setRead(false);
+
+        Message saved = messageRepository.save(message);
+        return ResponseEntity.status(201).body(toDto(saved));
+    }
+
     private Map<String, Object> toDto(Message message) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("messageId", message.getId());
@@ -100,4 +133,6 @@ public class ParentMessageController {
         }
         return parent;
     }
+
+    public record EncouragementRequest(UUID childId, String messageText) {}
 }

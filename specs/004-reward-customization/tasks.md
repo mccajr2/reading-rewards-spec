@@ -246,15 +246,15 @@
 
 ### Tests for User Story 8
 
-- [ ] T078 [P] [US8] Add backend integration test for encouragement message send/read workflow in backend/src/test/java/com/example/readingrewards/integration/message/EncouragementMessageIntegrationTest.java
-- [ ] T079 [P] [US8] Add frontend test for parent send-message form and child inbox rendering in frontend/src/components/rewards/__tests__/EncouragementMessaging.test.tsx
+- [X] T078 [P] [US8] Add backend integration test for encouragement message send/read workflow in backend/src/test/java/com/example/readingrewards/integration/message/EncouragementMessageIntegrationTest.java
+- [X] T079 [P] [US8] Add frontend test for parent send-message form and child inbox rendering in frontend/src/components/rewards/__tests__/EncouragementMessaging.test.tsx
 
 ### Implementation for User Story 8
 
-- [ ] T080 [US8] Implement parent encouragement send endpoint with in-app-only policy in backend/src/main/java/com/example/readingrewards/domain/controller/ParentMessageController.java
-- [ ] T081 [US8] Implement child message inbox and read-state endpoint in backend/src/main/java/com/example/readingrewards/domain/controller/ChildMessageController.java
-- [ ] T082 [US8] Build parent encouragement composer component in frontend/src/components/parent/EncouragementComposer.tsx
-- [ ] T083 [US8] Build child message center component with timestamped history in frontend/src/components/rewards/MessageCenter.tsx
+- [X] T080 [US8] Implement parent encouragement send endpoint with in-app-only policy in backend/src/main/java/com/example/readingrewards/domain/controller/ParentMessageController.java
+- [X] T081 [US8] Implement child message inbox and read-state endpoint in backend/src/main/java/com/example/readingrewards/domain/controller/ChildMessageController.java
+- [X] T082 [US8] Build parent encouragement composer component in frontend/src/components/parent/EncouragementComposer.tsx
+- [X] T083 [US8] Build child message center component with timestamped history in frontend/src/components/rewards/MessageCenter.tsx
 
 **Checkpoint**: Parent-to-child encouragement messaging is fully functional and persists in-app history.
 

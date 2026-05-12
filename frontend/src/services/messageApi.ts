@@ -45,3 +45,23 @@ export async function markParentPayoutReminderRead(messageId: string): Promise<R
     method: 'POST',
   });
 }
+
+export async function sendParentEncouragement(payload: { childId: string; messageText: string }): Promise<RewardMessage> {
+  return request<RewardMessage>('/parent/rewards/messages/encouragement', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function listChildInboxMessages(): Promise<{ messages: RewardMessage[]; unreadCount: number }> {
+  return request<{ messages: RewardMessage[]; unreadCount: number }>('/child/rewards/messages/inbox');
+}
+
+export async function markChildInboxMessageRead(messageId: string): Promise<RewardMessage> {
+  return request<RewardMessage>(`/child/rewards/messages/inbox/${messageId}/read`, {
+    method: 'POST',
+  });
+}
