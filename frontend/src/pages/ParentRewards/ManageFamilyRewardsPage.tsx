@@ -13,8 +13,14 @@ import {
 } from '../../services/rewardApi';
 import { CannedRewardCatalog } from '../../components/parent/CannedRewardCatalog';
 import { ParentPayoutsPanel, type ParentAccumulationRow } from '../../components/parent/ParentPayoutsPanel';
+import { PayoutReminderInbox } from '../../components/parent/PayoutReminderInbox';
 import { PerChildOverrides } from '../../components/parent/PerChildOverrides';
 import { RewardTemplateBuilder } from '../../components/parent/RewardTemplateBuilder';
+import {
+  listParentPayoutReminders,
+  markParentPayoutReminderRead,
+  type RewardMessage,
+} from '../../services/messageApi';
 
 export function ManageFamilyRewardsPage() {
   const [state, setState] = useState<ParentRewardsResponse>({ familyRewards: [], perChildRewards: [] });
@@ -22,6 +28,7 @@ export function ManageFamilyRewardsPage() {
   const [activeChildForPayouts, setActiveChildForPayouts] = useState<string | null>(null);
   const [payoutRows, setPayoutRows] = useState<ParentAccumulationRow[]>([]);
   const [payoutChildName, setPayoutChildName] = useState('');
+  const [reminders, setReminders] = useState<RewardMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   async function loadRewards() {
@@ -63,8 +70,27 @@ export function ManageFamilyRewardsPage() {
     }
   }
 
+  async function loadReminders() {
+    try {
+      const data = await listParentPayoutReminders();
+      setReminders(data.reminders ?? []);
+    } catch {
+      setReminders([]);
+    }
+  }
+
+  async function handleMarkReminderRead(messageId: string) {
+    try {
+      await markParentPayoutReminderRead(messageId);
+      await loadReminders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update reminder');
+    }
+  }
+
   useEffect(() => {
     void loadRewards();
+    void loadReminders();
   }, []);
 
   async function handleCreate(reward: Omit<RewardTemplate, 'rewardTemplateId' | 'isDeleted' | 'createdAt'>) {
@@ -137,6 +163,8 @@ export function ManageFamilyRewardsPage() {
           onConfirmPayout={handleConfirmPayout}
         />
       )}
+
+      <PayoutReminderInbox reminders={reminders} onMarkRead={handleMarkReminderRead} />
     </section>
   );
 }

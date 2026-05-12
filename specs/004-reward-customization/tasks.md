@@ -222,17 +222,17 @@
 
 ### Tests for User Story 7
 
-- [ ] T070 [P] [US7] Add backend integration test for payout reminder message flow and status transition in backend/src/test/java/com/example/readingrewards/integration/message/PayoutReminderFlowIntegrationTest.java
-- [ ] T071 [P] [US7] Add backend unit test for parent email opt-in default and opt-out behavior in backend/src/test/java/com/example/readingrewards/unit/message/PayoutReminderEmailPreferenceTest.java
-- [ ] T072 [P] [US7] Add frontend test for child notify-parent interaction and confirmation state in frontend/src/components/rewards/__tests__/PayoutReminderAction.test.tsx
+- [X] T070 [P] [US7] Add backend integration test for payout reminder message flow and status transition in backend/src/test/java/com/example/readingrewards/integration/message/PayoutReminderFlowIntegrationTest.java
+- [X] T071 [P] [US7] Add backend unit test for parent email opt-in default and opt-out behavior in backend/src/test/java/com/example/readingrewards/unit/message/PayoutReminderEmailPreferenceTest.java
+- [X] T072 [P] [US7] Add frontend test for child notify-parent interaction and confirmation state in frontend/src/components/rewards/__tests__/PayoutReminderAction.test.tsx
 
 ### Implementation for User Story 7
 
-- [ ] T073 [US7] Implement child payout reminder endpoint and message creation in backend/src/main/java/com/example/readingrewards/domain/controller/ChildMessageController.java
-- [ ] T074 [US7] Implement parent in-app notification retrieval for payout reminders in backend/src/main/java/com/example/readingrewards/domain/controller/ParentMessageController.java
-- [ ] T075 [US7] Implement optional parent email notification policy with default-enabled setting in backend/src/main/java/com/example/readingrewards/domain/service/message/PayoutReminderNotificationService.java
-- [ ] T076 [US7] Build child pending payout reminder action component in frontend/src/components/rewards/PayoutReminder.tsx
-- [ ] T077 [US7] Build parent reminder inbox panel in rewards management page in frontend/src/components/parent/PayoutReminderInbox.tsx
+- [X] T073 [US7] Implement child payout reminder endpoint and message creation in backend/src/main/java/com/example/readingrewards/domain/controller/ChildMessageController.java
+- [X] T074 [US7] Implement parent in-app notification retrieval for payout reminders in backend/src/main/java/com/example/readingrewards/domain/controller/ParentMessageController.java
+- [X] T075 [US7] Implement optional parent email notification policy with default-enabled setting in backend/src/main/java/com/example/readingrewards/domain/service/message/PayoutReminderNotificationService.java
+- [X] T076 [US7] Build child pending payout reminder action component in frontend/src/components/rewards/PayoutReminder.tsx
+- [X] T077 [US7] Build parent reminder inbox panel in rewards management page in frontend/src/components/parent/PayoutReminderInbox.tsx
 
 **Checkpoint**: Payout reminder loop is operational with in-app delivery and optional parent email support.
 

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth, RewardHistoryItemDto, RewardsPageResponseDto, RewardSummaryDto } from '../../shared/api';
 import { RewardBalance, type RewardBalanceRow, type RewardBalanceSummary } from '../../components/rewards/RewardBalance';
+import { PayoutReminder } from '../../components/rewards/PayoutReminder';
 import { getChildRewardBalance, getChildRewardHistory } from '../../services/rewardApi';
+import { sendChildPayoutReminder } from '../../services/messageApi';
 import { Button, Card, CardContent, Input, PageGuidance, Pagination } from '../../components/shared';
 import './RewardsPage.css';
 
@@ -19,6 +21,10 @@ export function RewardsPage() {
   const [loading, setLoading] = useState(false);
   const [rewardBalance, setRewardBalance] = useState<RewardBalanceSummary | null>(null);
   const [rewardHistory, setRewardHistory] = useState<RewardBalanceRow[]>([]);
+
+  const handleSendReminder = async (payload: { pendingAmount: number; note?: string; emailEnabled?: boolean }) => {
+    await sendChildPayoutReminder(payload);
+  };
 
   const loadSummary = async () => {
     const r = await fetchWithAuth('/rewards/summary', token);
@@ -133,7 +139,10 @@ export function RewardsPage() {
       </div>
 
       {isChild && rewardBalance && (
-        <RewardBalance summary={rewardBalance} history={rewardHistory} />
+        <>
+          <RewardBalance summary={rewardBalance} history={rewardHistory} />
+          <PayoutReminder pendingAmount={rewardBalance.availableBalance} onSend={handleSendReminder} />
+        </>
       )}
 
       <div className="rewards-actions">

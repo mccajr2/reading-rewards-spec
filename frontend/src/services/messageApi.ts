@@ -1,8 +1,14 @@
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
 
-export type MessageApiStubResponse = {
-  status: 'not_implemented';
-  feature: 'reward-customization';
+export type RewardMessage = {
+  messageId: string;
+  senderId: string;
+  recipientId: string;
+  messageType: 'PAYOUT_REMINDER' | 'ENCOURAGEMENT' | 'PAYOUT_CONFIRMATION';
+  messageText: string;
+  isRead: boolean;
+  createdAt: string;
+  readAt: string | null;
 };
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -16,10 +22,26 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return text ? (JSON.parse(text) as T) : ({} as T);
 }
 
-export async function getParentMessagesStub(): Promise<MessageApiStubResponse> {
-  return request<MessageApiStubResponse>('/parent/rewards/messages');
+export async function sendChildPayoutReminder(payload: {
+  pendingAmount: number;
+  note?: string;
+  emailEnabled?: boolean;
+}): Promise<{ messageId: string }> {
+  return request<{ messageId: string }>('/child/rewards/messages/payout-reminder', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
 }
 
-export async function getChildMessagesStub(): Promise<MessageApiStubResponse> {
-  return request<MessageApiStubResponse>('/child/rewards/messages');
+export async function listParentPayoutReminders(): Promise<{ reminders: RewardMessage[]; unreadCount: number }> {
+  return request<{ reminders: RewardMessage[]; unreadCount: number }>('/parent/rewards/messages/payout-reminders');
+}
+
+export async function markParentPayoutReminderRead(messageId: string): Promise<RewardMessage> {
+  return request<RewardMessage>(`/parent/rewards/messages/payout-reminders/${messageId}/read`, {
+    method: 'POST',
+  });
 }
