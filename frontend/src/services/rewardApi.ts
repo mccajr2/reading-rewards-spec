@@ -179,7 +179,7 @@ export async function archiveParentFamilyReward(rewardTemplateId: string): Promi
   });
 }
 
-export async function listChildAvailableRewards(): Promise<{ availableRewards: RewardTemplate[] }> {
+export async function listChildAvailableRewards(): Promise<ChildAvailableRewardsResponse> {
   return request<ChildAvailableRewardsResponse>('/child/rewards/available');
 }
 

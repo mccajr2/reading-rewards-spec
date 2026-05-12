@@ -1,9 +1,12 @@
 import { expect, test } from '@playwright/test';
-import axe from 'axe-core';
+import * as axe from 'axe-core';
+
 import { createKid, login, signupAndVerify, uniqueEmail, uniqueUsername } from './helpers';
 
+const axeSource = axe.source;
+
 async function runAxe(page: import('@playwright/test').Page) {
-  await page.addScriptTag({ content: axe.source });
+  await page.addScriptTag({ content: axeSource });
   return page.evaluate(async () => {
     // @ts-expect-error axe is injected at runtime in browser context.
     return axe.run(document, {
@@ -30,6 +33,7 @@ test.describe('Rewards accessibility checks', () => {
     await page.getByLabel('Username or Email').fill(childUsername);
     await page.getByLabel('Password').fill(childPassword);
     await page.getByRole('button', { name: /sign in/i }).click();
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
     await page.goto('/child/rewards');
     await expect(page.getByRole('heading', { name: /your rewards shop/i })).toBeVisible();
 
@@ -42,6 +46,7 @@ test.describe('Rewards accessibility checks', () => {
     await page.getByLabel('Username or Email').fill(parentEmail);
     await page.getByLabel('Password').fill(parentPassword);
     await page.getByRole('button', { name: /sign in/i }).click();
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
     await page.goto('/parent/rewards');
     await expect(page.getByRole('heading', { name: /manage rewards/i })).toBeVisible();
 

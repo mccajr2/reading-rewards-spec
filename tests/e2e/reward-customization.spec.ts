@@ -141,6 +141,7 @@ test.describe('Reward customization regression flow', () => {
     await page.getByLabel('Username or Email').fill(childUsername);
     await page.getByLabel('Password').fill(childPassword);
     await page.getByRole('button', { name: /sign in/i }).click();
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
     await page.goto('/child/rewards');
     await expect(page.getByRole('heading', { name: /your rewards shop/i })).toBeVisible();
   });
