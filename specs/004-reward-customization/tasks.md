@@ -17,13 +17,13 @@
 
 **Purpose**: Initialize feature scaffolding for backend, frontend, contracts, and test harnesses.
 
-- [ ] T001 Create Flyway migration shell for reward tables in backend/src/main/resources/db/migration/V20260511_01__reward_customization_tables.sql
-- [ ] T002 Create Flyway migration shell for BookRead reward columns in backend/src/main/resources/db/migration/V20260511_02__bookread_reward_links.sql
-- [ ] T003 [P] Create reward domain package structure with package-info docs in backend/src/main/java/com/example/readingrewards/domain/model/reward/package-info.java
-- [ ] T004 [P] Create reward API service stub for frontend integration in frontend/src/services/rewardApi.ts
-- [ ] T005 [P] Create messaging API service stub for frontend integration in frontend/src/services/messageApi.ts
-- [ ] T006 [P] Create feature E2E spec shell for reward customization journey in tests/e2e/reward-customization.spec.ts
-- [ ] T007 [P] Document task-to-contract mapping baseline in specs/004-reward-customization/contracts/README.md
+- [X] T001 Create Flyway migration shell for reward tables in backend/src/main/resources/db/migration/V20260511_01__reward_customization_tables.sql
+- [X] T002 Create Flyway migration shell for BookRead reward columns in backend/src/main/resources/db/migration/V20260511_02__bookread_reward_links.sql
+- [X] T003 [P] Create reward domain package structure with package-info docs in backend/src/main/java/com/example/readingrewards/domain/model/reward/package-info.java
+- [X] T004 [P] Create reward API service stub for frontend integration in frontend/src/services/rewardApi.ts
+- [X] T005 [P] Create messaging API service stub for frontend integration in frontend/src/services/messageApi.ts
+- [X] T006 [P] Create feature E2E spec shell for reward customization journey in tests/e2e/reward-customization.spec.ts
+- [X] T007 [P] Document task-to-contract mapping baseline in specs/004-reward-customization/contracts/README.md
 
 **Checkpoint**: Setup complete; codebase has feature scaffolding for DB, backend domain, frontend services, and tests.
 
@@ -35,19 +35,19 @@
 
 **CRITICAL**: No user story implementation starts before this phase is complete.
 
-- [ ] T008 Implement RewardTemplate entity and validation rules in backend/src/main/java/com/example/readingrewards/domain/model/reward/RewardTemplate.java
-- [ ] T009 [P] Implement RewardSelection entity with locked snapshot fields in backend/src/main/java/com/example/readingrewards/domain/model/reward/RewardSelection.java
-- [ ] T010 [P] Implement RewardAccumulation ledger entity in backend/src/main/java/com/example/readingrewards/domain/model/reward/RewardAccumulation.java
-- [ ] T011 [P] Implement ProgressTracking entity for chapter/page tracking in backend/src/main/java/com/example/readingrewards/domain/model/reward/ProgressTracking.java
-- [ ] T012 [P] Implement Message entity for payout reminders and encouragement in backend/src/main/java/com/example/readingrewards/domain/model/message/Message.java
-- [ ] T013 [P] Add reward repositories for template/selection/accumulation/tracking in backend/src/main/java/com/example/readingrewards/domain/repo/reward/RewardTemplateRepository.java
-- [ ] T014 [P] Add message repository and query methods in backend/src/main/java/com/example/readingrewards/domain/repo/message/MessageRepository.java
-- [ ] T015 Implement shared reward calculation engine and formatters in backend/src/main/java/com/example/readingrewards/domain/service/reward/RewardCalculationService.java
-- [ ] T016 Implement parent/child authorization guard helpers for reward endpoints in backend/src/main/java/com/example/readingrewards/security/RewardAccessPolicy.java
-- [ ] T017 Implement shared reward DTO set aligned to contracts in backend/src/main/java/com/example/readingrewards/domain/dto/reward/RewardDtos.java
-- [ ] T018 [P] Add frontend reward route guards for parent vs child page separation in frontend/src/components/AuthContext.tsx
-- [ ] T019 [P] Add reward route wiring and placeholders in frontend/src/App.tsx
-- [ ] T020 [P] Add foundational backend integration test base for reward APIs in backend/src/test/java/com/example/readingrewards/integration/reward/RewardApiIntegrationBaseTest.java
+- [X] T008 Implement RewardTemplate entity and validation rules in backend/src/main/java/com/example/readingrewards/domain/model/reward/RewardTemplate.java
+- [X] T009 [P] Implement RewardSelection entity with locked snapshot fields in backend/src/main/java/com/example/readingrewards/domain/model/reward/RewardSelection.java
+- [X] T010 [P] Implement RewardAccumulation ledger entity in backend/src/main/java/com/example/readingrewards/domain/model/reward/RewardAccumulation.java
+- [X] T011 [P] Implement ProgressTracking entity for chapter/page tracking in backend/src/main/java/com/example/readingrewards/domain/model/reward/ProgressTracking.java
+- [X] T012 [P] Implement Message entity for payout reminders and encouragement in backend/src/main/java/com/example/readingrewards/domain/model/message/Message.java
+- [X] T013 [P] Add reward repositories for template/selection/accumulation/tracking in backend/src/main/java/com/example/readingrewards/domain/repo/reward/RewardTemplateRepository.java
+- [X] T014 [P] Add message repository and query methods in backend/src/main/java/com/example/readingrewards/domain/repo/message/MessageRepository.java
+- [X] T015 Implement shared reward calculation engine and formatters in backend/src/main/java/com/example/readingrewards/domain/service/reward/RewardCalculationService.java
+- [X] T016 Implement parent/child authorization guard helpers for reward endpoints in backend/src/main/java/com/example/readingrewards/security/RewardAccessPolicy.java
+- [X] T017 Implement shared reward DTO set aligned to contracts in backend/src/main/java/com/example/readingrewards/domain/dto/reward/RewardDtos.java
+- [X] T018 [P] Add frontend reward route guards for parent vs child page separation in frontend/src/components/AuthContext.tsx
+- [X] T019 [P] Add reward route wiring and placeholders in frontend/src/App.tsx
+- [X] T020 [P] Add foundational backend integration test base for reward APIs in backend/src/test/java/com/example/readingrewards/integration/reward/RewardApiIntegrationBaseTest.java
 
 **Checkpoint**: Foundation complete; all stories can now build on stable data model, auth policy, and shared APIs.
 
@@ -61,17 +61,17 @@
 
 ### Tests for User Story 1
 
-- [ ] T021 [P] [US1] Add parent rewards contract test for GET/POST/PUT/DELETE endpoints in backend/src/test/java/com/example/readingrewards/contract/ParentRewardApiContractTest.java
-- [ ] T022 [P] [US1] Add frontend component test for global reward settings form in frontend/src/components/parent/__tests__/RewardConfiguration.test.tsx
+- [X] T021 [P] [US1] Add parent rewards contract test for GET/POST/PUT/DELETE endpoints in backend/src/test/java/com/example/readingrewards/contract/ParentRewardApiContractTest.java
+- [X] T022 [P] [US1] Add frontend component test for global reward settings form in frontend/src/components/parent/__tests__/RewardConfiguration.test.tsx
 
 ### Implementation for User Story 1
 
-- [ ] T023 [US1] Implement parent reward CRUD service methods for family scope in backend/src/main/java/com/example/readingrewards/domain/service/reward/ParentRewardConfigService.java
-- [ ] T024 [US1] Implement parent rewards controller endpoints for family rewards in backend/src/main/java/com/example/readingrewards/domain/controller/ParentRewardController.java
-- [ ] T025 [US1] Implement soft-delete archive behavior and active filter logic in backend/src/main/java/com/example/readingrewards/domain/service/reward/RewardTemplateArchiveService.java
-- [ ] T026 [US1] Build parent global reward configuration page UI in frontend/src/pages/ParentRewards/ManageFamilyRewardsPage.tsx
-- [ ] T027 [US1] Build reusable reward template editor component in frontend/src/components/parent/RewardTemplateBuilder.tsx
-- [ ] T028 [US1] Wire global reward CRUD calls and optimistic updates in frontend/src/services/rewardApi.ts
+- [X] T023 [US1] Implement parent reward CRUD service methods for family scope in backend/src/main/java/com/example/readingrewards/domain/service/reward/ParentRewardConfigService.java
+- [X] T024 [US1] Implement parent rewards controller endpoints for family rewards in backend/src/main/java/com/example/readingrewards/domain/controller/ParentRewardController.java
+- [X] T025 [US1] Implement soft-delete archive behavior and active filter logic in backend/src/main/java/com/example/readingrewards/domain/service/reward/RewardTemplateArchiveService.java
+- [X] T026 [US1] Build parent global reward configuration page UI in frontend/src/pages/ParentRewards/ManageFamilyRewardsPage.tsx
+- [X] T027 [US1] Build reusable reward template editor component in frontend/src/components/parent/RewardTemplateBuilder.tsx
+- [X] T028 [US1] Wire global reward CRUD calls and optimistic updates in frontend/src/services/rewardApi.ts
 
 **Checkpoint**: Parent can manage global reward defaults end-to-end with archived rewards excluded from new selections.
 
@@ -85,16 +85,16 @@
 
 ### Tests for User Story 2
 
-- [ ] T029 [P] [US2] Add contract test for POST /api/parent/rewards/child/{childId} and list grouping in backend/src/test/java/com/example/readingrewards/contract/ParentPerChildRewardContractTest.java
-- [ ] T030 [P] [US2] Add frontend test for per-child reward grouping and hierarchy labels in frontend/src/components/parent/__tests__/PerChildOverrides.test.tsx
+- [X] T029 [P] [US2] Add contract test for POST /api/parent/rewards/child/{childId} and list grouping in backend/src/test/java/com/example/readingrewards/contract/ParentPerChildRewardContractTest.java
+- [X] T030 [P] [US2] Add frontend test for per-child reward grouping and hierarchy labels in frontend/src/components/parent/__tests__/PerChildOverrides.test.tsx
 
 ### Implementation for User Story 2
 
-- [ ] T031 [US2] Implement per-child override service with family ownership checks in backend/src/main/java/com/example/readingrewards/domain/service/reward/PerChildRewardService.java
-- [ ] T032 [US2] Extend parent controller to support per-child override creation and retrieval in backend/src/main/java/com/example/readingrewards/domain/controller/ParentRewardController.java
-- [ ] T033 [US2] Build per-child override management UI section in frontend/src/components/parent/PerChildOverrides.tsx
-- [ ] T034 [US2] Add per-child reward API methods and typed responses in frontend/src/services/rewardApi.ts
-- [ ] T035 [US2] Render parent management hierarchy (family vs child groups) in frontend/src/pages/ParentRewards/ManageFamilyRewardsPage.tsx
+- [X] T031 [US2] Implement per-child override service with family ownership checks in backend/src/main/java/com/example/readingrewards/domain/service/reward/PerChildRewardService.java
+- [X] T032 [US2] Extend parent controller to support per-child override creation and retrieval in backend/src/main/java/com/example/readingrewards/domain/controller/ParentRewardController.java
+- [X] T033 [US2] Build per-child override management UI section in frontend/src/components/parent/PerChildOverrides.tsx
+- [X] T034 [US2] Add per-child reward API methods and typed responses in frontend/src/services/rewardApi.ts
+- [X] T035 [US2] Render parent management hierarchy (family vs child groups) in frontend/src/pages/ParentRewards/ManageFamilyRewardsPage.tsx
 
 **Checkpoint**: Parent can manage child-specific rewards without affecting siblings or family defaults.
 
@@ -108,15 +108,15 @@
 
 ### Tests for User Story 3
 
-- [ ] T036 [P] [US3] Add backend test validating all required canned templates exist in backend/src/test/java/com/example/readingrewards/unit/reward/CannedRewardTemplateTest.java
-- [ ] T037 [P] [US3] Add frontend test for canned template catalog rendering in frontend/src/components/parent/__tests__/CannedRewardCatalog.test.tsx
+- [X] T036 [P] [US3] Add backend test validating all required canned templates exist in backend/src/test/java/com/example/readingrewards/unit/reward/CannedRewardTemplateTest.java
+- [X] T037 [P] [US3] Add frontend test for canned template catalog rendering in frontend/src/components/parent/__tests__/CannedRewardCatalog.test.tsx
 
 ### Implementation for User Story 3
 
-- [ ] T038 [US3] Implement canned reward seed/bootstrap provider in backend/src/main/java/com/example/readingrewards/domain/service/reward/CannedRewardTemplateProvider.java
-- [ ] T039 [US3] Expose canned template retrieval endpoint for parent UI in backend/src/main/java/com/example/readingrewards/domain/controller/ParentRewardController.java
-- [ ] T040 [US3] Build canned reward catalog component with one-click add actions in frontend/src/components/parent/CannedRewardCatalog.tsx
-- [ ] T041 [US3] Integrate canned template selection into parent rewards workflow in frontend/src/pages/ParentRewards/ManageFamilyRewardsPage.tsx
+- [X] T038 [US3] Implement canned reward seed/bootstrap provider in backend/src/main/java/com/example/readingrewards/domain/service/reward/CannedRewardTemplateProvider.java
+- [X] T039 [US3] Expose canned template retrieval endpoint for parent UI in backend/src/main/java/com/example/readingrewards/domain/controller/ParentRewardController.java
+- [X] T040 [US3] Build canned reward catalog component with one-click add actions in frontend/src/components/parent/CannedRewardCatalog.tsx
+- [X] T041 [US3] Integrate canned template selection into parent rewards workflow in frontend/src/pages/ParentRewards/ManageFamilyRewardsPage.tsx
 
 **Checkpoint**: Canned templates are visible, selectable, and saved as active family rewards.
 

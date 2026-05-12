@@ -28,6 +28,24 @@ function ParentOnlyRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function ChildOnlyRoute({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+
+  if (user?.role !== 'CHILD') {
+    return <Navigate to="/parent" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function ParentRewardsPlaceholder() {
+  return <section aria-label="Parent rewards placeholder">Manage family rewards coming soon.</section>;
+}
+
+function ChildRewardsPlaceholder() {
+  return <section aria-label="Child rewards placeholder">Personal rewards workspace coming soon.</section>;
+}
+
 function AuthenticatedLayout() {
   return (
     <div className="app-layout grid min-h-screen grid-cols-1 bg-background-alt text-text-primary md:grid-cols-3">
@@ -41,6 +59,22 @@ function AuthenticatedLayout() {
           <Route path="/reading-list" element={<ReadingListPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/rewards" element={<RewardsPage />} />
+          <Route
+            path="/parent/rewards"
+            element={(
+              <ParentOnlyRoute>
+                <ParentRewardsPlaceholder />
+              </ParentOnlyRoute>
+            )}
+          />
+          <Route
+            path="/child/rewards"
+            element={(
+              <ChildOnlyRoute>
+                <ChildRewardsPlaceholder />
+              </ChildOnlyRoute>
+            )}
+          />
           <Route
             path="/parent"
             element={(
