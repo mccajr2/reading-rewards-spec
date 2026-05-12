@@ -164,4 +164,27 @@ RewardTemplate represents a parent-configured option. Once a child selects it fo
 
 ---
 
+## Final Edge-Case Implementation Notes (Phase 13)
+
+1. Parent-only vs child-only rewards surfaces
+   - Route gating now enforces parent management at `/parent/rewards` and child experience at `/child/rewards`.
+   - Child APIs under `/api/child/rewards/**` deny parent principals.
+
+2. Reminder and encouragement message consistency
+   - Payout reminders and encouragement messages both support in-app read-state transitions.
+   - Message history is recipient-scoped (`findByIdAndRecipientId`) to prevent cross-user reads.
+
+3. Mixed reward type rollups
+   - Child balance API now returns typed by-reward summaries for MONEY, TIME, and CUSTOM_TEXT.
+   - Formatting labels are normalized to `USD`, `minutes`, and `points` for consistent UI rendering.
+
+4. Resilience for partial backend feature availability
+   - Frontend rewards screens fail open: if message or reward-summary endpoints are temporarily unavailable, the page remains usable and hides only affected widgets.
+
+5. E2E and accessibility release controls
+   - Added regression flow spec to validate parent config -> child select -> earn -> remind -> payout.
+   - Added axe-based accessibility checks for parent and child rewards pages with critical/serious gate.
+
+---
+
 **Next Phase**: Phase 1 - Design & Contracts (data-model.md, contract definitions, quickstart.md)

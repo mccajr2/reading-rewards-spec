@@ -286,12 +286,12 @@
 
 **Purpose**: Final hardening, documentation, accessibility/performance validation, and release readiness.
 
-- [ ] T090 [P] Add end-to-end regression flow (parent config -> child select -> earn -> remind -> payout) in tests/e2e/reward-customization.spec.ts
-- [ ] T091 [P] Add accessibility assertions for rewards pages in tests/e2e/reward-accessibility.spec.ts
-- [ ] T092 [P] Add frontend Lighthouse/perf baseline script for rewards page load target in scripts/phase8-rewards-performance-audit.mjs
-- [ ] T093 Update quickstart validation steps and screenshots for new flows in specs/004-reward-customization/quickstart.md
-- [ ] T094 Update feature research with final edge-case implementation notes in specs/004-reward-customization/research.md
-- [ ] T095 Add release notes and rollout checklist for reward customization in docs/reward-customization-release.md
+- [X] T090 [P] Add end-to-end regression flow (parent config -> child select -> earn -> remind -> payout) in tests/e2e/reward-customization.spec.ts
+- [X] T091 [P] Add accessibility assertions for rewards pages in tests/e2e/reward-accessibility.spec.ts
+- [X] T092 [P] Add frontend Lighthouse/perf baseline script for rewards page load target in scripts/phase8-rewards-performance-audit.mjs
+- [X] T093 Update quickstart validation steps and screenshots for new flows in specs/004-reward-customization/quickstart.md
+- [X] T094 Update feature research with final edge-case implementation notes in specs/004-reward-customization/research.md
+- [X] T095 Add release notes and rollout checklist for reward customization in docs/reward-customization-release.md
 
 **Checkpoint**: Feature is validated for correctness, accessibility, performance, and rollout readiness.
 

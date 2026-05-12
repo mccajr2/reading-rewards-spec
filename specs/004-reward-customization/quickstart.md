@@ -410,4 +410,31 @@ Send a motivational message to your child to encourage reading.
 
 ---
 
+## Phase 13 Validation Runbook
+
+Run these checks before release signoff:
+
+1. Regression E2E flow
+   - `npm run test:e2e -- tests/e2e/reward-customization.spec.ts`
+2. Accessibility E2E flow
+   - `npm run test:e2e -- tests/e2e/reward-accessibility.spec.ts`
+3. Frontend performance baseline
+   - `node scripts/phase8-rewards-performance-audit.mjs`
+
+Expected results:
+
+- Reward customization E2E passes parent->child->payout loop.
+- Accessibility scan reports zero `critical` and `serious` WCAG violations on child and parent rewards pages.
+- Lighthouse report generated at `test-results/perf/rewards-lighthouse.json` and summary at `test-results/perf/rewards-lighthouse-summary.json`.
+
+### Screenshot Checklist (Release Evidence)
+
+- Parent Manage Rewards page showing family rewards and encouragement composer.
+- Child rewards page showing reward type cards (cash/time/custom).
+- Child payout reminder confirmation state.
+- Parent payout reminders inbox and read-state transition.
+- Child message center displaying encouragement history.
+
+---
+
 **Next Steps**: Phase 2 will break these workflows into implementation tasks (backend services, API controllers, frontend components, tests).
