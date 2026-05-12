@@ -9,6 +9,7 @@ import { SearchPage } from '../features/books/SearchPage';
 import { ReadingListPage } from '../features/books/ReadingListPage';
 import { HistoryPage } from '../features/books/HistoryPage';
 import { RewardsPage } from '../features/rewards/RewardsPage';
+import { ManageFamilyRewardsPage } from '../pages/ParentRewards/ManageFamilyRewardsPage';
 import { ParentDashboard } from '../features/parent/ParentDashboard';
 import { ParentSummary } from '../features/parent/ParentSummary';
 import '../styles/global.css';
@@ -38,14 +39,6 @@ function ChildOnlyRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function ParentRewardsPlaceholder() {
-  return <section aria-label="Parent rewards placeholder">Manage family rewards coming soon.</section>;
-}
-
-function ChildRewardsPlaceholder() {
-  return <section aria-label="Child rewards placeholder">Personal rewards workspace coming soon.</section>;
-}
-
 function AuthenticatedLayout() {
   return (
     <div className="app-layout grid min-h-screen grid-cols-1 bg-background-alt text-text-primary md:grid-cols-3">
@@ -58,12 +51,12 @@ function AuthenticatedLayout() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/reading-list" element={<ReadingListPage />} />
           <Route path="/history" element={<HistoryPage />} />
-          <Route path="/rewards" element={<RewardsPage />} />
+          <Route path="/rewards" element={<Navigate to="/child/rewards" replace />} />
           <Route
             path="/parent/rewards"
             element={(
               <ParentOnlyRoute>
-                <ParentRewardsPlaceholder />
+                <ManageFamilyRewardsPage />
               </ParentOnlyRoute>
             )}
           />
@@ -71,7 +64,7 @@ function AuthenticatedLayout() {
             path="/child/rewards"
             element={(
               <ChildOnlyRoute>
-                <ChildRewardsPlaceholder />
+                <RewardsPage />
               </ChildOnlyRoute>
             )}
           />

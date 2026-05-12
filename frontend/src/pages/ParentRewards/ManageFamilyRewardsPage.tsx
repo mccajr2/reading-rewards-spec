@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
+  confirmParentPayout,
+  getParentChildAccumulation,
   listCannedRewardTemplates,
   createParentPerChildReward,
   createParentFamilyReward,
@@ -10,12 +12,16 @@ import {
   type RewardTemplateDraft,
 } from '../../services/rewardApi';
 import { CannedRewardCatalog } from '../../components/parent/CannedRewardCatalog';
+import { ParentPayoutsPanel, type ParentAccumulationRow } from '../../components/parent/ParentPayoutsPanel';
 import { PerChildOverrides } from '../../components/parent/PerChildOverrides';
 import { RewardTemplateBuilder } from '../../components/parent/RewardTemplateBuilder';
 
 export function ManageFamilyRewardsPage() {
   const [state, setState] = useState<ParentRewardsResponse>({ familyRewards: [], perChildRewards: [] });
   const [cannedTemplates, setCannedTemplates] = useState<CannedRewardTemplate[]>([]);
+  const [activeChildForPayouts, setActiveChildForPayouts] = useState<string | null>(null);
+  const [payoutRows, setPayoutRows] = useState<ParentAccumulationRow[]>([]);
+  const [payoutChildName, setPayoutChildName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   async function loadRewards() {
@@ -27,6 +33,33 @@ export function ManageFamilyRewardsPage() {
       setCannedTemplates(templates);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load rewards');
+    }
+  }
+
+  async function loadChildPayouts(childId: string) {
+    try {
+      const data = await getParentChildAccumulation(childId);
+      setActiveChildForPayouts(childId);
+      setPayoutChildName(data.childName);
+      const rows = (data.accumulations ?? []).map((row) => ({
+        accumulationId: row.accumulationId ?? row.id ?? `${row.createdAt}-${row.amountEarned}`,
+        amountEarned: Number(row.amountEarned ?? 0),
+        status: row.status,
+        calculationNote: row.calculationNote,
+      }));
+      setPayoutRows(rows);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load child payouts');
+    }
+  }
+
+  async function handleConfirmPayout(accumulationIds: string[]) {
+    if (!activeChildForPayouts) return;
+    try {
+      await confirmParentPayout(activeChildForPayouts, accumulationIds);
+      await loadChildPayouts(activeChildForPayouts);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to confirm payout');
     }
   }
 
@@ -83,6 +116,27 @@ export function ManageFamilyRewardsPage() {
       </ul>
 
       <PerChildOverrides groups={state.perChildRewards} onCreate={handleCreatePerChild} />
+
+      {state.perChildRewards.length > 0 && (
+        <section>
+          <h2>Payout Tracking</h2>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {state.perChildRewards.map((group) => (
+              <button key={group.childId} type="button" onClick={() => void loadChildPayouts(group.childId)}>
+                View {group.childName} Payouts
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {activeChildForPayouts && (
+        <ParentPayoutsPanel
+          childName={payoutChildName}
+          rows={payoutRows}
+          onConfirmPayout={handleConfirmPayout}
+        />
+      )}
     </section>
   );
 }

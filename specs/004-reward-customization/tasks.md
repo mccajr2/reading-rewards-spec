@@ -130,16 +130,16 @@
 
 ### Tests for User Story 4
 
-- [ ] T042 [P] [US4] Add contract test for child reward availability and selection endpoints in backend/src/test/java/com/example/readingrewards/contract/ChildRewardSelectionContractTest.java
-- [ ] T043 [P] [US4] Add frontend component test for reward selection panel in frontend/src/components/rewards/__tests__/RewardSelector.test.tsx
+- [X] T042 [P] [US4] Add contract test for child reward availability and selection endpoints in backend/src/test/java/com/example/readingrewards/contract/ChildRewardSelectionContractTest.java
+- [X] T043 [P] [US4] Add frontend component test for reward selection panel in frontend/src/components/rewards/__tests__/RewardSelector.test.tsx
 
 ### Implementation for User Story 4
 
-- [ ] T044 [US4] Implement child available rewards query (family + per-child + default fallback) in backend/src/main/java/com/example/readingrewards/domain/service/reward/ChildRewardAvailabilityService.java
-- [ ] T045 [US4] Implement select/change reward endpoints with locked snapshot logic in backend/src/main/java/com/example/readingrewards/domain/controller/ChildRewardSelectionController.java
-- [ ] T046 [US4] Enforce archived reward exclusion for new selections while preserving active in-progress selections in backend/src/main/java/com/example/readingrewards/domain/service/reward/RewardSelectionPolicyService.java
-- [ ] T047 [US4] Build child reward selector component with descriptive cards in frontend/src/components/rewards/RewardSelector.tsx
-- [ ] T048 [US4] Integrate reward selection prompt into child add-book flow in frontend/src/components/ReadingList.tsx
+- [X] T044 [US4] Implement child available rewards query (family + per-child + default fallback) in backend/src/main/java/com/example/readingrewards/domain/service/reward/ChildRewardAvailabilityService.java
+- [X] T045 [US4] Implement select/change reward endpoints with locked snapshot logic in backend/src/main/java/com/example/readingrewards/domain/controller/ChildRewardSelectionController.java
+- [X] T046 [US4] Enforce archived reward exclusion for new selections while preserving active in-progress selections in backend/src/main/java/com/example/readingrewards/domain/service/reward/RewardSelectionPolicyService.java
+- [X] T047 [US4] Build child reward selector component with descriptive cards in frontend/src/components/rewards/RewardSelector.tsx
+- [X] T048 [US4] Integrate reward selection prompt into child add-book flow in frontend/src/components/ReadingList.tsx
 
 **Checkpoint**: Child can choose and update reward targets safely with predictable locked-rate calculations.
 
@@ -153,17 +153,17 @@
 
 ### Tests for User Story 5
 
-- [ ] T049 [P] [US5] Add backend integration test for accumulation summary and payout confirmation in backend/src/test/java/com/example/readingrewards/integration/reward/RewardAccumulationIntegrationTest.java
-- [ ] T050 [P] [US5] Add frontend test for child balance widgets and payout state transitions in frontend/src/components/rewards/__tests__/RewardBalance.test.tsx
+- [X] T049 [P] [US5] Add backend integration test for accumulation summary and payout confirmation in backend/src/test/java/com/example/readingrewards/integration/reward/RewardAccumulationIntegrationTest.java
+- [X] T050 [P] [US5] Add frontend test for child balance widgets and payout state transitions in frontend/src/components/rewards/__tests__/RewardBalance.test.tsx
 
 ### Implementation for User Story 5
 
-- [ ] T051 [US5] Implement immutable accumulation ledger writes on book completion in backend/src/main/java/com/example/readingrewards/domain/service/reward/RewardAccumulationService.java
-- [ ] T052 [US5] Implement parent child-accumulation and payout-confirm endpoints in backend/src/main/java/com/example/readingrewards/domain/controller/ParentPayoutController.java
-- [ ] T053 [US5] Implement child balance and history endpoints in backend/src/main/java/com/example/readingrewards/domain/controller/ChildRewardBalanceController.java
-- [ ] T054 [US5] Build child rewards balance/history UI with by-type formatting in frontend/src/components/rewards/RewardBalance.tsx
-- [ ] T055 [US5] Build parent pending payouts and confirm action panel in frontend/src/components/parent/ParentPayoutsPanel.tsx
-- [ ] T056 [US5] Integrate balance/history/confirm APIs in frontend/src/services/rewardApi.ts
+- [X] T051 [US5] Implement immutable accumulation ledger writes on book completion in backend/src/main/java/com/example/readingrewards/domain/service/reward/RewardAccumulationService.java
+- [X] T052 [US5] Implement parent child-accumulation and payout-confirm endpoints in backend/src/main/java/com/example/readingrewards/domain/controller/ParentPayoutController.java
+- [X] T053 [US5] Implement child balance and history endpoints in backend/src/main/java/com/example/readingrewards/domain/controller/ChildRewardBalanceController.java
+- [X] T054 [US5] Build child rewards balance/history UI with by-type formatting in frontend/src/components/rewards/RewardBalance.tsx
+- [X] T055 [US5] Build parent pending payouts and confirm action panel in frontend/src/components/parent/ParentPayoutsPanel.tsx
+- [X] T056 [US5] Integrate balance/history/confirm APIs in frontend/src/services/rewardApi.ts
 
 **Checkpoint**: Reward earnings and payouts are transparent and auditable for both parent and child.
 
@@ -177,14 +177,14 @@
 
 ### Tests for User Story 9
 
-- [ ] T057 [P] [US9] Add frontend routing test for role-specific rewards navigation labels in frontend/src/components/__tests__/RewardsNavigationRoleGate.test.tsx
-- [ ] T058 [P] [US9] Add backend authorization test preventing parent access to child reward endpoints in backend/src/test/java/com/example/readingrewards/security/RewardRoleAuthorizationTest.java
+- [X] T057 [P] [US9] Add frontend routing test for role-specific rewards navigation labels in frontend/src/components/__tests__/RewardsNavigationRoleGate.test.tsx
+- [X] T058 [P] [US9] Add backend authorization test preventing parent access to child reward endpoints in backend/src/test/java/com/example/readingrewards/security/RewardRoleAuthorizationTest.java
 
 ### Implementation for User Story 9
 
-- [ ] T059 [US9] Implement role-aware rewards nav labels and route destinations in frontend/src/App.tsx
-- [ ] T060 [US9] Build parent manage-rewards landing page shell without personal balance widgets in frontend/src/pages/ParentRewards/ManageFamilyRewardsPage.tsx
-- [ ] T061 [US9] Enforce child-only access policy on /api/child/rewards endpoints in backend/src/main/java/com/example/readingrewards/security/RewardAccessPolicy.java
+- [X] T059 [US9] Implement role-aware rewards nav labels and route destinations in frontend/src/App.tsx
+- [X] T060 [US9] Build parent manage-rewards landing page shell without personal balance widgets in frontend/src/pages/ParentRewards/ManageFamilyRewardsPage.tsx
+- [X] T061 [US9] Enforce child-only access policy on /api/child/rewards endpoints in backend/src/main/java/com/example/readingrewards/security/RewardAccessPolicy.java
 
 **Checkpoint**: Role separation for rewards UI and API is enforced end-to-end.
 
@@ -198,17 +198,17 @@
 
 ### Tests for User Story 6
 
-- [ ] T062 [P] [US6] Add backend test for mandatory chapter tracking validation in backend/src/test/java/com/example/readingrewards/unit/reward/ProgressTrackingValidationTest.java
-- [ ] T063 [P] [US6] Add backend integration test for OpenLibrary fallback and manual page entry in backend/src/test/java/com/example/readingrewards/integration/reward/OpenLibraryProgressIntegrationTest.java
-- [ ] T064 [P] [US6] Add frontend test for chapter/page tracking controls and completion gating in frontend/src/components/rewards/__tests__/ProgressTracker.test.tsx
+- [X] T062 [P] [US6] Add backend test for mandatory chapter tracking validation in backend/src/test/java/com/example/readingrewards/unit/reward/ProgressTrackingValidationTest.java
+- [X] T063 [P] [US6] Add backend integration test for OpenLibrary fallback and manual page entry in backend/src/test/java/com/example/readingrewards/integration/reward/OpenLibraryProgressIntegrationTest.java
+- [X] T064 [P] [US6] Add frontend test for chapter/page tracking controls and completion gating in frontend/src/components/rewards/__tests__/ProgressTracker.test.tsx
 
 ### Implementation for User Story 6
 
-- [ ] T065 [US6] Implement chapter and page progress update endpoints in backend/src/main/java/com/example/readingrewards/domain/controller/ChildProgressTrackingController.java
-- [ ] T066 [US6] Implement progress validation policy for per-chapter vs per-book rewards in backend/src/main/java/com/example/readingrewards/domain/service/reward/ProgressTrackingPolicyService.java
-- [ ] T067 [US6] Implement OpenLibrary page count fetch + manual override fallback service in backend/src/main/java/com/example/readingrewards/external/OpenLibraryClient.java
-- [ ] T068 [US6] Build child progress tracking UI (chapters/pages/none) in frontend/src/components/rewards/ProgressTracker.tsx
-- [ ] T069 [US6] Integrate progress tracking API into reading detail flow in frontend/src/components/ReadingList.tsx
+- [X] T065 [US6] Implement chapter and page progress update endpoints in backend/src/main/java/com/example/readingrewards/domain/controller/ChildProgressTrackingController.java
+- [X] T066 [US6] Implement progress validation policy for per-chapter vs per-book rewards in backend/src/main/java/com/example/readingrewards/domain/service/reward/ProgressTrackingPolicyService.java
+- [X] T067 [US6] Implement OpenLibrary page count fetch + manual override fallback service in backend/src/main/java/com/example/readingrewards/external/OpenLibraryClient.java
+- [X] T068 [US6] Build child progress tracking UI (chapters/pages/none) in frontend/src/components/rewards/ProgressTracker.tsx
+- [X] T069 [US6] Integrate progress tracking API into reading detail flow in frontend/src/components/ReadingList.tsx
 
 **Checkpoint**: Progress tracking is flexible while enforcing per-chapter completion correctness.
 

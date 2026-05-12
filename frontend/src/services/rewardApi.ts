@@ -39,6 +39,83 @@ export type CannedRewardTemplate = {
   description: string;
 };
 
+export type AvailableRewardTemplate = {
+  rewardTemplateId: string;
+  rewardType: RewardType;
+  amount: number;
+  unit: RewardUnit;
+  frequency: RewardFrequency;
+  description: string;
+  cannedTemplateId: string | null;
+  scope: 'FAMILY' | 'PER_CHILD';
+};
+
+export type ChildAvailableRewardsResponse = {
+  childId: string;
+  availableRewards: AvailableRewardTemplate[];
+  defaultRewardId: string | null;
+};
+
+export type RewardAccumulationStatus = 'EARNED' | 'PENDING_PAYOUT' | 'PAID';
+export type TrackingType = 'CHAPTERS' | 'PAGES' | 'NONE';
+
+export type RewardAccumulation = {
+  id?: string;
+  accumulationId?: string;
+  amountEarned: number;
+  unitCount?: number;
+  calculationNote?: string;
+  status: RewardAccumulationStatus;
+  payoutDate?: string | null;
+  createdAt: string;
+};
+
+export type ChildRewardBalanceResponse = {
+  childId: string;
+  balance: {
+    totalEarned: number;
+    totalPaid: number;
+    availableBalance: number;
+  };
+  byRewardType: Array<Record<string, unknown>>;
+};
+
+export type ChildRewardHistoryResponse = {
+  childId: string;
+  accumulations: RewardAccumulation[];
+};
+
+export type ParentChildAccumulationResponse = {
+  childId: string;
+  childName: string;
+  summary: {
+    totalEarned: number;
+    totalPaid: number;
+    availableBalance: number;
+  };
+  accumulations: RewardAccumulation[];
+};
+
+export type ChildProgressTracking = {
+  bookReadId: string;
+  trackingType: TrackingType;
+  totalChapters: number | null;
+  currentChapter: number | null;
+  totalPages: number | null;
+  currentPage: number | null;
+  suggestedPageCount: number | null;
+  rewardUnit: RewardUnit;
+  completionAllowed: boolean;
+};
+
+export type ChildProgressTrackingDraft = {
+  trackingType: TrackingType;
+  totalChapters?: number | null;
+  currentChapter?: number | null;
+  totalPages?: number | null;
+  currentPage?: number | null;
+};
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, init);
   if (!response.ok) {
@@ -95,5 +172,69 @@ export async function archiveParentFamilyReward(rewardTemplateId: string): Promi
 }
 
 export async function listChildAvailableRewards(): Promise<{ availableRewards: RewardTemplate[] }> {
-  return request<{ availableRewards: RewardTemplate[] }>('/child/rewards/available');
+  return request<ChildAvailableRewardsResponse>('/child/rewards/available');
+}
+
+export async function selectChildReward(bookReadId: string, rewardTemplateId: string): Promise<{ selectionId: string }> {
+  return request<{ selectionId: string }>(`/child/rewards/select/${bookReadId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ rewardTemplateId }),
+  });
+}
+
+export async function changeChildReward(bookReadId: string, rewardTemplateId: string): Promise<{ selectionId: string }> {
+  return request<{ selectionId: string }>(`/child/rewards/select/${bookReadId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ rewardTemplateId }),
+  });
+}
+
+export async function getChildRewardBalance(): Promise<ChildRewardBalanceResponse> {
+  return request<ChildRewardBalanceResponse>('/child/rewards/balance');
+}
+
+export async function getChildRewardHistory(status?: RewardAccumulationStatus): Promise<ChildRewardHistoryResponse> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  return request<ChildRewardHistoryResponse>(`/child/rewards/history${query}`);
+}
+
+export async function getParentChildAccumulation(childId: string, status?: RewardAccumulationStatus): Promise<ParentChildAccumulationResponse> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  return request<ParentChildAccumulationResponse>(`/parent/rewards/child/${childId}/accumulation${query}`);
+}
+
+export async function confirmParentPayout(childId: string, accumulationIds: string[], payoutMethod = ''): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>(`/parent/rewards/child/${childId}/payout-confirm`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ accumulationIds, payoutMethod }),
+  });
+}
+
+export async function getChildProgressTracking(bookReadId: string): Promise<ChildProgressTracking> {
+  return request<ChildProgressTracking>(`/child/rewards/progress/${bookReadId}`);
+}
+
+export async function updateChildProgressTracking(bookReadId: string, payload: ChildProgressTrackingDraft): Promise<ChildProgressTracking> {
+  return request<ChildProgressTracking>(`/child/rewards/progress/${bookReadId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function validateChildCompletion(bookReadId: string): Promise<{ allowed: boolean; message?: string }> {
+  return request<{ allowed: boolean; message?: string }>(`/child/rewards/progress/${bookReadId}/validate-complete`, {
+    method: 'POST',
+  });
 }

@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth } from '../../shared/api';
+import { RewardSelector } from '../../components/rewards/RewardSelector';
+import {
+  listChildAvailableRewards,
+  selectChildReward,
+  type AvailableRewardTemplate,
+} from '../../services/rewardApi';
 import { Scanner } from './Scanner';
 import { Button, Card, CardContent, FormField, Input, Modal, PageGuidance } from '../../components/shared';
 import './SearchPage.css';
@@ -25,6 +31,13 @@ type PendingChapterSeed = {
   title: string;
 };
 
+type PendingRewardSelection = {
+  bookReadId: string;
+  googleBookId: string;
+  title: string;
+  shouldSeedChapters: boolean;
+};
+
 export function SearchPage() {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -36,6 +49,11 @@ export function SearchPage() {
   const [adding, setAdding] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [pendingChapterSeed, setPendingChapterSeed] = useState<PendingChapterSeed | null>(null);
+  const [pendingRewardSelection, setPendingRewardSelection] = useState<PendingRewardSelection | null>(null);
+  const [availableRewards, setAvailableRewards] = useState<AvailableRewardTemplate[]>([]);
+  const [selectedRewardTemplateId, setSelectedRewardTemplateId] = useState('');
+  const [savingRewardSelection, setSavingRewardSelection] = useState(false);
+  const [rewardSelectionError, setRewardSelectionError] = useState('');
   const [chapterCount, setChapterCount] = useState('');
   const [chapterCountError, setChapterCountError] = useState('');
   const [savingChapters, setSavingChapters] = useState(false);
@@ -91,6 +109,25 @@ export function SearchPage() {
       }
 
       if (shouldSeedChapters) {
+        try {
+          const rewardsResponse = await listChildAvailableRewards();
+          const rewards = rewardsResponse.availableRewards ?? [];
+          if (rewards.length > 0) {
+            setAvailableRewards(rewards);
+            setSelectedRewardTemplateId(rewardsResponse.defaultRewardId ?? rewards[0].rewardTemplateId);
+            setRewardSelectionError('');
+            setPendingRewardSelection({
+              bookReadId: added.id,
+              googleBookId: added.googleBookId,
+              title: book.title,
+              shouldSeedChapters,
+            });
+            return;
+          }
+        } catch {
+          // If reward selection cannot be loaded, continue with existing chapter setup behavior.
+        }
+
         setChapterCount('');
         setChapterCountError('');
         setPendingChapterSeed({
@@ -104,6 +141,51 @@ export function SearchPage() {
       navigate('/reading-list', { state: { newGoogleBookId: added.googleBookId } });
     } finally {
       setAdding(null);
+    }
+  };
+
+  const closeRewardModal = (proceedToReadingList: boolean) => {
+    if (proceedToReadingList && pendingRewardSelection) {
+      navigate('/reading-list', { state: { newGoogleBookId: pendingRewardSelection.googleBookId } });
+    }
+    setPendingRewardSelection(null);
+    setAvailableRewards([]);
+    setSelectedRewardTemplateId('');
+    setSavingRewardSelection(false);
+    setRewardSelectionError('');
+  };
+
+  const submitRewardSelection = async () => {
+    if (!pendingRewardSelection) return;
+    if (!selectedRewardTemplateId) {
+      setRewardSelectionError('Select a reward option to continue.');
+      return;
+    }
+
+    setSavingRewardSelection(true);
+    setRewardSelectionError('');
+    try {
+      await selectChildReward(pendingRewardSelection.bookReadId, selectedRewardTemplateId);
+      const shouldSeedChapters = pendingRewardSelection.shouldSeedChapters;
+      const next = {
+        bookReadId: pendingRewardSelection.bookReadId,
+        googleBookId: pendingRewardSelection.googleBookId,
+        title: pendingRewardSelection.title,
+      };
+      setPendingRewardSelection(null);
+      setAvailableRewards([]);
+      setSelectedRewardTemplateId('');
+      setSavingRewardSelection(false);
+      if (shouldSeedChapters) {
+        setChapterCount('');
+        setChapterCountError('');
+        setPendingChapterSeed(next);
+      } else {
+        navigate('/reading-list', { state: { newGoogleBookId: pendingRewardSelection.googleBookId } });
+      }
+    } catch {
+      setSavingRewardSelection(false);
+      setRewardSelectionError('Could not save reward selection right now.');
     }
   };
 
@@ -230,6 +312,37 @@ export function SearchPage() {
           </Card>
         ))}
       </div>
+      <Modal
+        open={Boolean(pendingRewardSelection)}
+        onOpenChange={open => {
+          if (!open) {
+            closeRewardModal(true);
+          }
+        }}
+        title="Pick A Reward"
+        description={pendingRewardSelection
+          ? `Choose what you want to earn for reading "${pendingRewardSelection.title}".`
+          : undefined}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => closeRewardModal(true)} disabled={savingRewardSelection}>
+              Add Later
+            </Button>
+            <Button onClick={submitRewardSelection} disabled={savingRewardSelection}>
+              {savingRewardSelection ? 'Saving…' : 'Save Reward'}
+            </Button>
+          </>
+        )}
+      >
+        <div className="grid gap-4">
+          <RewardSelector
+            rewards={availableRewards}
+            selectedRewardTemplateId={selectedRewardTemplateId}
+            onSelect={setSelectedRewardTemplateId}
+          />
+          {rewardSelectionError && <p role="alert">{rewardSelectionError}</p>}
+        </div>
+      </Modal>
       <Modal
         open={Boolean(pendingChapterSeed)}
         onOpenChange={open => {

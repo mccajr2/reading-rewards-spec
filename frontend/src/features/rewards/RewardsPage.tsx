@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth, RewardHistoryItemDto, RewardsPageResponseDto, RewardSummaryDto } from '../../shared/api';
+import { RewardBalance, type RewardBalanceRow, type RewardBalanceSummary } from '../../components/rewards/RewardBalance';
+import { getChildRewardBalance, getChildRewardHistory } from '../../services/rewardApi';
 import { Button, Card, CardContent, Input, PageGuidance, Pagination } from '../../components/shared';
 import './RewardsPage.css';
 
@@ -15,6 +17,8 @@ export function RewardsPage() {
   const [spendNote, setSpendNote] = useState('');
   const [payout, setPayout] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rewardBalance, setRewardBalance] = useState<RewardBalanceSummary | null>(null);
+  const [rewardHistory, setRewardHistory] = useState<RewardBalanceRow[]>([]);
 
   const loadSummary = async () => {
     const r = await fetchWithAuth('/rewards/summary', token);
@@ -39,9 +43,35 @@ export function RewardsPage() {
   useEffect(() => {
     loadSummary();
     loadRewards(1);
+    if (user?.role === 'CHILD') {
+      void loadChildRewardData();
+    }
   }, []);
 
   useEffect(() => { loadRewards(page); }, [page]);
+
+  const loadChildRewardData = async () => {
+    try {
+      const [balanceRes, historyRes] = await Promise.all([getChildRewardBalance(), getChildRewardHistory()]);
+      setRewardBalance({
+        totalEarned: Number(balanceRes.balance.totalEarned ?? 0),
+        totalPaid: Number(balanceRes.balance.totalPaid ?? 0),
+        availableBalance: Number(balanceRes.balance.availableBalance ?? 0),
+      });
+      const rows = (historyRes.accumulations ?? []).map((row) => ({
+        accumulationId: row.accumulationId ?? row.id ?? `${row.createdAt}-${row.amountEarned}`,
+        amountEarned: Number(row.amountEarned ?? 0),
+        status: row.status,
+        calculationNote: row.calculationNote,
+        createdAt: row.createdAt,
+      }));
+      setRewardHistory(rows);
+    } catch {
+      // Keep legacy rewards page usable if reward customization endpoints are unavailable.
+      setRewardBalance(null);
+      setRewardHistory([]);
+    }
+  };
 
   const handleSpend = async () => {
     if (!spend || !spendNote) return;
@@ -101,6 +131,10 @@ export function RewardsPage() {
           <span className="summary-value balance">${summary.currentBalance.toFixed(2)}</span>
         </Card>
       </div>
+
+      {isChild && rewardBalance && (
+        <RewardBalance summary={rewardBalance} history={rewardHistory} />
+      )}
 
       <div className="rewards-actions">
         <div className="action-group">

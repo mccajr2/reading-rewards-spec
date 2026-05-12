@@ -32,7 +32,10 @@ export function Nav() {
     { label: 'Search', to: '/search' },
     { label: 'My Books', to: '/reading-list' },
     { label: 'History', to: '/history' },
-    { label: 'Rewards', to: '/rewards' },
+    {
+      label: user?.role === 'PARENT' ? 'Manage Rewards' : 'Rewards',
+      to: user?.role === 'PARENT' ? '/parent/rewards' : '/child/rewards'
+    },
     { label: 'Manage Kids', to: '/parent', visible: user?.role === 'PARENT' }
   ];
 

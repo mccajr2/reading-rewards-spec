@@ -7,6 +7,7 @@ import com.example.readingrewards.domain.dto.BookSummaryDto;
 import com.example.readingrewards.domain.dto.HistoryItemDto;
 import com.example.readingrewards.domain.model.*;
 import com.example.readingrewards.domain.repo.*;
+import com.example.readingrewards.domain.service.reward.RewardAccumulationService;
 import com.example.readingrewards.domain.service.GoogleBooksService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,6 +30,7 @@ public class ApiController {
     private final BookReadRepository bookReadRepo;
     private final UserRepository userRepo;
     private final RewardRepository rewardRepo;
+    private final RewardAccumulationService rewardAccumulationService;
 
     public ApiController(GoogleBooksService googleBooksService,
                          BookRepository bookRepo,
@@ -36,7 +38,8 @@ public class ApiController {
                          ChapterReadRepository chapterReadRepo,
                          BookReadRepository bookReadRepo,
                          UserRepository userRepo,
-                         RewardRepository rewardRepo) {
+                         RewardRepository rewardRepo,
+                         RewardAccumulationService rewardAccumulationService) {
         this.googleBooksService = googleBooksService;
         this.bookRepo = bookRepo;
         this.chapterRepo = chapterRepo;
@@ -44,6 +47,7 @@ public class ApiController {
         this.bookReadRepo = bookReadRepo;
         this.userRepo = userRepo;
         this.rewardRepo = rewardRepo;
+        this.rewardAccumulationService = rewardAccumulationService;
     }
 
     private User getCurrentUser(UserDetails userDetails) {
@@ -159,6 +163,7 @@ public class ApiController {
             if (googleBookId.equals(br.getGoogleBookId()) && br.isInProgress()) {
                 br.setEndDate(LocalDateTime.now());
                 bookReadRepo.save(br);
+                rewardAccumulationService.recordBookCompletion(user, br);
                 found = true;
             }
         }

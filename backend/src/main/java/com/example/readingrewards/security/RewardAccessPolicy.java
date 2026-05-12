@@ -25,4 +25,8 @@ public class RewardAccessPolicy {
             && principal.getId() != null
             && principal.getId().equals(childId);
     }
+
+    public boolean canAccessChildRewardEndpoints(User principal, UUID childId) {
+        return canChildAccessOwnRewards(principal, childId);
+    }
 }
