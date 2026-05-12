@@ -1,0 +1,254 @@
+
+> reading-rewards-spec-frontend@0.1.0 test
+> vitest run
+
+
+ RUN  v2.1.9 /Users/jasonmccarthy/projects/reading-rewards-spec/frontend
+
+ ✓ src/components/shared/__tests__/PageGuidance.test.tsx (3 tests) 61ms
+ ✓ src/features/auth/SignupPage.test.tsx (3 tests) 112ms
+ ✓ src/features/books/HistoryPage.test.tsx (1 test) 83ms
+ ✓ src/features/books/ReadingListPage.test.tsx (4 tests) 114ms
+ ✓ src/features/auth/LoginPage.test.tsx (5 tests) 207ms
+ ✓ src/features/parent/ParentSummary.test.tsx (3 tests) 212ms
+ ✓ src/features/books/SearchPage.test.tsx (2 tests) 220ms
+ ✓ src/features/parent/ParentDashboard.test.tsx (7 tests) 444ms
+ ✓ src/app/App.test.tsx (3 tests) 74ms
+ ✓ src/components/shared/__tests__/Primitives.test.tsx (3 tests) 45ms
+ ❯ src/features/rewards/RewardsPage.test.tsx (5 tests | 1 failed) 1285ms
+   × RewardsPage > submits spend and payout actions and refreshes summary 1126ms
+     → expected "fetchWithAuth" to be called with arguments: [ …(3) ]
+
+Received: 
+
+  1st fetchWithAuth call:
+
+  Array [
+-   "/rewards/spend?amount=0.50&note=Pencil",
++   "/rewards/summary",
+    "test-token",
+-   ObjectContaining {
+-     "method": "POST",
+-   },
+  ]
+
+  2nd fetchWithAuth call:
+
+  Array [
+-   "/rewards/spend?amount=0.50&note=Pencil",
++   "/rewards?page=1&pageSize=10",
+    "test-token",
+-   ObjectContaining {
+-     "method": "POST",
+-   },
+  ]
+
+  3rd fetchWithAuth call:
+
+  Array [
+-   "/rewards/spend?amount=0.50&note=Pencil",
++   "/rewards?page=1&pageSize=10",
+    "test-token",
+-   ObjectContaining {
+-     "method": "POST",
+-   },
+  ]
+
+  4th fetchWithAuth call:
+
+  Array [
+-   "/rewards/spend?amount=0.50&note=Pencil",
++   "/rewards/spend?amount=0.5&note=Pencil",
+    "test-token",
+-   ObjectContaining {
++   Object {
+      "method": "POST",
+    },
+  ]
+
+  5th fetchWithAuth call:
+
+  Array [
+-   "/rewards/spend?amount=0.50&note=Pencil",
++   "/rewards/summary",
+    "test-token",
+-   ObjectContaining {
+-     "method": "POST",
+-   },
+  ]
+
+  6th fetchWithAuth call:
+
+  Array [
+-   "/rewards/spend?amount=0.50&note=Pencil",
++   "/rewards?page=1&pageSize=10",
+    "test-token",
+-   ObjectContaining {
+-     "method": "POST",
+-   },
+  ]
+
+
+Number of calls: 6
+
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"page rewards-page"[39m
+      [36m>[39m
+        [36m<section[39m
+          [33maria-label[39m=[32m"Your Rewards Shop 🎁 page guidance"[39m
+          [33mclass[39m=[32m"mb-6 rounded-xl border p-4 shadow-sm sm:p-6 border-amber-200 bg-amber-50"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-start gap-3"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<h1[39m
+                [33mclass[39m=[32m"m-0 text-2xl font-bold sm:text-3xl text-amber-900"[39m
+              [36m>[39m
+                [0mYour Rewards Shop 🎁[0m
+              [36m</h1>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"mb-2 mt-2 text-sm leading-relaxed text-text-primary sm:text-base"[39m
+              [36m>[39m
+                [0mHere are the rewards you can unlock with your reading points. The more you read, the more you can earn.[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"m-0 text-sm italic leading-relaxed text-text-secondary"[39m
+              [36m>[39m
+                [0mCheck your balance, celebrate your progress, and use your points for fun rewards.[0m
+              [36m</p>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</section>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"rewards-summary-grid"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"rounded-xl border border-border bg-background p-6 shadow-base summary-card"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"summary-label"[39m
+            [36m>[39m
+              [0mAll-Time Earned[0m
+            [36m</span>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"summary-value earn"[39m
+            [36m>[39m
+              [0m$[0m
+              [0m3.00[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"rounded-xl border border-border bg-background p-6 shadow-base summary-card"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"summary-label"[39m
+            [36m>[39m
+              [0mPaid Out[0m
+            [36m</span>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"summary-value payout"[39m
+            [36m>[39m
+              [0m$[0m
+              [0m1.00[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"rounded-xl border border-border bg-background p-6 shadow-base summary-card"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"summary-label"[39m
+            [36m>[39m
+              [0mSpent[0m
+            [36m</span>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"summary-value spend"[39m
+            [36m>[39m
+              [0m$[0m
+              [0m0.50[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"rounded-xl border border-border bg-background p-6 shadow-base summary-card highlight"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"summary-label"[39m
+            [36m>[39m
+              [0mBalance[0m
+            [36m</span>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"summary-value balance"[39m
+            [36m>[39m
+              [0m$[0m
+              [0m1.50[0m
+            [36m</span>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"rewards-actions"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"action-group"[39m
+          [36m>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"flex h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60 input"[39m
+              [33mmin[39m=[32m"0"[39m
+              [33mplaceholder[39m=[32m"Payout amount"[39m
+              [33mstep[39m=[32m"0.01"[39m
+              [33mtype[39m=[32m"number"[39m
+              [33mvalue[39m=[32m""[39m
+            [36m/>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-11 items-center justify-center rounded-md text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-60 bg-primary text-white hover:opacity-90 h-11 px-4"[39m
+              [33mdisabled[39m=[32m""[39m
+            [36m>[39m
+              [0mMark Paid Out[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"action-group"[39m
+          [36m>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"flex h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60 input"[39m
+              [33mmin[39m=[32m"0"[39m
+              [33mplaceholder[39m=[32m"Spend amount"[39m
+              [33mstep[39m=[32m"0.01"[39m
+              [33mtype[39m=[32m"number"[39m
+              [33mvalue[39m=[32m""[39m
+            [36m/>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"flex h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60 input"[39m
+              [33mplaceholder[39m=[32m"What did you buy?"[39m
+              [33mtype[39m=[32m"text"[39m
+              [33mvalue[39m=[32m""[39m
+            [36m/>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex min-h-11 items-center justify-center rounded-md text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-60 bg-background-alt text-text-primary border border-border hover:bg-primary-light h-11 px-4"[39m
+              [33mdisabled[39m=[32m""[39m
+            [36m>[39m
+              [0mSpend[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<h2>[39m
+          [0mReward History[0m
+        [36m</h2>[39m
+        [36m<ul[39m
+          [33mclass[39m=[32m"rewards-list"[39m
+        [36m/>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+
+ Test Files  1 failed | 10 passed (11)
+      Tests  1 failed | 38 passed (39)
+   Start at  16:02:00
+   Duration  2.22s (transform 775ms, setup 505ms, collect 3.24s, tests 2.86s, environment 3.14s, prepare 831ms)
+

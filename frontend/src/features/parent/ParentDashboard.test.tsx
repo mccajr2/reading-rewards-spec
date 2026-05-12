@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import { ParentDashboard } from './ParentDashboard';
@@ -90,6 +91,7 @@ describe('ParentDashboard', () => {
   });
 
   it('submits add-kid form and refreshes kids list', async () => {
+    const user = userEvent.setup();
     const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
       if (path === '/parent/kids' && !options?.method) {
         return Promise.resolve(mockOkResponse([{ id: 'k-1', firstName: 'Jamie', username: 'jamie' }]));
@@ -106,10 +108,10 @@ describe('ParentDashboard', () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByPlaceholderText(/username/i), { target: { value: 'jamie' } });
-    fireEvent.change(screen.getByPlaceholderText(/first name/i), { target: { value: 'Jamie' } });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), { target: { value: 'KidPass1!' } });
-    fireEvent.click(screen.getByRole('button', { name: /add kid/i }));
+    await user.type(screen.getByPlaceholderText(/username/i), 'jamie');
+    await user.type(screen.getByPlaceholderText(/first name/i), 'Jamie');
+    await user.type(screen.getByPlaceholderText(/password/i), 'KidPass1!');
+    await user.click(screen.getByRole('button', { name: /add kid/i }));
 
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(
       '/parent/kids',
@@ -120,6 +122,7 @@ describe('ParentDashboard', () => {
   });
 
   it('opens reset modal and posts reset password request', async () => {
+    const user = userEvent.setup();
     const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
       if (path === '/parent/kids' && !options?.method) {
         return Promise.resolve(mockOkResponse([{ id: 'k-1', firstName: 'Jamie', username: 'jamie' }]));
@@ -137,12 +140,12 @@ describe('ParentDashboard', () => {
     );
 
     const resetButton = await screen.findByRole('button', { name: /reset password/i });
-    fireEvent.click(resetButton);
+    await user.click(resetButton);
 
-    fireEvent.change(screen.getByPlaceholderText(/new password/i), { target: { value: 'NewPass1!' } });
+    await user.type(screen.getByPlaceholderText(/new password/i), 'NewPass1!');
     const modal = screen.getByText(/reset password for/i).closest('.modal');
     expect(modal).not.toBeNull();
-    fireEvent.click(within(modal as HTMLElement).getByRole('button', { name: /^reset password$/i }));
+    await user.click(within(modal as HTMLElement).getByRole('button', { name: /^reset password$/i }));
 
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(
       '/parent/reset-child-password',

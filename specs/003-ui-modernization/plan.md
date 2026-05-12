@@ -3,6 +3,16 @@
 **Branch**: `003-ui-modernization` | **Date**: 2026-05-11 | **Spec**: [spec.md](./spec.md)  
 **Input**: Feature specification from `/specs/003-ui-modernization/spec.md`
 
+## Prerequisites
+
+**Requires**: Spec 001-reading-rewards-parity must be implemented and deployed first. This plan assumes:
+- The application is currently deployed and functional (backend + frontend running)
+- All core features (auth, parent dashboard, child reading, rewards) are working
+- Existing tests pass and build is clean
+- No breaking changes to business logic or API contracts during UI modernization
+
+**Optional but Recommended**: Spec 002-deployment-cicd should be deployed first so CI/CD is in place before UI refactoring begins.
+
 ## Summary
 
 Apply a modern, production-ready React component library (e.g., shadcn/ui, Material-UI, Chakra UI) to modernize the visual appearance and interaction patterns across all pages. Simultaneously, add clear, purpose-driven guidance text to each page: parent-facing pages use professional adult tone; child-facing pages use fun, encouraging tone. Ensure responsive design for mobile, tablet, and desktop, and establish a reusable design system for future features.

@@ -3,6 +3,16 @@
 **Branch**: `002-deployment-cicd` | **Date**: 2026-05-10 | **Spec**: [spec.md](spec.md)  
 **Input**: Feature specification from `/specs/002-deployment-cicd/spec.md`
 
+## Prerequisites
+
+**Requires**: Spec 001-reading-rewards-parity must be implemented and deployed first. This plan assumes:
+- The Spring Boot backend is buildable and tests pass locally
+- The React frontend is buildable and tests pass locally
+- Both services are ready for containerization (Dockerfiles exist)
+- A Render account with free tier available
+- A Neon PostgreSQL database provisioned
+- GitHub repository with admin/secrets access
+
 ## Summary
 
 Set up GitHub Actions CI/CD for the reading-rewards-spec Spring Boot + React monorepo. Two path-triggered workflows (`backend.yml`, `frontend.yml`) run tests on every pull request to main and — on merge to main — build Docker images, push them to GitHub Container Registry (GHCR), then call Render Deploy Hooks to trigger deployment. The PostgreSQL database is hosted permanently on Neon (free tier, not Render Postgres). Flyway migrations run on backend startup. All sensitive values are stored as GitHub Secrets or Render environment variables; no credentials appear in tracked files.

@@ -2,7 +2,8 @@
 
 **Feature Branch**: `003-ui-modernization`  
 **Created**: 2026-05-11  
-**Status**: Draft  
+**Prerequisites**: Requires spec 001-reading-rewards-parity implemented and deployed first; spec 002-deployment-cicd is optional but recommended  
+**Status**: Ready for Development  
 **Input**: User description: "Clean modern look using a UI framework retrofitted into current codebase. Each page has text describing purpose and usage. Simple conversational tone—parent pages: adult style; kid pages: fun and loose."
 
 ## User Scenarios & Testing

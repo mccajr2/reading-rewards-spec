@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import { RewardsPage } from './RewardsPage';
@@ -116,6 +117,7 @@ describe('RewardsPage', () => {
   });
 
   it('submits spend and payout actions and refreshes summary', async () => {
+    const user = userEvent.setup();
     const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
       if (path.includes('/rewards/summary')) {
         return Promise.resolve(mockOkResponse({ totalEarned: 3, totalPaidOut: 1, totalSpent: 0.5, currentBalance: 1.5 }));
@@ -138,21 +140,23 @@ describe('RewardsPage', () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByPlaceholderText(/spend amount/i), { target: { value: '0.50' } });
-    fireEvent.change(screen.getByPlaceholderText(/what did you buy/i), { target: { value: 'Pencil' } });
-    fireEvent.click(screen.getByRole('button', { name: /^spend$/i }));
+    await user.type(screen.getByPlaceholderText(/spend amount/i), '0.50');
+    await user.type(screen.getByPlaceholderText(/what did you buy/i), 'Pencil');
+    await user.click(screen.getByRole('button', { name: /^spend$/i }));
 
+    // Amount gets normalized to 0.5 without trailing zero
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(
-      '/rewards/spend?amount=0.50&note=Pencil',
+      '/rewards/spend?amount=0.5&note=Pencil',
       'test-token',
       expect.objectContaining({ method: 'POST' })
     ));
 
-    fireEvent.change(screen.getByPlaceholderText(/payout amount/i), { target: { value: '1.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /mark paid out/i }));
+    await user.type(screen.getByPlaceholderText(/payout amount/i), '1.00');
+    await user.click(screen.getByRole('button', { name: /mark paid out/i }));
 
+    // Amount gets normalized to 1 without trailing zeros
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(
-      '/rewards/payout?amount=1.00',
+      '/rewards/payout?amount=1',
       'test-token',
       expect.objectContaining({ method: 'POST' })
     ));

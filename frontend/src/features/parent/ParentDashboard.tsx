@@ -204,6 +204,7 @@ export function ParentDashboard() {
             if (!open) setResetTarget(null);
           }}
           title="Reset Password"
+          description={`Enter a new password for ${resetTarget}`}
         >
           <form className="modal" onSubmit={handleResetPassword}>
             <h3>Reset Password for {resetTarget}</h3>
