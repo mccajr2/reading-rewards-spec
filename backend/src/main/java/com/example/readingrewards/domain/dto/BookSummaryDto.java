@@ -14,6 +14,7 @@ public class BookSummaryDto {
     private String title;
     private List<String> authors;
     private String description;
+    private Integer pageCount;
     private String thumbnailUrl;
     private RewardEarningBasis earningBasis;
 
@@ -39,6 +40,9 @@ public class BookSummaryDto {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public Integer getPageCount() { return pageCount; }
+    public void setPageCount(Integer pageCount) { this.pageCount = pageCount; }
 
     public String getThumbnailUrl() { return thumbnailUrl; }
     public void setThumbnailUrl(String thumbnailUrl) { this.thumbnailUrl = thumbnailUrl; }

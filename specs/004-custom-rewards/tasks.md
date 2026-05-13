@@ -72,7 +72,7 @@ description: "Task list for Parent Reward Customization (Feature 004)"
 
 - [ ] T030 [P] [US3] Backend: Update ReadingAssignment and progress logic for all tracking modes in backend/src/main/java/[...]/domain/ and service/
 - [ ] T031 [P] [US3] Backend: Implement page milestone earning logic with carry-forward in backend/src/main/java/[...]/service/
-- [ ] T032 [P] [US3] Backend: Integrate OpenLibrary page suggestion and manual override in backend/src/main/java/[...]/service/
+- [X] T032 [P] [US3] Backend: Integrate OpenLibrary page suggestion and manual override in backend/src/main/java/[...]/service/
 - [ ] T033 [P] [US3] Frontend: Update reading progress UI for all tracking modes in frontend/src/components/ReadingProgress.tsx
 - [ ] T034 [P] [US3] Frontend: Add parent override for page count in frontend/src/components/ReadingProgress.tsx
 - [ ] T035 [US3] Backend: Add tests for progress, milestone, and override logic in backend/src/test/java/[...]/

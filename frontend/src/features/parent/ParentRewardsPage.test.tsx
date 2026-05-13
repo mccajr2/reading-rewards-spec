@@ -121,7 +121,6 @@ describe('ParentRewardsPage', () => {
   });
 
   it('keeps the default reward view-only and prevents deactivating the last active option', async () => {
-    const user = userEvent.setup();
     vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
       if (path === '/parent/kids' && !options?.method) {
         return Promise.resolve(mockOkResponse([]));

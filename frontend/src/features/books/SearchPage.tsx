@@ -12,6 +12,7 @@ type BookResult = {
   authors: string[];
   description: string;
   thumbnailUrl: string;
+  pageCount?: number | null;
 };
 
 type AddBookResponse = {
@@ -23,6 +24,7 @@ type PendingChapterSeed = {
   bookReadId: string;
   googleBookId: string;
   title: string;
+  suggestedPageCount?: number | null;
 };
 
 export function SearchPage() {
@@ -37,8 +39,10 @@ export function SearchPage() {
   const [error, setError] = useState('');
   const [pendingChapterSeed, setPendingChapterSeed] = useState<(PendingChapterSeed & { shouldSeedChapters: boolean }) | null>(null);
   const [chapterCount, setChapterCount] = useState('');
+  const [pageCount, setPageCount] = useState('');
   const [earningBasis, setEarningBasis] = useState<'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE'>('PER_CHAPTER');
   const [chapterCountError, setChapterCountError] = useState('');
+  const [pageCountError, setPageCountError] = useState('');
   const [savingChapters, setSavingChapters] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -93,11 +97,14 @@ export function SearchPage() {
 
       setChapterCount('');
       setChapterCountError('');
+      setPageCount(book.pageCount != null ? String(book.pageCount) : '');
+      setPageCountError('');
       setEarningBasis('PER_CHAPTER');
       setPendingChapterSeed({
         bookReadId: added.id,
         googleBookId: added.googleBookId,
         title: book.title,
+        suggestedPageCount: book.pageCount ?? null,
         shouldSeedChapters,
       });
     } finally {
@@ -111,17 +118,28 @@ export function SearchPage() {
     }
     setPendingChapterSeed(null);
     setChapterCount('');
+    setPageCount('');
     setEarningBasis('PER_CHAPTER');
     setChapterCountError('');
+    setPageCountError('');
     setSavingChapters(false);
   };
 
   const submitChapterSeed = async () => {
     if (!pendingChapterSeed) return;
 
+    const parsedPageCount = earningBasis === 'PER_PAGE_MILESTONE' ? parseInt(pageCount, 10) : null;
+    if (earningBasis === 'PER_PAGE_MILESTONE' && (Number.isNaN(parsedPageCount as number) || (parsedPageCount as number) < 1)) {
+      setPageCountError('Enter a page count of 1 or more.');
+      return;
+    }
+
     const basisRes = await fetchWithAuth(`/children/${user?.id}/books/${pendingChapterSeed.googleBookId}/basis-selection`, token, {
       method: 'PUT',
-      body: JSON.stringify({ earningBasis }),
+      body: JSON.stringify({
+        earningBasis,
+        ...(parsedPageCount != null ? { pageCount: parsedPageCount } : {}),
+      }),
     });
     if (!basisRes.ok) {
       setChapterCountError('Could not save this reading setup right now. Please try again.');
@@ -252,7 +270,7 @@ export function SearchPage() {
         }}
         title="Set Up Reading"
         description={pendingChapterSeed
-          ? `"${pendingChapterSeed.title}" is now in your reading list. Choose how you want to track rewards for this book.`
+          ? `"${pendingChapterSeed.title}" is now in your reading list. Choose how you want to track rewards for this book.${pendingChapterSeed.suggestedPageCount ? ` Open Library suggests ${pendingChapterSeed.suggestedPageCount} pages.` : ''}`
           : undefined}
         footer={(
           <>
@@ -298,7 +316,28 @@ export function SearchPage() {
               }}
             />
           )}
+          {earningBasis === 'PER_PAGE_MILESTONE' && (
+            <FormField
+              label="Page count"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              step={1}
+              value={pageCount}
+              error={pageCountError || undefined}
+              helperText={pendingChapterSeed?.suggestedPageCount
+                ? `Open Library suggests ${pendingChapterSeed.suggestedPageCount} pages. You can confirm or override it here.`
+                : 'Enter the total page count for this book.'}
+              onChange={e => {
+                setPageCount(e.target.value);
+                if (pageCountError) {
+                  setPageCountError('');
+                }
+              }}
+            />
+          )}
           {earningBasis !== 'PER_CHAPTER' && chapterCountError && <p className="error-msg">{chapterCountError}</p>}
+          {earningBasis === 'PER_PAGE_MILESTONE' && pageCountError && <p className="error-msg">{pageCountError}</p>}
         </div>
       </Modal>
     </div>

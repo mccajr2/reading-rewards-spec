@@ -19,6 +19,8 @@ public class BookReadProgressDto {
     private int readCount;
     private List<UUID> readChapterIds;
     private RewardEarningBasis bookEarningBasis;
+    private Integer pageCount;
+    private boolean pageCountConfirmed;
 
     public BookReadProgressDto(BookRead br, Book book, int readCount, List<UUID> readChapterIds) {
         this.bookReadId = br.getId();
@@ -31,6 +33,8 @@ public class BookReadProgressDto {
         this.readCount = readCount;
         this.readChapterIds = readChapterIds;
         this.bookEarningBasis = br.getBookEarningBasis();
+        this.pageCount = br.getPageCount();
+        this.pageCountConfirmed = Boolean.TRUE.equals(br.getPageCountConfirmed());
     }
 
     public UUID getBookReadId() { return bookReadId; }
@@ -43,4 +47,6 @@ public class BookReadProgressDto {
     public int getReadCount() { return readCount; }
     public List<UUID> getReadChapterIds() { return readChapterIds; }
     public RewardEarningBasis getBookEarningBasis() { return bookEarningBasis; }
+    public Integer getPageCount() { return pageCount; }
+    public boolean isPageCountConfirmed() { return pageCountConfirmed; }
 }

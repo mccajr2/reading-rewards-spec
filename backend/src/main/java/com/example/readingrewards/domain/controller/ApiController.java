@@ -420,6 +420,7 @@ public class ApiController {
         book.setGoogleBookId(dto.getGoogleBookId());
         book.setTitle(dto.getTitle());
         book.setDescription(dto.getDescription());
+        book.setPageCount(dto.getPageCount());
         book.setThumbnailUrl(dto.getThumbnailUrl());
         book.setAuthors(dto.getAuthors() != null ? dto.getAuthors() : List.of());
         bookRepo.save(book);
@@ -429,6 +430,11 @@ public class ApiController {
         );
         if (existingInProgress.isPresent()) {
             BookRead existing = existingInProgress.get();
+            if (existing.getPageCount() == null && dto.getPageCount() != null) {
+                existing.setPageCount(dto.getPageCount());
+                existing.setPageCountConfirmed(Boolean.TRUE);
+                existing = bookReadRepo.save(existing);
+            }
             if (existing.getBookEarningBasis() == null && dto.getEarningBasis() != null) {
                 existing.setBookEarningBasis(dto.getEarningBasis());
                 existing.setBasisLockedAt(LocalDateTime.now());
@@ -447,6 +453,13 @@ public class ApiController {
         br.setGoogleBookId(book.getGoogleBookId());
         br.setUserId(user.getId());
         br.setStartDate(LocalDateTime.now());
+        if (dto.getPageCount() != null) {
+            br.setPageCount(dto.getPageCount());
+            br.setPageCountConfirmed(Boolean.TRUE);
+        } else if (book.getPageCount() != null) {
+            br.setPageCount(book.getPageCount());
+            br.setPageCountConfirmed(Boolean.FALSE);
+        }
         if (dto.getEarningBasis() != null) {
             br.setBookEarningBasis(dto.getEarningBasis());
             br.setBasisLockedAt(LocalDateTime.now());
@@ -496,16 +509,38 @@ public class ApiController {
             return badRequest("Invalid earningBasis value");
         }
 
+        Integer pageCount = null;
+        if (body.containsKey("pageCount")) {
+            Object rawPageCount = body.get("pageCount");
+            if (rawPageCount != null && !String.valueOf(rawPageCount).isBlank()) {
+                try {
+                    pageCount = Integer.valueOf(String.valueOf(rawPageCount));
+                } catch (NumberFormatException ex) {
+                    return badRequest("Invalid pageCount value");
+                }
+            }
+        }
+
+        if (basis == RewardEarningBasis.PER_PAGE_MILESTONE && (pageCount == null || pageCount < 1)) {
+            return badRequest("pageCount is required for PER_PAGE_MILESTONE");
+        }
+
         br.setBookEarningBasis(basis);
         br.setBasisLockedAt(LocalDateTime.now());
+        if (pageCount != null) {
+            br.setPageCount(pageCount);
+            br.setPageCountConfirmed(Boolean.TRUE);
+        }
         BookRead saved = bookReadRepo.save(br);
-        return ResponseEntity.ok(Map.of(
-                "bookReadId", saved.getId(),
-                "childId", saved.getUserId(),
-                "bookId", saved.getGoogleBookId(),
-                "bookEarningBasis", saved.getBookEarningBasis(),
-                "basisLockedAt", saved.getBasisLockedAt()
-        ));
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("bookReadId", saved.getId());
+        response.put("childId", saved.getUserId());
+        response.put("bookId", saved.getGoogleBookId());
+        response.put("bookEarningBasis", saved.getBookEarningBasis());
+        response.put("pageCount", saved.getPageCount());
+        response.put("pageCountConfirmed", saved.getPageCountConfirmed());
+        response.put("basisLockedAt", saved.getBasisLockedAt());
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/books/{googleBookId}/finish")

@@ -152,6 +152,17 @@ class ApiControllerIntegrationTests {
         return userRepository.save(child);
     }
 
+    private String createChildAndLogin(String username, String firstName) throws Exception {
+        createChildForCurrentParent(username, firstName);
+        return loginAndGetToken(username, "kidpass");
+    }
+
+    private void ensureDefaultRewardOptionExists() throws Exception {
+        mockMvc.perform(get("/api/reward-options")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+    }
+
     private String seedChildReadingData(User child, String googleBookId) {
         Book book = new Book();
         book.setGoogleBookId(googleBookId);
@@ -260,6 +271,8 @@ class ApiControllerIntegrationTests {
 
     @Test
     void searchAddFinishAndRereadWorkflowIsSupported() throws Exception {
+        String childToken = createChildAndLogin("kid_search_flow", "Kid Search");
+
         when(googleBooksService.search(any(), any(), any())).thenReturn(List.of(
                 new BookSummaryDto(
                 "OL-SEARCH-1",
@@ -273,14 +286,14 @@ class ApiControllerIntegrationTests {
         mockMvc.perform(get("/api/search")
                 .param("title", "Searchable")
                 .param("author", "Search Author")
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(1))
             .andExpect(jsonPath("$[0].googleBookId").value("OL-SEARCH-1"))
             .andExpect(jsonPath("$[0].title").value("Searchable Book"));
 
         MvcResult addRes = mockMvc.perform(post("/api/books")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -298,14 +311,14 @@ class ApiControllerIntegrationTests {
                 .get("googleBookId").toString();
 
         mockMvc.perform(post("/api/books/" + googleBookId + "/finish")
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk());
 
         assertThat(bookReadRepository.findAll()).hasSize(1);
         assertThat(bookReadRepository.findAll().get(0).isInProgress()).isFalse();
 
         mockMvc.perform(post("/api/books/" + googleBookId + "/reread")
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk());
 
         assertThat(bookReadRepository.findAll()).hasSize(2);
@@ -314,12 +327,15 @@ class ApiControllerIntegrationTests {
 
     @Test
     void addChaptersAndMarkReadEarnsReward() throws Exception {
+        ensureDefaultRewardOptionExists();
+        String childToken = createChildAndLogin("kid_add_chapters", "Kid Chapters");
+
         // Add book
         mockMvc.perform(post("/api/books")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"googleBookId":"gbk1","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    {"googleBookId":"gbk1","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":"","earningBasis":"PER_CHAPTER"}
                     """))
             .andExpect(status().isOk());
 
@@ -327,7 +343,7 @@ class ApiControllerIntegrationTests {
 
         // Add chapters
         mockMvc.perform(post("/api/books/gbk1/chapters")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     [{"name":"Chapter 1","chapterIndex":0},{"name":"Chapter 2","chapterIndex":1}]
@@ -339,7 +355,7 @@ class ApiControllerIntegrationTests {
 
         // Mark chapter as read
         mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk());
 
         assertThat(chapterReadRepository.findAll()).hasSize(1);
@@ -349,18 +365,21 @@ class ApiControllerIntegrationTests {
 
     @Test
     void duplicateMarkReadIsIdempotentAndDoesNotCreateDuplicateReward() throws Exception {
+        ensureDefaultRewardOptionExists();
+        String childToken = createChildAndLogin("kid_mark_idempotent", "Kid Idempotent");
+
         mockMvc.perform(post("/api/books")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"googleBookId":"gbk-idem","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    {"googleBookId":"gbk-idem","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":"","earningBasis":"PER_CHAPTER"}
                     """))
             .andExpect(status().isOk());
 
         String bookReadId = bookReadRepository.findAll().get(0).getId().toString();
 
         mockMvc.perform(post("/api/books/gbk-idem/chapters")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     [{"name":"Chapter 1","chapterIndex":0}]
@@ -370,11 +389,11 @@ class ApiControllerIntegrationTests {
         String chapterId = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk-idem").get(0).getId().toString();
 
         mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk());
 
         assertThat(chapterReadRepository.findAll()).hasSize(1);
@@ -605,6 +624,45 @@ class ApiControllerIntegrationTests {
                         .andExpect(status().isConflict());
         }
 
+            @Test
+            void bookBasisSelectionCanConfirmPageCountForPerPageMilestones() throws Exception {
+                User child = createChildForCurrentParent("kid_page_basis", "Kid Page");
+                String childToken = loginAndGetToken("kid_page_basis", "kidpass");
+
+                mockMvc.perform(post("/api/books")
+                        .header("Authorization", "Bearer " + childToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "googleBookId": "book-page-basis",
+                                "title": "Page Basis Book",
+                                "authors": ["Author One"],
+                                "description": "desc",
+                                "thumbnailUrl": "",
+                                "pageCount": 280
+                            }
+                            """))
+                    .andExpect(status().isOk());
+
+                mockMvc.perform(put("/api/children/" + child.getId() + "/books/book-page-basis/basis-selection")
+                        .header("Authorization", "Bearer " + childToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "earningBasis": "PER_PAGE_MILESTONE",
+                                "pageCount": 333
+                            }
+                            """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.bookEarningBasis").value("PER_PAGE_MILESTONE"))
+                    .andExpect(jsonPath("$.pageCount").value(333))
+                    .andExpect(jsonPath("$.pageCountConfirmed").value(true));
+
+                BookRead saved = bookReadRepository.findByUserIdAndGoogleBookIdAndEndDateIsNull(child.getId(), "book-page-basis").orElseThrow();
+                assertThat(saved.getPageCount()).isEqualTo(333);
+                assertThat(saved.getPageCountConfirmed()).isTrue();
+            }
+
         @Test
         void chapterRewardsRequirePerChapterBasisSelectionBeforeEarning() throws Exception {
                 User parent = getCurrentParent();
@@ -683,19 +741,22 @@ class ApiControllerIntegrationTests {
 
     @Test
     void creditsReflectEarnedRewards() throws Exception {
+        ensureDefaultRewardOptionExists();
+        String childToken = createChildAndLogin("kid_credits", "Kid Credits");
+
         // Add book + chapter + mark read twice
         mockMvc.perform(post("/api/books")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"googleBookId":"gbk2","title":"B2","authors":["A"],"description":"","thumbnailUrl":""}
+                    {"googleBookId":"gbk2","title":"B2","authors":["A"],"description":"","thumbnailUrl":"","earningBasis":"PER_CHAPTER"}
                     """))
             .andExpect(status().isOk());
 
         String bookReadId = bookReadRepository.findAll().get(0).getId().toString();
 
         mockMvc.perform(post("/api/books/gbk2/chapters")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     [{"name":"Ch1","chapterIndex":0},{"name":"Ch2","chapterIndex":1}]
@@ -705,12 +766,12 @@ class ApiControllerIntegrationTests {
         var chapters = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk2");
         for (var ch : chapters) {
             mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + ch.getId() + "/read")
-                    .header("Authorization", "Bearer " + jwt))
+                    .header("Authorization", "Bearer " + childToken))
                 .andExpect(status().isOk());
         }
 
         mockMvc.perform(get("/api/credits")
-                .header("Authorization", "Bearer " + jwt))
+                .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.cents").value(200))
             .andExpect(jsonPath("$.dollars").value(2.0));
@@ -727,18 +788,21 @@ class ApiControllerIntegrationTests {
 
     @Test
     void payoutReducesCurrentBalanceInSummary() throws Exception {
+        ensureDefaultRewardOptionExists();
+        String childToken = createChildAndLogin("kid_payout_summary", "Kid Payout");
+
         mockMvc.perform(post("/api/books")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"googleBookId":"gbk-pay","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    {"googleBookId":"gbk-pay","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":"","earningBasis":"PER_CHAPTER"}
                     """))
             .andExpect(status().isOk());
 
         String bookReadId = bookReadRepository.findAll().get(0).getId().toString();
 
         mockMvc.perform(post("/api/books/gbk-pay/chapters")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     [{"name":"Chapter 1","chapterIndex":0}]
@@ -748,16 +812,16 @@ class ApiControllerIntegrationTests {
         String chapterId = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk-pay").get(0).getId().toString();
 
         mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
-                .header("Authorization", "Bearer " + jwt))
+                .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/rewards/payout")
-                .header("Authorization", "Bearer " + jwt)
+                .header("Authorization", "Bearer " + childToken)
                 .param("amount", "0.50"))
             .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/rewards/summary")
-                .header("Authorization", "Bearer " + jwt))
+                .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalEarned").value(1.0))
             .andExpect(jsonPath("$.totalPaidOut").value(0.5))
@@ -1069,19 +1133,22 @@ class ApiControllerIntegrationTests {
 
     @Test
     void deleteChapterReadReversesReward() throws Exception {
+        ensureDefaultRewardOptionExists();
+        String childToken = createChildAndLogin("kid_delete_chapter_read", "Kid Delete Chapter");
+
         // Add book + chapter + mark read
         mockMvc.perform(post("/api/books")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"googleBookId":"gbk-del-cr","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    {"googleBookId":"gbk-del-cr","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":"","earningBasis":"PER_CHAPTER"}
                     """))
             .andExpect(status().isOk());
 
         String bookReadId = bookReadRepository.findAll().get(0).getId().toString();
 
         mockMvc.perform(post("/api/books/gbk-del-cr/chapters")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     [{"name":"Chapter 1","chapterIndex":0}]
@@ -1091,7 +1158,7 @@ class ApiControllerIntegrationTests {
         String chapterId = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk-del-cr").get(0).getId().toString();
 
         mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk());
 
         assertThat(rewardRepository.findAll()).hasSize(1);
@@ -1099,7 +1166,7 @@ class ApiControllerIntegrationTests {
 
         // Delete chapter read — should also delete reward
         mockMvc.perform(delete("/api/books/gbk-del-cr/chapters/" + chapterId + "/read")
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk());
 
         assertThat(chapterReadRepository.findAll()).isEmpty();
@@ -1108,19 +1175,22 @@ class ApiControllerIntegrationTests {
 
     @Test
     void deleteBookReadCascadesChapterReadsAndRewards() throws Exception {
+        ensureDefaultRewardOptionExists();
+        String childToken = createChildAndLogin("kid_delete_book_read", "Kid Delete BookRead");
+
         // Add book + chapter + mark read
         mockMvc.perform(post("/api/books")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"googleBookId":"gbk-del-br","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    {"googleBookId":"gbk-del-br","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":"","earningBasis":"PER_CHAPTER"}
                     """))
             .andExpect(status().isOk());
 
         String bookReadId = bookReadRepository.findAll().get(0).getId().toString();
 
         mockMvc.perform(post("/api/books/gbk-del-br/chapters")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     [{"name":"Ch1","chapterIndex":0}]
@@ -1130,7 +1200,7 @@ class ApiControllerIntegrationTests {
         String chapterId = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk-del-br").get(0).getId().toString();
 
         mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk());
 
         assertThat(chapterReadRepository.findAll()).hasSize(1);
@@ -1138,7 +1208,7 @@ class ApiControllerIntegrationTests {
 
         // Delete the BookRead — should cascade-delete ChapterRead + Reward
         mockMvc.perform(delete("/api/bookreads/" + bookReadId)
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk());
 
         assertThat(bookReadRepository.findAll()).isEmpty();
@@ -1250,19 +1320,22 @@ class ApiControllerIntegrationTests {
 
     @Test
     void spendReducesCurrentBalanceInSummary() throws Exception {
+        ensureDefaultRewardOptionExists();
+        String childToken = createChildAndLogin("kid_spend_summary", "Kid Spend");
+
         // Earn $1 by reading a chapter
         mockMvc.perform(post("/api/books")
-                .header("Authorization", "Bearer " + jwt)
+                .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"googleBookId":"gbk-spend","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":""}
+                    {"googleBookId":"gbk-spend","title":"Book","authors":["Auth"],"description":"","thumbnailUrl":"","earningBasis":"PER_CHAPTER"}
                     """))
             .andExpect(status().isOk());
 
         String bookReadId = bookReadRepository.findAll().get(0).getId().toString();
 
         mockMvc.perform(post("/api/books/gbk-spend/chapters")
-                .header("Authorization", "Bearer " + jwt)
+                .header("Authorization", "Bearer " + childToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     [{"name":"Chapter 1","chapterIndex":0}]
@@ -1272,18 +1345,18 @@ class ApiControllerIntegrationTests {
         String chapterId = chapterRepository.findByGoogleBookIdOrderByChapterIndex("gbk-spend").get(0).getId().toString();
 
         mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapterId + "/read")
-                .header("Authorization", "Bearer " + jwt))
+                .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk());
 
         // Spend $0.50
         mockMvc.perform(post("/api/rewards/spend")
-                .header("Authorization", "Bearer " + jwt)
+                .header("Authorization", "Bearer " + childToken)
                 .param("amount", "0.50")
                 .param("note", "ice cream"))
             .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/rewards/summary")
-                .header("Authorization", "Bearer " + jwt))
+                .header("Authorization", "Bearer " + childToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalEarned").value(1.0))
             .andExpect(jsonPath("$.totalSpent").value(0.5))

@@ -41,6 +41,12 @@ public class BookRead {
     @Column(name = "basis_locked_at")
     private LocalDateTime basisLockedAt;
 
+    @Column(name = "page_count")
+    private Integer pageCount;
+
+    @Column(name = "page_count_confirmed", nullable = false)
+    private Boolean pageCountConfirmed = Boolean.FALSE;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -78,6 +84,12 @@ public class BookRead {
 
     public LocalDateTime getBasisLockedAt() { return basisLockedAt; }
     public void setBasisLockedAt(LocalDateTime basisLockedAt) { this.basisLockedAt = basisLockedAt; }
+
+    public Integer getPageCount() { return pageCount; }
+    public void setPageCount(Integer pageCount) { this.pageCount = pageCount; }
+
+    public Boolean getPageCountConfirmed() { return pageCountConfirmed; }
+    public void setPageCountConfirmed(Boolean pageCountConfirmed) { this.pageCountConfirmed = pageCountConfirmed; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

@@ -14,6 +14,8 @@ type BookReadProgress = {
   authors: string[];
   startDate: string;
   bookEarningBasis?: 'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE' | null;
+  pageCount?: number | null;
+  pageCountConfirmed?: boolean;
   readCount: number;
   readChapterIds: string[];
 };
@@ -272,6 +274,11 @@ export function ReadingListPage() {
                 <p className="book-authors">{br.authors?.join(', ')}</p>
                 {br.bookEarningBasis === 'PER_BOOK' && (
                   <p className="muted">Reward tracks per book. Use Mark as Complete when you finish.</p>
+                )}
+                {br.bookEarningBasis === 'PER_PAGE_MILESTONE' && (
+                  <p className="muted">
+                    Page milestones use {br.pageCountConfirmed ? `${br.pageCount} pages` : 'the confirmed page count'}.
+                  </p>
                 )}
                 {total > 0 && (
                   <div className="progress-row">

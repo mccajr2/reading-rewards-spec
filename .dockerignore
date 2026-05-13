@@ -9,3 +9,6 @@ dist/
 target/
 playwright-report/
 test-results/
+
+node_modules/
+dist/
