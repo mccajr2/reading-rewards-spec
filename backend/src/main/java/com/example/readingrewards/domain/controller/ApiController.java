@@ -117,7 +117,10 @@ public class ApiController {
     private RewardOption resolveVisibleSelection(User child) {
         Optional<ChildRewardSelection> activeSelection = rewardSelectionRepo.findByChildUserIdAndActiveTrue(child.getId());
         if (activeSelection.isPresent()) {
-            RewardOption selected = activeSelection.get().getRewardOption();
+            UUID selectedOptionId = activeSelection.get().getRewardOptionId();
+            RewardOption selected = selectedOptionId != null
+                    ? rewardOptionRepo.findById(selectedOptionId).orElse(null)
+                    : null;
             if (selected != null && isVisibleToChild(child, selected)) {
                 return selected;
             }
@@ -574,6 +577,7 @@ public class ApiController {
         return new BookSummaryDto.RewardRollupDto(earned, paidOut, spent, earned - paidOut - spent);
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/reward-options")
     public BookSummaryDto.RewardOptionsResponseDto getRewardOptions(@AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
