@@ -102,6 +102,9 @@ export function ParentDashboard() {
         <h2>Your Reading</h2>
         <p className="muted">Use your own parent account reading list without affecting child activity.</p>
         <div className="quick-actions-row">
+          <Button variant="secondary" onClick={() => navigate('/parent/rewards')}>
+            Manage Rewards
+          </Button>
           <Button variant="secondary" onClick={() => navigate('/search')}>
             Add Book To My Reading List
           </Button>

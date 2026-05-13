@@ -9,11 +9,16 @@ import com.example.readingrewards.domain.model.BookRead;
 import com.example.readingrewards.domain.model.Chapter;
 import com.example.readingrewards.domain.model.ChapterRead;
 import com.example.readingrewards.domain.model.Reward;
+import com.example.readingrewards.domain.model.RewardEarningBasis;
+import com.example.readingrewards.domain.model.RewardOption;
+import com.example.readingrewards.domain.model.RewardScopeType;
 import com.example.readingrewards.domain.model.RewardType;
 import com.example.readingrewards.domain.repo.BookReadRepository;
 import com.example.readingrewards.domain.repo.BookRepository;
+import com.example.readingrewards.domain.repo.ChildRewardSelectionRepository;
 import com.example.readingrewards.domain.repo.ChapterReadRepository;
 import com.example.readingrewards.domain.repo.ChapterRepository;
+import com.example.readingrewards.domain.repo.RewardOptionRepository;
 import com.example.readingrewards.domain.repo.RewardRepository;
 import com.example.readingrewards.domain.service.GoogleBooksService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -71,6 +76,12 @@ class ApiControllerIntegrationTests {
     private RewardRepository rewardRepository;
 
     @Autowired
+    private RewardOptionRepository rewardOptionRepository;
+
+    @Autowired
+    private ChildRewardSelectionRepository childRewardSelectionRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -80,6 +91,8 @@ class ApiControllerIntegrationTests {
 
     @BeforeEach
     void setUp() throws Exception {
+        childRewardSelectionRepository.deleteAll();
+        rewardOptionRepository.deleteAll();
         rewardRepository.deleteAll();
         chapterReadRepository.deleteAll();
         chapterRepository.deleteAll();
@@ -365,6 +378,135 @@ class ApiControllerIntegrationTests {
 
         assertThat(chapterReadRepository.findAll()).hasSize(1);
         assertThat(rewardRepository.findAll()).hasSize(1);
+    }
+
+    @Test
+    void rewardOptionCrudCreateUpdateDeactivateWorksForParent() throws Exception {
+        MvcResult createResult = mockMvc.perform(post("/api/reward-options")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "name": "Movie Night",
+                      "description": "One movie reward",
+                      "scopeType": "FAMILY",
+                      "earningBasis": "PER_BOOK",
+                      "amount": 5.0,
+                      "active": true
+                    }
+                    """))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.name").value("Movie Night"))
+            .andReturn();
+
+        String rewardOptionId = objectMapper.readTree(createResult.getResponse().getContentAsString())
+            .get("id")
+            .asText();
+
+        mockMvc.perform(put("/api/reward-options/" + rewardOptionId)
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "name": "Movie Night Plus",
+                      "description": "Updated reward",
+                      "scopeType": "FAMILY",
+                      "earningBasis": "PER_BOOK",
+                      "amount": 7.5,
+                      "active": true
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Movie Night Plus"))
+            .andExpect(jsonPath("$.amount").value(7.5));
+
+        mockMvc.perform(delete("/api/reward-options/" + rewardOptionId)
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isNoContent());
+
+        RewardOption stored = rewardOptionRepository.findById(UUID.fromString(rewardOptionId)).orElseThrow();
+        assertThat(stored.getActive()).isFalse();
+    }
+
+    @Test
+    void rewardOptionValidationRejectsMissingChildIdAndMissingPageMilestoneSize() throws Exception {
+        mockMvc.perform(post("/api/reward-options")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "name": "Child Only",
+                      "scopeType": "CHILD",
+                      "earningBasis": "PER_CHAPTER",
+                      "amount": 1.0,
+                      "active": true
+                    }
+                    """))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/reward-options")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "name": "Pages Reward",
+                      "scopeType": "FAMILY",
+                      "earningBasis": "PER_PAGE_MILESTONE",
+                      "amount": 1.0,
+                      "active": true
+                    }
+                    """))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void childRewardOptionsAreAdditiveFamilyPlusMatchingChildScope() throws Exception {
+        User parent = getCurrentParent();
+        User childA = createChildForCurrentParent("kid_scope_a", "Kid A");
+        User childB = createChildForCurrentParent("kid_scope_b", "Kid B");
+        String childToken = loginAndGetToken("kid_scope_a", "kidpass");
+
+        RewardOption familyOption = new RewardOption();
+        familyOption.setOwnerUserId(parent.getId());
+        familyOption.setScopeType(RewardScopeType.FAMILY);
+        familyOption.setName("Family chapter reward");
+        familyOption.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
+        familyOption.setAmount(1.0);
+        familyOption.setActive(Boolean.TRUE);
+        rewardOptionRepository.save(familyOption);
+
+        RewardOption childAOption = new RewardOption();
+        childAOption.setOwnerUserId(parent.getId());
+        childAOption.setScopeType(RewardScopeType.CHILD);
+        childAOption.setChildUserId(childA.getId());
+        childAOption.setName("Kid A bonus");
+        childAOption.setEarningBasis(RewardEarningBasis.PER_BOOK);
+        childAOption.setAmount(3.0);
+        childAOption.setActive(Boolean.TRUE);
+        rewardOptionRepository.save(childAOption);
+
+        RewardOption childBOption = new RewardOption();
+        childBOption.setOwnerUserId(parent.getId());
+        childBOption.setScopeType(RewardScopeType.CHILD);
+        childBOption.setChildUserId(childB.getId());
+        childBOption.setName("Kid B bonus");
+        childBOption.setEarningBasis(RewardEarningBasis.PER_BOOK);
+        childBOption.setAmount(4.0);
+        childBOption.setActive(Boolean.TRUE);
+        rewardOptionRepository.save(childBOption);
+
+        MvcResult optionsResult = mockMvc.perform(get("/api/reward-options")
+                .header("Authorization", "Bearer " + childToken))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String content = optionsResult.getResponse().getContentAsString();
+        List<String> names = objectMapper.readTree(content)
+            .withArray("options")
+            .findValuesAsText("name");
+
+        assertThat(names).contains("Family chapter reward", "Kid A bonus");
+        assertThat(names).doesNotContain("Kid B bonus");
     }
 
     @Test

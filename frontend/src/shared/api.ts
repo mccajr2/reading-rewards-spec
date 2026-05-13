@@ -51,6 +51,9 @@ export type RewardHistoryItemDto = {
   amount: number;
   note?: string;
   createdAt: string;
+  rewardOptionId?: string;
+  rewardOptionName?: string;
+  rewardOptionBasis?: 'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE';
   chapterReadId?: string;
   completionDate?: string;
   chapter?: ChapterDto;
@@ -70,6 +73,30 @@ export type RewardHistoryItemDto = {
 export type RewardsPageResponseDto = {
   rewards: RewardHistoryItemDto[];
   totalCount: number;
+};
+
+export type RewardScopeType = 'FAMILY' | 'CHILD';
+export type RewardEarningBasis = 'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE';
+
+export type RewardOptionDto = {
+  id: string;
+  ownerUserId: string;
+  childUserId?: string | null;
+  scopeType: RewardScopeType;
+  name: string;
+  description?: string | null;
+  earningBasis: RewardEarningBasis;
+  amount: number;
+  pageMilestoneSize?: number | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RewardOptionsResponseDto = {
+  options: RewardOptionDto[];
+  activeSelectionId?: string | null;
+  activeSelectionOptionId?: string | null;
 };
 
 export async function postJson<T>(path: string, body: unknown): Promise<T> {

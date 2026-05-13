@@ -14,6 +14,12 @@
 - Q: Who is allowed to mark rewards as paid out or spent? → A: Child requests; parent approves to finalize.
 - Q: What should the nudge rate limit be per child? → A: One nudge every 24 hours.
 - Q: When both family-level and child-specific reward options exist, what should the child see by default? → A: Both family and child-specific options (additive list).
+- Q: Should global active reward selection remain when per-book basis selection and completion-time choice are required? → A: Keep global active selection as fallback default; require per-book basis at start and allow completion-time choice for chapter/page events when multiple eligible options exist.
+- Q: How should monetary vs non-monetary reward values be modeled? → A: Use a typed value model where MONEY uses currency amount and NON_MONEY uses quantity plus unit label.
+- Q: Can child users change earning basis mid-book? → A: Lock basis per book once selected; allow basis changes only for books started later.
+- Q: If multiple eligible completion-time reward options exist, what happens when no explicit choice is made? → A: Block completion and require explicit option selection.
+- Q: For PER_PAGE rewards, should page count come from OpenLibrary or user input? → A: Prefill from OpenLibrary, then require user confirmation or override before PER_PAGE earning starts.
+- Q: For PER_BOOK rewards, are chapter/page counts required? → A: No. Chapter/page counts are optional tracking-only fields and never required for PER_BOOK earning eligibility.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -30,6 +36,8 @@ As a parent, I can define reward rules at the family level and optionally overri
 1. **Given** a parent has no custom rewards yet, **When** they open reward settings, **Then** they see an initial default reward of $1 per chapter and can edit or remove it.
 2. **Given** a parent creates multiple reward options for one child, **When** they save changes, **Then** those options are available only to that child unless explicitly marked as family-wide.
 3. **Given** a parent defines family-wide reward options, **When** a child without overrides views available rewards, **Then** the child sees the family-wide options.
+4. **Given** a parent is managing family administration, **When** they open child account management, **Then** reward configuration is not shown on that page and is available only from a dedicated reward management page.
+5. **Given** a parent creates a non-money reward option (for example, one TV show), **When** they save the option, **Then** no dollar amount field is shown or required.
 
 ---
 
@@ -46,6 +54,9 @@ As a child, I can choose one of the reward options my parent has offered and ear
 1. **Given** a child has multiple offered rewards, **When** they select one as active, **Then** new reading activity accrues earnings against the selected reward.
 2. **Given** a child changes their selected reward, **When** future reading is logged, **Then** only future earnings follow the newly selected rule and historical earnings remain unchanged.
 3. **Given** a parent account user, **When** they access rewards views, **Then** they are not presented with child reward selection workflows.
+4. **Given** a child starts a book, **When** they begin tracking progress, **Then** they must choose one reward basis for that book: per chapter, per book, or per page milestone.
+5. **Given** a child selected per chapter or per page milestone for a book and has multiple matching reward options, **When** they complete a chapter or milestone event, **Then** they can select which eligible reward option to apply for that completion event.
+6. **Given** multiple eligible options exist at completion time for a chapter/page event, **When** the child does not make an explicit choice, **Then** the completion action is blocked until one eligible option is selected.
 
 ---
 
@@ -63,6 +74,7 @@ As a parent or child, I can log progress using the tracking method that best fit
 2. **Given** a book has chapter tracking enabled, **When** a child checks off completed chapters, **Then** progress and earnings update according to the selected reward rule.
 3. **Given** a book has page tracking enabled, **When** current page is updated, **Then** progress and earnings update from page-based milestones.
 4. **Given** book metadata provides a suggested page count, **When** a parent reviews the value, **Then** they can accept it or override it manually.
+5. **Given** a PER_PAGE reward basis is selected, **When** suggested page count is shown, **Then** earning is blocked until the user confirms or overrides total page count.
 
 ---
 
@@ -104,11 +116,18 @@ As a child and parent, we can manage unpaid rewards through in-app communication
 - **FR-006**: Children MUST be able to select one offered reward option as their active earning rule.
 - **FR-007**: System MUST calculate earnings based on the active reward rule and logged reading progress.
 - **FR-008**: System MUST support reward rule units including per chapter, per page milestone, and per completed book.
+- **FR-008a**: Reward management MUST be a dedicated parent flow/page and MUST NOT be combined with child account management on the same page.
+- **FR-008b**: System MUST support both monetary and non-monetary reward options.
+- **FR-008c**: Monetary options MUST use a currency amount field, and non-monetary options MUST NOT require or display a currency amount field.
+- **FR-008d**: System MUST implement a typed reward value model where valueType `MONEY` stores currency amount and valueType `NON_MONEY` stores quantity plus unit label.
+- **FR-008e**: For non-monetary rewards, system MUST require a unit label and numeric quantity and MUST validate these as structured fields (not free text only).
 - **FR-009**: For per-book rewards, system MUST allow book completion without requiring chapter tracking.
+- **FR-009a**: For per-book rewards, chapter count and page count fields MUST be optional tracking-only fields and MUST NOT be required for earning eligibility.
 - **FR-010**: System MUST support optional chapter tracking with chapter count entry and chapter completion updates.
 - **FR-011**: System MUST support optional page tracking with total page count and current page updates.
 - **FR-011a**: For page-based milestone rewards, system MUST grant earnings only when each full page threshold is reached and MUST carry any leftover pages toward the next threshold.
 - **FR-012**: System MUST attempt to prefill total page count from an external book metadata source when available and MUST allow parent override.
+- **FR-012a**: For PER_PAGE reward basis, system MUST require explicit user confirmation or override of total page count before posting any page-based earnings.
 - **FR-013**: System MUST track reward transactions as separate types: earned, paid out, and spent.
 - **FR-013a**: System MUST maintain separate balances and ledger streams per reward unit/type and MUST NOT combine unlike units into a single balance.
 - **FR-013b**: Children MUST be able to request payout or spending actions, and only parent approval can finalize paid-out or spent ledger entries.
@@ -119,11 +138,17 @@ As a child and parent, we can manage unpaid rewards through in-app communication
 - **FR-017**: System MUST NOT send email notifications to children for encouragement messages.
 - **FR-018**: Parent account interfaces MUST NOT display child reward earning/selection workflows intended for child users.
 - **FR-019**: Rewards pages MUST present all supported reward types in one consistent flow that allows users to understand available options, active selection, current progress, and current balance.
+- **FR-020**: At book start, child users MUST explicitly choose one earning basis for that book: per chapter, per completed book, or per page milestone.
+- **FR-021**: When the chosen book basis is per chapter or per page milestone and multiple eligible options exist, child users MUST be able to choose the specific reward option at completion time for each earned event.
+- **FR-022**: System MUST retain a child global active reward selection as a default fallback only; explicit per-book basis selection at book start overrides fallback behavior, and explicit completion-time option choice (when applicable) overrides both for that earning event.
+- **FR-023**: Once selected at book start, book earning basis MUST remain locked for that in-progress book and MUST NOT be changed mid-book; basis updates MAY apply only to subsequently started books.
+- **FR-024**: For completion events where multiple eligible reward options exist, system MUST require an explicit child choice and MUST block completion/earning until a valid option is selected.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Reward Option**: A parent-defined rule with scope (family or child), unit type (chapter, page milestone, completed book), payout value, status, and optional title/description.
+- **Reward Option**: A parent-defined rule with scope (family or child), unit type (chapter, page milestone, completed book), valueType (`MONEY` or `NON_MONEY`), currency amount (money only), or quantity plus unit label (non-money only), status, and optional title/description.
 - **Child Reward Selection**: A child’s active chosen reward option and effective period.
+- **Book Reward Basis Selection**: A child’s required per-book earning basis choice (chapter, page milestone, or completed book) captured at book start.
 - **Reading Progress Record**: Progress entries per book using chapter completion, current page updates, or completion status.
 - **Reward Ledger Entry**: A dated transaction representing earned, paid out, or spent reward value with running balance impact.
 - **Message Thread**: In-app conversation items between parent and child, including message type (nudge or encouragement) and delivery channel outcomes.

@@ -1,6 +1,8 @@
 package com.example.readingrewards.domain.dto;
 
 import com.example.readingrewards.domain.model.RewardType;
+import com.example.readingrewards.domain.model.RewardEarningBasis;
+import com.example.readingrewards.domain.model.RewardScopeType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -75,10 +77,34 @@ public class BookSummaryDto {
         double amount,
         String note,
         LocalDateTime createdAt,
+        UUID rewardOptionId,
+        String rewardOptionName,
+        RewardEarningBasis rewardOptionBasis,
         UUID chapterReadId,
         LocalDateTime completionDate,
         ChapterRefDto chapter,
         BookReadRefDto bookRead
+    ) {}
+
+    public record RewardOptionDto(
+        UUID id,
+        UUID ownerUserId,
+        UUID childUserId,
+        RewardScopeType scopeType,
+        String name,
+        String description,
+        RewardEarningBasis earningBasis,
+        double amount,
+        Integer pageMilestoneSize,
+        boolean active,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+    ) {}
+
+    public record RewardOptionsResponseDto(
+        List<RewardOptionDto> options,
+        UUID activeSelectionId,
+        UUID activeSelectionOptionId
     ) {}
 
     public record ChapterRefDto(

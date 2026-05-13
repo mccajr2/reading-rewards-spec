@@ -1,55 +1,33 @@
-# Implementation Plan: Parent Reward Customization
+# Implementation Plan: Parent Reward Customization Re-Baseline
 
-**Branch**: `[004-parent-reward-customization]` | **Date**: 2026-05-12 | **Spec**: [spec.md](./spec.md)
+**Branch**: `004-parent-reward-customization` | **Date**: 2026-05-12 | **Spec**: `/specs/004-custom-rewards/spec.md`
 **Input**: Feature specification from `/specs/004-custom-rewards/spec.md`
 
 ## Summary
 
-Introduce configurable rewards so parents can define multiple reward options at family and child scope, children can select active options, and earnings/payouts are tracked with unit-safe ledgers. Support per-chapter, per-book, and per-page milestone earning with carry-forward leftovers, include parent-approved payout/spend requests, and add constrained in-app messaging (child nudges with parent email notification, parent encouragement in-app only).
+Re-baseline feature 004 so implemented behavior matches clarified requirements: separate parent reward management from kid management, support typed monetary and non-monetary reward values, require per-book earning basis selection at book start, lock that basis for the in-progress book, require explicit completion-time option choice when multiple options match, require PER_PAGE page-count confirmation or override before earning, and treat PER_BOOK chapter/page counts as optional tracking-only data.
 
 ## Technical Context
 
-**Language/Version**: Java 21 + Spring Boot 3.5.6 (backend), TypeScript 5.9 + React 19 + Vite 7 (frontend)  
-**Primary Dependencies**: Spring Web/Data JPA/Security/Validation, Flyway, PostgreSQL driver; React Router 7, Vitest, Testing Library  
-**Storage**: PostgreSQL (primary), H2 for local/test profiles  
-**Testing**: JUnit/Spring Boot Test + Spring Security Test (backend), Vitest + Testing Library (frontend), Playwright E2E smoke  
-**Target Platform**: Web application (browser frontend + Linux containerized backend)  
-**Project Type**: Monorepo web app (`backend/` + `frontend/`)  
-**Performance Goals**: Preserve existing user-perceived responsiveness; reward calculation and balance retrieval remain interactive for normal family usage (<2s API responses in standard flows)  
-**Constraints**: Preserve auth/role boundaries; no parent reward earning UI; one nudge per child per 24h; separate ledgers per reward unit; no secrets in repo  
-**Scale/Scope**: Family-level and child-level rewards across existing user base; feature touches rewards, reading progress, ledger, and messaging surfaces
+**Language/Version**: Java 21 (backend), TypeScript 5.9 and React 19 (frontend)  
+**Primary Dependencies**: Spring Boot 3.5.6, Spring Security, Spring Data JPA, Flyway, PostgreSQL, Vite 7, React Router 7, Vitest, Testing Library  
+**Storage**: PostgreSQL primary, H2 fallback for local/testing profiles  
+**Testing**: JUnit and Spring Boot Test, Spring Security Test, Vitest and Testing Library, Playwright smoke coverage  
+**Target Platform**: Web application on browser frontend plus JVM backend (local macOS dev, Linux deploy target)  
+**Project Type**: Monorepo web application with backend and frontend modules  
+**Performance Goals**: Preserve current UX responsiveness; no significant regression in existing reward and reading flows  
+**Constraints**: Behavior parity governance, no live secrets in tracked files, parent and child role boundaries unchanged, explicit validation for typed value model and confirmation gates  
+**Scale/Scope**: Existing family and child workflows; feature-local schema, API, and UI changes only
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-### Pre-Design Gate Review
-
-✅ **I. Behavior Parity First**  
-- Feature intentionally extends rewards behavior through approved spec updates.
-- Existing auth and role constraints are preserved (parents configure, children earn/select).
-
-✅ **II. Spec Before Structure**  
-- Spec exists at `specs/004-custom-rewards/spec.md` with clarified decisions and measurable outcomes.
-
-✅ **III. Tests Are Delivery Criteria**  
-- Plan includes backend calculation/authorization tests, frontend flow tests, and E2E smoke for critical journey.
-
-✅ **IV. Clean Architecture Over Legacy Shape**  
-- Uses explicit reward option, selection, ledger, and settlement models instead of controller-only logic sprawl.
-
-✅ **V. Secure Configuration By Default**  
-- No new secret classes introduced; notification and metadata integrations use existing env/config patterns.
-
-**Pre-Design Result**: PASS
-
-### Post-Design Gate Review (after Phase 1 artifacts)
-
-✅ Research, data model, contracts, and quickstart now define deterministic behavior for all clarified requirements.  
-✅ No unresolved clarification markers remain.  
-✅ No constitution violations introduced.
-
-**Post-Design Result**: PASS
+- **Behavior Parity First**: PASS. All intentional behavior changes are documented in spec clarifications and FR-008a..FR-024.
+- **Spec Before Structure**: PASS. This plan and design outputs are derived from the clarified feature spec.
+- **Tests Are Delivery Criteria**: PASS. Plan mandates backend, frontend, and smoke test updates for new gating behavior.
+- **Clean Architecture Over Legacy Shape**: PASS. Design keeps explicit domain entities and clear precedence rules.
+- **Secure Configuration By Default**: PASS. No new secret-handling or configuration policy exceptions.
 
 ## Project Structure
 
@@ -64,58 +42,63 @@ specs/004-custom-rewards/
 ├── contracts/
 │   ├── reward-customization.openapi.yaml
 │   └── earnings-and-ledger-rules.md
-└── tasks.md              # Created by /speckit.tasks
+└── tasks.md
 ```
 
 ### Source Code (repository root)
 
 ```text
 backend/
-├── src/main/java/.../domain/           # reward options, ledgers, settlement, messaging entities
-├── src/main/java/.../service/          # scope resolution, earnings, settlement approval
-├── src/main/java/.../web/              # reward config, selection, settlement, messaging APIs
-├── src/main/resources/db/migration/    # schema migrations for new reward tables/fields
-└── src/test/java/.../                  # service/controller tests for calculations and permissions
+├── src/main/java/com/example/readingrewards/
+│   ├── auth/
+│   └── domain/
+│       ├── controller/
+│       ├── dto/
+│       ├── model/
+│       ├── repo/
+│       └── service/
+├── src/main/resources/db/migration/
+└── src/test/java/com/example/readingrewards/
 
 frontend/
-├── src/components/                     # parent reward config, child selection, ledger views, messaging UI
-├── src/services/                       # API clients for reward options, ledgers, settlement, messages
-├── src/types/                          # DTOs for reward customization entities
-└── src/tests/                          # component and integration tests
-
-tests/e2e/
-└── reward-customization*.spec.*        # end-to-end smoke flows
+├── src/
+│   ├── app/
+│   ├── components/
+│   ├── features/
+│   │   ├── parent/
+│   │   └── rewards/
+│   ├── shared/
+│   └── test/
+└── package.json
 ```
 
-**Structure Decision**: Keep existing monorepo boundaries and implement feature incrementally across current backend/frontend modules. No new top-level services are required.
+**Structure Decision**: Keep the current monorepo architecture and implement clarified behavior inside existing domain and feature boundaries.
 
 ## Phase 0: Research Output
 
-Phase 0 completed in `research.md` with explicit decisions for:
-- additive scope resolution,
-- unit-separated ledgers,
-- page milestone carry-forward,
-- child-request/parent-approve settlement,
-- nudge cooldown and channel rules,
-- OpenLibrary page suggestion with override.
+Generated: `/specs/004-custom-rewards/research.md`
 
-## Phase 1: Design and Contracts Output
+Clarified decisions include additive visibility, typed value model, fallback-selection precedence, per-book basis lock, explicit completion-time choice blocking, PER_PAGE page-count confirmation gate, and PER_BOOK tracking optionality.
 
-Phase 1 completed with:
-- `data-model.md` defining entities, relationships, and state transitions,
-- API and behavior contracts under `contracts/`,
-- implementation and verification workflow in `quickstart.md`.
+## Phase 1: Design Output
 
-## Phase 2 Preview (for /speckit.tasks)
+Generated:
+- `/specs/004-custom-rewards/data-model.md`
+- `/specs/004-custom-rewards/contracts/reward-customization.openapi.yaml`
+- `/specs/004-custom-rewards/contracts/earnings-and-ledger-rules.md`
+- `/specs/004-custom-rewards/quickstart.md`
 
-Planned task streams:
-1. Backend schema and domain model updates.
-2. Earnings engine and ledger logic updates.
-3. Settlement request + approval endpoints.
-4. Messaging constraints and notifications.
-5. Frontend parent/child reward UX and tracking updates.
-6. Automated tests and E2E smoke coverage.
+Agent context update:
+- `.github/copilot-instructions.md` already points to `specs/004-custom-rewards/plan.md`; no marker update required.
+
+## Post-Design Constitution Re-Check
+
+- **Behavior Parity First**: PASS
+- **Spec Before Structure**: PASS
+- **Tests Are Delivery Criteria**: PASS
+- **Clean Architecture Over Legacy Shape**: PASS
+- **Secure Configuration By Default**: PASS
 
 ## Complexity Tracking
 
-No constitution violations requiring justification.
+No constitution exceptions required.

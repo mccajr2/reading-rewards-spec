@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
-import { fetchWithAuth, RewardHistoryItemDto, RewardsPageResponseDto, RewardSummaryDto } from '../../shared/api';
+import { fetchWithAuth, RewardHistoryItemDto, RewardOptionDto, RewardOptionsResponseDto, RewardsPageResponseDto, RewardSummaryDto } from '../../shared/api';
 import { Button, Card, CardContent, Input, PageGuidance, Pagination } from '../../components/shared';
 import './RewardsPage.css';
 
@@ -8,6 +8,8 @@ export function RewardsPage() {
   const { token, user } = useAuth();
   const [summary, setSummary] = useState<RewardSummaryDto>({ totalEarned: 0, totalPaidOut: 0, totalSpent: 0, currentBalance: 0 });
   const [rewards, setRewards] = useState<RewardHistoryItemDto[]>([]);
+  const [rewardOptions, setRewardOptions] = useState<RewardOptionDto[]>([]);
+  const [activeSelectionOptionId, setActiveSelectionOptionId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [totalCount, setTotalCount] = useState(0);
@@ -36,8 +38,18 @@ export function RewardsPage() {
     }
   };
 
+  const loadRewardOptions = async () => {
+    const r = await fetchWithAuth('/reward-options', token);
+    if (r.ok) {
+      const data = await r.json() as RewardOptionsResponseDto;
+      setRewardOptions(data.options ?? []);
+      setActiveSelectionOptionId(data.activeSelectionOptionId ?? null);
+    }
+  };
+
   useEffect(() => {
     loadSummary();
+    loadRewardOptions();
     loadRewards(1);
   }, []);
 
@@ -63,8 +75,19 @@ export function RewardsPage() {
     setLoading(false);
   };
 
+  const handleSelectRewardOption = async (optionId: string) => {
+    setLoading(true);
+    await fetchWithAuth(`/reward-options/${optionId}/select`, token, { method: 'POST' });
+    await loadRewardOptions();
+    await loadSummary();
+    await loadRewards(page);
+    (window as any).updateCredits?.();
+    setLoading(false);
+  };
+
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const isChild = user?.role === 'CHILD';
+  const activeOption = rewardOptions.find(option => option.id === activeSelectionOptionId);
 
   return (
     <div className="page rewards-page">
@@ -113,6 +136,44 @@ export function RewardsPage() {
           <Button variant="secondary" onClick={handleSpend} disabled={loading || !spend || !spendNote}>Spend</Button>
         </div>
       </div>
+
+      {isChild && (
+        <section className="reward-options-section">
+          <h2>My Reward Options</h2>
+          <p className="muted">Choose which reward rule should apply to your future reading progress.</p>
+          {activeOption ? (
+            <p className="muted current-option">
+              Active option: <strong>{activeOption.name}</strong> ({activeOption.earningBasis}, ${activeOption.amount.toFixed(2)})
+            </p>
+          ) : (
+            <p className="muted current-option">No reward option selected yet.</p>
+          )}
+
+          <div className="reward-option-list">
+            {rewardOptions.map(option => (
+              <Card key={option.id} className={`reward-option-card ${option.id === activeSelectionOptionId ? 'active' : ''}`}>
+                <CardContent className="reward-option-content">
+                  <div>
+                    <h3>{option.name}</h3>
+                    <p className="reward-option-meta">
+                      {option.scopeType === 'FAMILY' ? 'Family option' : 'Child option'} · {option.earningBasis} · ${option.amount.toFixed(2)}
+                    </p>
+                    {option.description && <p className="reward-option-description">{option.description}</p>}
+                  </div>
+                  <Button
+                    onClick={() => handleSelectRewardOption(option.id)}
+                    disabled={loading || option.id === activeSelectionOptionId || !option.active}
+                    variant={option.id === activeSelectionOptionId ? 'secondary' : 'default'}
+                  >
+                    {option.id === activeSelectionOptionId ? 'Selected' : 'Select'}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+            {rewardOptions.length === 0 && <p className="muted">No reward options have been shared with you yet.</p>}
+          </div>
+        </section>
+      )}
 
       <h2>Reward History</h2>
       <ul className="rewards-list">

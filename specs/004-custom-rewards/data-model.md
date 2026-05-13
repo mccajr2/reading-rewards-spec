@@ -15,9 +15,12 @@ Represents a parent-defined earning rule offered to one or more children.
 - `scopeChildId` (UUID, nullable when `scopeType=FAMILY`)
 - `name` (string, 1..120)
 - `description` (string, 0..500)
-- `unitType` (`MONEY_USD` | `SCREEN_MINUTES` | `NINTENDO_MINUTES` | `CUSTOM_UNIT`)
+- `valueType` (`MONEY` | `NON_MONEY`)
+- `currencyCode` (string, nullable unless `valueType=MONEY`, default `USD`)
+- `moneyAmount` (decimal, nullable unless `valueType=MONEY`, >0)
+- `nonMoneyQuantity` (decimal, nullable unless `valueType=NON_MONEY`, >0)
+- `nonMoneyUnitLabel` (string, nullable unless `valueType=NON_MONEY`, 1..40)
 - `earningBasis` (`PER_CHAPTER` | `PER_BOOK` | `PER_PAGE_MILESTONE`)
-- `payoutValue` (decimal or integer by unit, >0)
 - `pageMilestoneSize` (integer, nullable unless `PER_PAGE_MILESTONE`, >=1)
 - `isActive` (boolean)
 - `createdByParentId` (UUID)
@@ -27,7 +30,8 @@ Represents a parent-defined earning rule offered to one or more children.
 **Validation rules**:
 - `scopeChildId` required when `scopeType=CHILD`.
 - `pageMilestoneSize` required only for `PER_PAGE_MILESTONE`.
-- `payoutValue` cannot be zero or negative.
+- For `MONEY`, `moneyAmount` is required and `nonMoney*` fields are null.
+- For `NON_MONEY`, `nonMoneyQuantity` and `nonMoneyUnitLabel` are required and `moneyAmount` is null.
 - Duplicate active options with same name for same child are discouraged and flagged in UI.
 
 ---
@@ -62,9 +66,12 @@ Represents a child-book tracking context and chosen tracking mode.
 - `childId` (UUID)
 - `bookId` (string or UUID)
 - `trackingMode` (`BOOK_ONLY` | `CHAPTERS` | `PAGES`)
+- `bookEarningBasis` (`PER_CHAPTER` | `PER_BOOK` | `PER_PAGE_MILESTONE`)
+- `basisLockedAt` (timestamp)
 - `chapterCountPlanned` (integer, nullable)
 - `chaptersCompleted` (integer, default 0)
 - `totalPages` (integer, nullable)
+- `pageCountConfirmed` (boolean, default false for PER_PAGE until user confirm/override)
 - `currentPage` (integer, nullable)
 - `isCompleted` (boolean)
 - `metadataSource` (`OPEN_LIBRARY` | `MANUAL` | `NONE`)
@@ -73,8 +80,11 @@ Represents a child-book tracking context and chosen tracking mode.
 
 **Validation rules**:
 - `BOOK_ONLY` does not require chapter/page fields.
+- `bookEarningBasis` is required at assignment start and immutable while assignment is in progress.
 - `CHAPTERS` requires `chapterCountPlanned >= 1`.
 - `PAGES` requires `totalPages >= 1` and `currentPage <= totalPages`.
+- For `PER_PAGE`, earnings are blocked until `pageCountConfirmed=true`.
+- For `PER_BOOK`, `chapterCountPlanned` and page fields are optional tracking-only and do not gate earning eligibility.
 - Manual override wins over metadata suggestion.
 
 **State transitions**:
@@ -90,13 +100,14 @@ Unit-scoped running balance container for each child.
 **Fields**:
 - `id` (UUID)
 - `childId` (UUID)
-- `unitType` (same enum family as `RewardOption.unitType`)
+- `valueType` (`MONEY` | `NON_MONEY`)
+- `unitKey` (string; `USD` for money or normalized non-money unit label)
 - `availableBalance` (numeric)
 - `pendingPayoutBalance` (numeric)
 - `updatedAt` (timestamp)
 
 **Validation rules**:
-- One active ledger per `(childId, unitType)` pair.
+- One active ledger per `(childId, valueType, unitKey)` pair.
 - No cross-unit aggregation.
 
 ---
@@ -184,4 +195,31 @@ In-app communication between parent and child for reward follow-up.
 
 - Child-visible reward options = active family options + active child-scoped options for that child.
 - Page milestone earnings: `floor(cumulativePages / milestoneSize)` determines total milestone count earned; delta milestones since previous event generate new `EARNED` entries.
+- If multiple eligible options exist for chapter/page completion, completion cannot finalize until child selects one eligible option for that event.
+- Global child active selection is a fallback default only and is superseded by explicit per-book basis and completion-time option choice.
+- Once `bookEarningBasis` is set for a reading assignment, it cannot be changed until the assignment is completed.
+- For PER_PAGE basis, OpenLibrary page count prefill is provisional and must be user confirmed or overridden before milestone earnings begin.
+- For PER_BOOK basis, completion event alone is sufficient for eligibility regardless of chapter/page tracking fields.
+
+---
+
+### 8. ProgressCompletionEventSelection
+
+Represents the child's explicit option choice for a specific chapter/page completion event when multiple options are eligible.
+
+**Fields**:
+- `id` (UUID)
+- `childId` (UUID)
+- `readingAssignmentId` (UUID)
+- `progressEventType` (`CHAPTER_COMPLETION` | `PAGE_MILESTONE_COMPLETION`)
+- `progressEventRefId` (UUID or deterministic event key)
+- `selectedRewardOptionId` (UUID)
+- `selectedAt` (timestamp)
+
+**Validation rules**:
+- Required only when more than one eligible option exists for the event.
+- `selectedRewardOptionId` must belong to event-eligible options and match assignment `bookEarningBasis`.
+
+**State transitions**:
+- `PendingSelection` -> `Selected` -> `EarningPosted`
 - Parent accounts never participate as earning subjects or reward selectors.

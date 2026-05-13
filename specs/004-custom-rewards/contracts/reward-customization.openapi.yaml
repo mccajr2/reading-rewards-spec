@@ -32,9 +32,73 @@ paths:
   /api/children/{childId}/reward-selection:
     put:
       summary: Set active reward selection for child
+      description: Sets global fallback selection. Per-book basis and completion-time explicit choice can override this fallback.
       responses:
         '200':
           description: Active selection updated
+  /api/children/{childId}/books/{bookId}/basis-selection:
+    put:
+      summary: Select and lock earning basis at book start
+      description: Required before earnings progress for a new book. Basis is immutable while the book is in progress. For PER_PAGE, suggested page count must be user-confirmed or overridden before earnings post.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [earningBasis]
+              properties:
+                earningBasis:
+                  type: string
+                  enum: [PER_CHAPTER, PER_BOOK, PER_PAGE_MILESTONE]
+                suggestedPageCount:
+                  type: integer
+                  nullable: true
+                totalPagesOverride:
+                  type: integer
+                  nullable: true
+                pageCountConfirmed:
+                  type: boolean
+                  nullable: true
+      responses:
+        '200':
+          description: Basis selected and locked for the assignment
+        '409':
+          description: Basis already locked for in-progress book
+  /api/children/{childId}/books/{bookId}/page-count-confirmation:
+    put:
+      summary: Confirm or override total page count for PER_PAGE basis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [totalPages, confirmed]
+              properties:
+                totalPages:
+                  type: integer
+                confirmed:
+                  type: boolean
+      responses:
+        '200':
+          description: Page count confirmed and PER_PAGE earnings unblocked
+        '400':
+          description: Invalid page count or non-PER_PAGE assignment
+  /api/children/{childId}/books/{bookId}/completion-option-selection:
+    post:
+      summary: Select reward option for a completion event when multiple eligible options exist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletionOptionSelectionRequest'
+      responses:
+        '200':
+          description: Event-level reward option selected
+        '400':
+          description: Invalid event or option choice
   /api/children/{childId}/reward-ledgers:
     get:
       summary: List child balances grouped by reward unit type
@@ -79,7 +143,7 @@ components:
   schemas:
     RewardOption:
       type: object
-      required: [id, scopeType, unitType, earningBasis, payoutValue, isActive]
+      required: [id, scopeType, valueType, earningBasis, isActive]
       properties:
         id:
           type: string
@@ -93,14 +157,24 @@ components:
           nullable: true
         name:
           type: string
-        unitType:
+        valueType:
           type: string
-          enum: [MONEY_USD, SCREEN_MINUTES, NINTENDO_MINUTES, CUSTOM_UNIT]
+          enum: [MONEY, NON_MONEY]
+        currencyCode:
+          type: string
+          nullable: true
+        moneyAmount:
+          type: number
+          nullable: true
+        nonMoneyQuantity:
+          type: number
+          nullable: true
+        nonMoneyUnitLabel:
+          type: string
+          nullable: true
         earningBasis:
           type: string
           enum: [PER_CHAPTER, PER_BOOK, PER_PAGE_MILESTONE]
-        payoutValue:
-          type: number
         pageMilestoneSize:
           type: integer
           nullable: true
@@ -116,6 +190,21 @@ components:
           type: number
         pendingPayoutBalance:
           type: number
+    ReadingAssignmentConfig:
+      type: object
+      properties:
+        earningBasis:
+          type: string
+          enum: [PER_CHAPTER, PER_BOOK, PER_PAGE_MILESTONE]
+        chapterCountPlanned:
+          type: integer
+          nullable: true
+        totalPages:
+          type: integer
+          nullable: true
+        pageCountConfirmed:
+          type: boolean
+      description: For PER_BOOK, chapterCountPlanned and totalPages are optional tracking-only fields and do not gate earning eligibility.
     SettlementRequest:
       type: object
       required: [id, requestType, status, requestedAmount]
@@ -131,3 +220,15 @@ components:
           enum: [PENDING, APPROVED, REJECTED, CANCELLED]
         requestedAmount:
           type: number
+    CompletionOptionSelectionRequest:
+      type: object
+      required: [progressEventType, progressEventRefId, selectedRewardOptionId]
+      properties:
+        progressEventType:
+          type: string
+          enum: [CHAPTER_COMPLETION, PAGE_MILESTONE_COMPLETION]
+        progressEventRefId:
+          type: string
+        selectedRewardOptionId:
+          type: string
+          format: uuid

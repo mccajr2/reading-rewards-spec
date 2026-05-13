@@ -33,7 +33,8 @@ export function Nav() {
     { label: 'My Books', to: '/reading-list' },
     { label: 'History', to: '/history' },
     { label: 'Rewards', to: '/rewards' },
-    { label: 'Manage Kids', to: '/parent', visible: user?.role === 'PARENT' }
+    { label: 'Manage Kids', to: '/parent', visible: user?.role === 'PARENT' },
+    { label: 'Manage Rewards', to: '/parent/rewards', visible: user?.role === 'PARENT' }
   ];
 
   return (
