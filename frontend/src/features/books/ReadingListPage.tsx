@@ -14,8 +14,11 @@ type BookReadProgress = {
   authors: string[];
   startDate: string;
   bookEarningBasis?: 'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE' | null;
+  trackingMode?: 'BOOK_ONLY' | 'CHAPTERS' | 'PAGES' | null;
   pageCount?: number | null;
   pageCountConfirmed?: boolean;
+  currentPage?: number | null;
+  pageMilestoneCarryForward?: number | null;
   readCount: number;
   readChapterIds: string[];
 };
@@ -45,6 +48,8 @@ export function ReadingListPage() {
   const [readDates, setReadDates] = useState<Record<string, Record<string, string>>>({});
   const [editName, setEditName] = useState<Record<string, { editing: boolean; value: string }>>({});
   const [chapterInput, setChapterInput] = useState<Record<string, string>>({});
+  const [pageInput, setPageInput] = useState<Record<string, string>>({});
+  const [pageLogging, setPageLogging] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -191,6 +196,50 @@ export function ReadingListPage() {
     }
   };
 
+  const handleLogPages = async (br: BookReadProgress) => {
+    const raw = pageInput[br.bookReadId] ?? '';
+    const newPage = parseInt(raw, 10);
+    if (isNaN(newPage) || newPage < 1) {
+      window.alert('Enter a valid page number.');
+      return;
+    }
+    if (br.pageCount && newPage > br.pageCount) {
+      window.alert(`Page number cannot exceed total page count (${br.pageCount}).`);
+      return;
+    }
+    if (br.currentPage != null && newPage <= br.currentPage) {
+      window.alert(`Page number must be greater than your current page (${br.currentPage}).`);
+      return;
+    }
+    setPageLogging(prev => ({ ...prev, [br.bookReadId]: true }));
+    try {
+      const res = await fetchWithAuth(`/bookreads/${br.bookReadId}/pages`, token, {
+        method: 'POST',
+        body: JSON.stringify({ currentPage: newPage }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const milestones: number = data.milestonesCompleted ?? 0;
+        const carryForward: number = data.pageMilestoneCarryForward ?? 0;
+        setBookReads(prev => prev.map(b =>
+          b.bookReadId === br.bookReadId
+            ? { ...b, currentPage: newPage, pageMilestoneCarryForward: carryForward }
+            : b
+        ));
+        setPageInput(prev => ({ ...prev, [br.bookReadId]: '' }));
+        if (milestones > 0) {
+          (window as any).updateCredits?.();
+          window.alert(`Great job! You completed ${milestones} milestone${milestones > 1 ? 's' : ''} and earned a reward!`);
+        }
+      } else {
+        const msg = await res.text();
+        if (msg) window.alert(msg);
+      }
+    } finally {
+      setPageLogging(prev => ({ ...prev, [br.bookReadId]: false }));
+    }
+  };
+
   const handleDeleteBookRead = async (br: BookReadProgress) => {
     if (!window.confirm(`Remove "${br.title}" from your reading list?`)) return;
     const res = await fetchWithAuth(`/bookreads/${br.bookReadId}`, token, { method: 'DELETE' });
@@ -276,9 +325,14 @@ export function ReadingListPage() {
                   <p className="muted">Reward tracks per book. Use Mark as Complete when you finish.</p>
                 )}
                 {br.bookEarningBasis === 'PER_PAGE_MILESTONE' && (
-                  <p className="muted">
-                    Page milestones use {br.pageCountConfirmed ? `${br.pageCount} pages` : 'the confirmed page count'}.
-                  </p>
+                  <div className="page-milestone-info">
+                    <p className="muted">
+                      Page milestones: {br.currentPage != null ? `${br.currentPage} of ${br.pageCount ?? '?'} pages read` : `${br.pageCount ?? '?'} total pages`}.
+                      {br.pageMilestoneCarryForward != null && br.pageMilestoneCarryForward > 0 && (
+                        <span className="carry-forward"> ({br.pageMilestoneCarryForward} pages toward next milestone)</span>
+                      )}
+                    </p>
+                  </div>
                 )}
                 {total > 0 && (
                   <div className="progress-row">
@@ -298,6 +352,37 @@ export function ReadingListPage() {
                 ✕
               </Button>
             </div>
+
+            {br.bookEarningBasis === 'PER_PAGE_MILESTONE' && br.pageCountConfirmed && (
+              <div className="page-progress-section">
+                <h3 className="section-subtitle">Log Reading Progress</h3>
+                <div className="page-progress-row">
+                  <label htmlFor={`page-input-${br.bookReadId}`} className="page-label">
+                    Current page:
+                  </label>
+                  <Input
+                    id={`page-input-${br.bookReadId}`}
+                    type="number"
+                    min={br.currentPage != null ? br.currentPage + 1 : 1}
+                    max={br.pageCount ?? undefined}
+                    placeholder={br.currentPage != null ? `After page ${br.currentPage}` : `1–${br.pageCount ?? '?'}`}
+                    value={pageInput[br.bookReadId] ?? ''}
+                    onChange={e => setPageInput(prev => ({ ...prev, [br.bookReadId]: e.target.value }))}
+                    onKeyDown={e => e.key === 'Enter' && handleLogPages(br)}
+                    className="page-number-input"
+                  />
+                  <Button
+                    onClick={() => handleLogPages(br)}
+                    disabled={pageLogging[br.bookReadId] || !pageInput[br.bookReadId]}
+                  >
+                    {pageLogging[br.bookReadId] ? 'Saving…' : 'Log Pages'}
+                  </Button>
+                </div>
+                {!br.pageCountConfirmed && (
+                  <p className="muted warning">Page count must be confirmed before logging pages.</p>
+                )}
+              </div>
+            )}
 
             {chapList.length === 0 && (
               <div className="chapter-add">

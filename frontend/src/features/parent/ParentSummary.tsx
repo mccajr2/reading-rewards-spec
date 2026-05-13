@@ -33,6 +33,9 @@ type Book = {
   startDate: string;
   endDate?: string;
   inProgress: boolean;
+  bookEarningBasis?: 'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE' | null;
+  pageCount?: number | null;
+  pageCountConfirmed?: boolean;
   chapters: Chapter[];
 };
 
@@ -67,6 +70,8 @@ export function ParentSummary() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState<string | null>(null);
+  const [pageOverrideInput, setPageOverrideInput] = useState<Record<string, string>>({});
+  const [pageOverrideLoading, setPageOverrideLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -102,6 +107,40 @@ export function ParentSummary() {
 
     loadDetail();
   }, [childId, token]);
+
+  const handlePageCountOverride = async (childId: string, book: Book) => {
+    const raw = pageOverrideInput[book.bookReadId] ?? '';
+    const totalPages = parseInt(raw, 10);
+    if (isNaN(totalPages) || totalPages < 1) {
+      window.alert('Enter a valid page count (minimum 1).');
+      return;
+    }
+    setPageOverrideLoading(prev => ({ ...prev, [book.bookReadId]: true }));
+    try {
+      const res = await fetchWithAuth(
+        `/children/${childId}/books/${book.googleBookId}/page-count-confirmation`,
+        token,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ totalPages, confirmed: true }),
+        }
+      );
+      if (res.ok) {
+        setPageOverrideInput(prev => ({ ...prev, [book.bookReadId]: '' }));
+        // Refresh child detail
+        const detailR = await fetchWithAuth(`/parent/${childId}/child-detail`, token);
+        if (detailR.ok) {
+          const data = await detailR.json();
+          setChildDetail(data);
+        }
+      } else {
+        const msg = await res.text();
+        window.alert(msg || 'Error updating page count.');
+      }
+    } finally {
+      setPageOverrideLoading(prev => ({ ...prev, [book.bookReadId]: false }));
+    }
+  };
 
   const handleReverse = async (chapterReadId: string) => {
     if (!childId) return;
@@ -174,6 +213,32 @@ export function ParentSummary() {
                     <p className="muted">
                       {book.inProgress ? 'In Progress' : `Finished on ${new Date(book.endDate!).toLocaleDateString()}`}
                     </p>
+                    {book.inProgress && book.bookEarningBasis === 'PER_PAGE_MILESTONE' && (
+                      <div className="page-override-section" style={{ margin: '0.75rem 0', padding: '0.75rem', background: '#f9f9f9', borderRadius: '4px' }}>
+                        <p className="muted" style={{ marginBottom: '0.5rem' }}>
+                          <strong>Page Milestones</strong> — Current page count: {book.pageCount ?? 'not set'}
+                          {book.pageCountConfirmed ? ' ✓ Confirmed' : ' (not yet confirmed)'}
+                        </p>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="Override page count"
+                            value={pageOverrideInput[book.bookReadId] ?? ''}
+                            onChange={e => setPageOverrideInput(prev => ({ ...prev, [book.bookReadId]: e.target.value }))}
+                            style={{ padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid #ccc', width: '160px' }}
+                          />
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handlePageCountOverride(childDetail!.child.id, book)}
+                            disabled={pageOverrideLoading[book.bookReadId] || !pageOverrideInput[book.bookReadId]}
+                          >
+                            {pageOverrideLoading[book.bookReadId] ? 'Saving…' : 'Set Page Count'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                     {book.chapters.length > 0 && (
                       <div>
                         <h5>Chapters ({book.chapters.filter(ch => ch.isRead).length}/{book.chapters.length} read)</h5>

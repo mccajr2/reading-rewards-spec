@@ -595,8 +595,20 @@ public class ApiController {
                                               @PathVariable String bookId,
                                               @RequestBody Map<String, Object> body,
                                               @AuthenticationPrincipal UserDetails userDetails) {
-        User user = requireChild(getCurrentUser(userDetails));
-        if (!user.getId().equals(childId)) {
+        User user = getCurrentUser(userDetails);
+
+        // Allow child calling for themselves, or parent calling for their child
+        if (user.getRole() == User.UserRole.CHILD) {
+            if (!user.getId().equals(childId)) {
+                return notFound("Book read not found for this user");
+            }
+        } else if (user.getRole() == User.UserRole.PARENT) {
+            // Verify the target child belongs to this parent
+            Optional<User> childOpt = userRepo.findById(childId);
+            if (childOpt.isEmpty() || !user.getId().equals(childOpt.get().getParentId())) {
+                return notFound("Child not found for this parent");
+            }
+        } else {
             return notFound("Book read not found for this user");
         }
 

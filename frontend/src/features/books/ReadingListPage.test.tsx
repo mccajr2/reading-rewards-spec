@@ -298,4 +298,141 @@ describe('ReadingListPage', () => {
       expect(body.rewardOptionId).toBe('opt-2');
     });
   });
+
+  it('shows page progress input for PER_PAGE_MILESTONE books with confirmed page count', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-page-1',
+        googleBookId: 'g-page-1',
+        title: 'Page Milestone Book',
+        description: '',
+        thumbnailUrl: '',
+        authors: ['Author'],
+        startDate: '2026-01-01',
+        bookEarningBasis: 'PER_PAGE_MILESTONE',
+        trackingMode: 'PAGES',
+        pageCount: 200,
+        pageCountConfirmed: true,
+        currentPage: null,
+        pageMilestoneCarryForward: null,
+        readCount: 0,
+        readChapterIds: [],
+      },
+    ];
+
+    vi.spyOn(api, 'fetchWithAuth').mockImplementation((path) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path.includes('/chapters')) return Promise.resolve(mockOkResponse([]));
+      if (path.includes('/chapterreads')) return Promise.resolve(mockOkResponse([]));
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText('Page Milestone Book')).toBeInTheDocument());
+    expect(screen.getByText(/log reading progress/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /log pages/i })).toBeInTheDocument();
+  });
+
+  it('sends page progress and shows milestone reward alert', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-page-2',
+        googleBookId: 'g-page-2',
+        title: 'Milestone Alert Book',
+        description: '',
+        thumbnailUrl: '',
+        authors: ['Author'],
+        startDate: '2026-01-01',
+        bookEarningBasis: 'PER_PAGE_MILESTONE',
+        trackingMode: 'PAGES',
+        pageCount: 300,
+        pageCountConfirmed: true,
+        currentPage: null,
+        pageMilestoneCarryForward: null,
+        readCount: 0,
+        readChapterIds: [],
+      },
+    ];
+
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path.includes('/chapters') && !path.includes('/chapterreads')) return Promise.resolve(mockOkResponse([]));
+      if (path.includes('/chapterreads')) return Promise.resolve(mockOkResponse([]));
+      if (path === '/bookreads/br-page-2/pages' && options?.method === 'POST') {
+        return Promise.resolve(mockOkResponse({ milestonesCompleted: 2, pageMilestoneCarryForward: 10 }));
+      }
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText('Milestone Alert Book')).toBeInTheDocument());
+
+    const pageInput = screen.getByPlaceholderText(/1–300/i);
+    fireEvent.change(pageInput, { target: { value: '110' } });
+    fireEvent.click(screen.getByRole('button', { name: /log pages/i }));
+
+    await waitFor(() => {
+      const pageCall = fetchSpy.mock.calls.find(call =>
+        call[0] === '/bookreads/br-page-2/pages' && call[2]?.method === 'POST'
+      );
+      expect(pageCall).toBeTruthy();
+      const body = JSON.parse(String(pageCall?.[2]?.body));
+      expect(body.currentPage).toBe(110);
+    });
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(
+      expect.stringContaining('2 milestones')
+    ));
+  });
+
+  it('shows page milestone info with carry-forward when pages have been logged', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-page-3',
+        googleBookId: 'g-page-3',
+        title: 'Carry Forward Book',
+        description: '',
+        thumbnailUrl: '',
+        authors: ['Author'],
+        startDate: '2026-01-01',
+        bookEarningBasis: 'PER_PAGE_MILESTONE',
+        trackingMode: 'PAGES',
+        pageCount: 200,
+        pageCountConfirmed: true,
+        currentPage: 75,
+        pageMilestoneCarryForward: 25,
+        readCount: 0,
+        readChapterIds: [],
+      },
+    ];
+
+    vi.spyOn(api, 'fetchWithAuth').mockImplementation((path) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path.includes('/chapters')) return Promise.resolve(mockOkResponse([]));
+      if (path.includes('/chapterreads')) return Promise.resolve(mockOkResponse([]));
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText('Carry Forward Book')).toBeInTheDocument());
+    expect(screen.getByText(/75 of 200 pages read/i)).toBeInTheDocument();
+    expect(screen.getByText(/25 pages toward next milestone/i)).toBeInTheDocument();
+  });
 });

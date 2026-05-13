@@ -2,6 +2,7 @@ package com.example.readingrewards.domain.dto;
 
 import com.example.readingrewards.domain.model.Book;
 import com.example.readingrewards.domain.model.BookRead;
+import com.example.readingrewards.domain.model.ReadingTrackingMode;
 import com.example.readingrewards.domain.model.RewardEarningBasis;
 
 import java.time.LocalDateTime;
@@ -21,6 +22,9 @@ public class BookReadProgressDto {
     private RewardEarningBasis bookEarningBasis;
     private Integer pageCount;
     private boolean pageCountConfirmed;
+    private Integer currentPage;
+    private Integer pageMilestoneCarryForward;
+    private ReadingTrackingMode trackingMode;
 
     public BookReadProgressDto(BookRead br, Book book, int readCount, List<UUID> readChapterIds) {
         this.bookReadId = br.getId();
@@ -35,6 +39,9 @@ public class BookReadProgressDto {
         this.bookEarningBasis = br.getBookEarningBasis();
         this.pageCount = br.getPageCount();
         this.pageCountConfirmed = Boolean.TRUE.equals(br.getPageCountConfirmed());
+        this.currentPage = br.getCurrentPage();
+        this.pageMilestoneCarryForward = br.getPageMilestoneCarryForward();
+        this.trackingMode = br.getTrackingMode();
     }
 
     public UUID getBookReadId() { return bookReadId; }
@@ -49,4 +56,7 @@ public class BookReadProgressDto {
     public RewardEarningBasis getBookEarningBasis() { return bookEarningBasis; }
     public Integer getPageCount() { return pageCount; }
     public boolean isPageCountConfirmed() { return pageCountConfirmed; }
+    public Integer getCurrentPage() { return currentPage; }
+    public Integer getPageMilestoneCarryForward() { return pageMilestoneCarryForward; }
+    public ReadingTrackingMode getTrackingMode() { return trackingMode; }
 }
