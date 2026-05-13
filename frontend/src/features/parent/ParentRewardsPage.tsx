@@ -11,6 +11,44 @@ type Kid = {
   username: string;
 };
 
+function formatNumber(value: number | string): string {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numeric)) {
+    return '0';
+  }
+  return numeric.toString();
+}
+
+function buildRewardLabel(form: {
+  valueType: RewardValueType;
+  earningBasis: string;
+  moneyAmount: string;
+  nonMoneyQuantity: string;
+  nonMoneyUnitLabel: string;
+  pageMilestoneSize: string;
+}) {
+  const valueLabel = form.valueType === 'MONEY'
+    ? `$${formatNumber(form.moneyAmount || '0')}`
+    : `${formatNumber(form.nonMoneyQuantity || '0')} ${form.nonMoneyUnitLabel.trim() || 'reward units'}`;
+
+  if (form.earningBasis === 'PER_PAGE_MILESTONE') {
+    return `${valueLabel} per ${form.pageMilestoneSize || '0'} pages`;
+  }
+  if (form.earningBasis === 'PER_BOOK') {
+    return `${valueLabel} per book`;
+  }
+  return `${valueLabel} per chapter`;
+}
+
+function isDefaultRewardOption(option: RewardOptionDto) {
+  return option.scopeType === 'FAMILY'
+    && !option.childUserId
+    && option.valueType === 'MONEY'
+    && option.earningBasis === 'PER_CHAPTER'
+    && option.pageMilestoneSize == null
+    && option.moneyAmount === 1;
+}
+
 export function ParentRewardsPage() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
@@ -20,8 +58,6 @@ export function ParentRewardsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [rewardForm, setRewardForm] = useState({
-    name: 'Default $1 per chapter',
-    description: 'Starter option for chapter-based earnings',
     valueType: 'MONEY' as RewardValueType,
     scopeType: 'FAMILY',
     childUserId: '',
@@ -66,8 +102,6 @@ export function ParentRewardsPage() {
   const resetRewardForm = () => {
     setEditingRewardOptionId(null);
     setRewardForm({
-      name: 'Default $1 per chapter',
-      description: 'Starter option for chapter-based earnings',
       valueType: 'MONEY',
       scopeType: 'FAMILY',
       childUserId: '',
@@ -85,8 +119,6 @@ export function ParentRewardsPage() {
     setSuccess('');
 
     const payload: Record<string, unknown> = {
-      name: rewardForm.name,
-      description: rewardForm.description,
       valueType: rewardForm.valueType,
       scopeType: rewardForm.scopeType,
       earningBasis: rewardForm.earningBasis,
@@ -120,23 +152,30 @@ export function ParentRewardsPage() {
     loadRewardOptions();
   };
 
-  const handleDeactivateRewardOption = async (id: string) => {
+  const handleToggleRewardOption = async (option: RewardOptionDto) => {
     setError('');
     setSuccess('');
-    const res = await fetchWithAuth(`/reward-options/${id}`, token, { method: 'DELETE' });
-    if (!res.ok && res.status !== 204) {
-      setError(await res.text() || 'Failed to deactivate reward option');
+    const activeCount = rewardOptions.filter(rewardOption => rewardOption.active).length;
+    if (option.active && activeCount <= 1) {
+      setError('Keep at least one reward option active.');
       return;
     }
-    setSuccess('Reward option deactivated');
+
+    const res = await fetchWithAuth(`/reward-options/${option.id}`, token, {
+      method: 'PUT',
+      body: JSON.stringify({ active: !option.active }),
+    });
+    if (!res.ok) {
+      setError(await res.text() || 'Failed to update reward option');
+      return;
+    }
+    setSuccess(option.active ? 'Reward option deactivated' : 'Reward option activated');
     loadRewardOptions();
   };
 
   const startEditingRewardOption = (option: RewardOptionDto) => {
     setEditingRewardOptionId(option.id);
     setRewardForm({
-      name: option.name,
-      description: option.description ?? '',
       valueType: option.valueType ?? 'MONEY',
       scopeType: option.scopeType,
       childUserId: option.childUserId ?? '',
@@ -151,6 +190,8 @@ export function ParentRewardsPage() {
   const familyRewardOptions = rewardOptions.filter(option => option.scopeType === 'FAMILY');
   const childRewardOptions = rewardOptions.filter(option => option.scopeType === 'CHILD');
   const childNameById = new Map(kids.map(kid => [kid.id, kid.firstName]));
+  const activeRewardCount = rewardOptions.filter(option => option.active).length;
+  const rewardPreview = buildRewardLabel(rewardForm);
 
   return (
     <div className="page parent-rewards-page">
@@ -165,9 +206,6 @@ export function ParentRewardsPage() {
         <h2>Reward Options</h2>
         <p className="muted">Create family-wide or child-specific rewards so kids can choose how they earn.</p>
         <form className="reward-option-form" onSubmit={handleSaveRewardOption}>
-          <Input className="input" type="text" placeholder="Reward name" value={rewardForm.name} onChange={e => handleRewardFormChange('name', e.target.value)} required />
-          <Input className="input" type="text" placeholder="Description" value={rewardForm.description} onChange={e => handleRewardFormChange('description', e.target.value)} />
-
           <div className="reward-form-row">
             <label className="reward-select-field">
               <span>Scope</span>
@@ -217,6 +255,10 @@ export function ParentRewardsPage() {
             <Input className="input" type="number" min="1" step="1" placeholder="Page milestone size" value={rewardForm.pageMilestoneSize} onChange={e => handleRewardFormChange('pageMilestoneSize', e.target.value)} disabled={rewardForm.earningBasis !== 'PER_PAGE_MILESTONE'} />
           </div>
 
+          <div className="muted" aria-live="polite">
+            Reward summary: {rewardPreview}
+          </div>
+
           <div className="reward-form-actions">
             <Button type="submit">{editingRewardOptionId ? 'Update Reward Option' : 'Save Reward Option'}</Button>
             {editingRewardOptionId && <Button type="button" variant="secondary" onClick={resetRewardForm}>Cancel</Button>}
@@ -225,6 +267,9 @@ export function ParentRewardsPage() {
 
         {error && <p className="error-msg">{error}</p>}
         {success && <p className="success-msg">{success}</p>}
+        {activeRewardCount <= 1 && rewardOptions.length > 0 && (
+          <p className="muted">Keep at least one reward option active.</p>
+        )}
 
         <div className="reward-options-grid">
           <div>
@@ -238,11 +283,21 @@ export function ParentRewardsPage() {
                     <div>
                       <strong>{option.name}</strong>
                       <p className="muted">{option.earningBasis} · {option.valueType === 'MONEY' ? `$${(option.moneyAmount ?? 0).toFixed(2)}` : `${option.nonMoneyQuantity} ${option.nonMoneyUnitLabel}`}</p>
-                      {option.description && <p className="muted">{option.description}</p>}
+                      {isDefaultRewardOption(option) && <p className="muted">Default starter reward</p>}
                     </div>
                     <div className="table-actions">
-                      <Button type="button" variant="secondary" size="sm" onClick={() => startEditingRewardOption(option)}>Edit</Button>
-                      <Button type="button" variant="secondary" size="sm" onClick={() => handleDeactivateRewardOption(option.id)} disabled={!option.active}>Deactivate</Button>
+                      {!isDefaultRewardOption(option) && (
+                        <Button type="button" variant="secondary" size="sm" onClick={() => startEditingRewardOption(option)}>Edit</Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleToggleRewardOption(option)}
+                        disabled={option.active && activeRewardCount <= 1}
+                      >
+                        {option.active ? 'Deactivate' : 'Activate'}
+                      </Button>
                     </div>
                   </article>
                 ))}
@@ -261,11 +316,18 @@ export function ParentRewardsPage() {
                     <div>
                       <strong>{option.name}</strong>
                       <p className="muted">{childNameById.get(option.childUserId ?? '') ?? 'Unknown child'} · {option.earningBasis} · {option.valueType === 'MONEY' ? `$${(option.moneyAmount ?? 0).toFixed(2)}` : `${option.nonMoneyQuantity} ${option.nonMoneyUnitLabel}`}</p>
-                      {option.description && <p className="muted">{option.description}</p>}
                     </div>
                     <div className="table-actions">
                       <Button type="button" variant="secondary" size="sm" onClick={() => startEditingRewardOption(option)}>Edit</Button>
-                      <Button type="button" variant="secondary" size="sm" onClick={() => handleDeactivateRewardOption(option.id)} disabled={!option.active}>Deactivate</Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleToggleRewardOption(option)}
+                        disabled={option.active && activeRewardCount <= 1}
+                      >
+                        {option.active ? 'Deactivate' : 'Activate'}
+                      </Button>
                     </div>
                   </article>
                 ))}

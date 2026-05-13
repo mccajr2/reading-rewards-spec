@@ -13,6 +13,7 @@ type BookReadProgress = {
   thumbnailUrl: string;
   authors: string[];
   startDate: string;
+  bookEarningBasis?: 'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE' | null;
   readCount: number;
   readChapterIds: string[];
 };
@@ -81,6 +82,45 @@ export function ReadingListPage() {
 
   useEffect(() => { load(); }, []);
 
+  const promptForRewardChoice = async (message: string, options: CompletionOption[]) => {
+    const choice = window.prompt(
+      `${message}\n${options.map((o, i) => `${i + 1}. ${o.name}`).join('\n')}`,
+      '1'
+    );
+    if (!choice) return null;
+    const selected = options[Number(choice) - 1];
+    if (!selected) {
+      window.alert('Invalid option number.');
+      return null;
+    }
+    return selected;
+  };
+
+  const handleMarkComplete = async (br: BookReadProgress) => {
+    let res = await fetchWithAuth(`/books/${br.googleBookId}/finish`, token, { method: 'POST' });
+
+    if (res.status === 409) {
+      const conflictBody = await res.json().catch(() => null) as { availableOptions?: CompletionOption[] } | null;
+      const options = conflictBody?.availableOptions ?? [];
+      if (options.length > 0) {
+        const selected = await promptForRewardChoice('Choose a reward option for this book:', options);
+        if (!selected) return;
+        res = await fetchWithAuth(`/books/${br.googleBookId}/finish`, token, {
+          method: 'POST',
+          body: JSON.stringify({ rewardOptionId: selected.id }),
+        });
+      }
+    }
+
+    if (res.ok) {
+      navigate('/history');
+      return;
+    }
+
+    const msg = await res.text();
+    if (msg) window.alert(msg);
+  };
+
   const handleCheck = async (br: BookReadProgress, chapter: Chapter, isRead: boolean) => {
     const chapList = chapters[br.googleBookId] ?? [];
     if (!isRead) {
@@ -90,16 +130,8 @@ export function ReadingListPage() {
         const conflictBody = await res.json().catch(() => null) as { availableOptions?: CompletionOption[] } | null;
         const options = conflictBody?.availableOptions ?? [];
         if (options.length > 0) {
-          const choice = window.prompt(
-            `Choose a reward option for this chapter:\n${options.map((o, i) => `${i + 1}. ${o.name}`).join('\n')}`,
-            '1'
-          );
-          if (!choice) return;
-          const selected = options[Number(choice) - 1];
-          if (!selected) {
-            window.alert('Invalid option number.');
-            return;
-          }
+          const selected = await promptForRewardChoice('Choose a reward option for this chapter:', options);
+          if (!selected) return;
           res = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapters/${chapter.id}/read`, token, {
             method: 'POST',
             body: JSON.stringify({ rewardOptionId: selected.id }),
@@ -122,7 +154,7 @@ export function ReadingListPage() {
 
         // check if all done
         const newReadIds = new Set([...br.readChapterIds, chapter.id]);
-        if (chapList.length > 0 && chapList.every(c => newReadIds.has(c.id))) {
+        if (br.bookEarningBasis !== 'PER_BOOK' && chapList.length > 0 && chapList.every(c => newReadIds.has(c.id))) {
           if (window.confirm('You finished the book! Mark as finished?')) {
             await fetchWithAuth(`/books/${br.googleBookId}/finish`, token, { method: 'POST' });
             navigate('/history');
@@ -238,6 +270,9 @@ export function ReadingListPage() {
               <div className="book-meta">
                 <h2>{br.title}</h2>
                 <p className="book-authors">{br.authors?.join(', ')}</p>
+                {br.bookEarningBasis === 'PER_BOOK' && (
+                  <p className="muted">Reward tracks per book. Use Mark as Complete when you finish.</p>
+                )}
                 {total > 0 && (
                   <div className="progress-row">
                     <div className="progress-bar">
@@ -247,6 +282,11 @@ export function ReadingListPage() {
                   </div>
                 )}
               </div>
+              {br.bookEarningBasis === 'PER_BOOK' && (
+                <Button variant="secondary" size="sm" onClick={() => handleMarkComplete(br)}>
+                  Mark as Complete
+                </Button>
+              )}
               <Button variant="secondary" size="sm" className="btn-danger-sm" onClick={() => handleDeleteBookRead(br)} title="Remove book">
                 ✕
               </Button>

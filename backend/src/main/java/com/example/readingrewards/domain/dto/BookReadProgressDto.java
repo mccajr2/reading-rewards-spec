@@ -2,6 +2,7 @@ package com.example.readingrewards.domain.dto;
 
 import com.example.readingrewards.domain.model.Book;
 import com.example.readingrewards.domain.model.BookRead;
+import com.example.readingrewards.domain.model.RewardEarningBasis;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,6 +18,7 @@ public class BookReadProgressDto {
     private LocalDateTime startDate;
     private int readCount;
     private List<UUID> readChapterIds;
+    private RewardEarningBasis bookEarningBasis;
 
     public BookReadProgressDto(BookRead br, Book book, int readCount, List<UUID> readChapterIds) {
         this.bookReadId = br.getId();
@@ -28,6 +30,7 @@ public class BookReadProgressDto {
         this.startDate = br.getStartDate();
         this.readCount = readCount;
         this.readChapterIds = readChapterIds;
+        this.bookEarningBasis = br.getBookEarningBasis();
     }
 
     public UUID getBookReadId() { return bookReadId; }
@@ -39,4 +42,5 @@ public class BookReadProgressDto {
     public LocalDateTime getStartDate() { return startDate; }
     public int getReadCount() { return readCount; }
     public List<UUID> getReadChapterIds() { return readChapterIds; }
+    public RewardEarningBasis getBookEarningBasis() { return bookEarningBasis; }
 }

@@ -49,6 +49,9 @@ describe('SearchPage chapter seeding', () => {
       if (path === '/books' && options?.method === 'POST') {
         return Promise.resolve(okJson({ id: 'br-1', googleBookId: 'works/OL82563W' }));
       }
+      if (path === '/children/u1/books/works/OL82563W/basis-selection' && options?.method === 'PUT') {
+        return Promise.resolve(okJson({ bookReadId: 'br-1', bookEarningBasis: 'PER_CHAPTER' }));
+      }
       if (path === '/bookreads/br-1/chapters' && !options?.method) {
         return Promise.resolve(okJson([]));
       }
@@ -74,10 +77,16 @@ describe('SearchPage chapter seeding', () => {
     fireEvent.click(screen.getByRole('button', { name: /add to reading list/i }));
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/reward tracking/i), { target: { value: 'PER_CHAPTER' } });
     fireEvent.change(screen.getByLabelText(/chapter count/i), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: /save chapters/i }));
 
     await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/children/u1/books/works/OL82563W/basis-selection',
+        'test-token',
+        expect.objectContaining({ method: 'PUT' })
+      );
       expect(fetchMock).toHaveBeenCalledWith(
         '/bookreads/br-1/chapters',
         'test-token',
@@ -103,6 +112,9 @@ describe('SearchPage chapter seeding', () => {
       if (path === '/books' && options?.method === 'POST') {
         return Promise.resolve(okJson({ id: 'br-2', googleBookId: 'works/OL82563W' }));
       }
+      if (path === '/children/u1/books/works/OL82563W/basis-selection' && options?.method === 'PUT') {
+        return Promise.resolve(okJson({ bookReadId: 'br-2', bookEarningBasis: 'PER_BOOK' }));
+      }
       if (path === '/bookreads/br-2/chapters' && !options?.method) {
         return Promise.resolve(okJson([{ id: 'c1', name: 'Chapter 1', chapterIndex: 1 }]));
       }
@@ -123,9 +135,16 @@ describe('SearchPage chapter seeding', () => {
 
     await waitFor(() => expect(screen.getByText(/harry potter and the chamber of secrets/i)).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /add to reading list/i }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/reward tracking/i), { target: { value: 'PER_BOOK' } });
+    fireEvent.click(screen.getByRole('button', { name: /save chapters/i }));
 
     await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/children/u1/books/works/OL82563W/basis-selection',
+      'test-token',
+      expect.objectContaining({ method: 'PUT' })
+    );
     expect(fetchMock).not.toHaveBeenCalledWith(
       '/bookreads/br-2/chapters',
       'test-token',

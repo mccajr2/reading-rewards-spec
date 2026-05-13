@@ -15,6 +15,7 @@ public class BookSummaryDto {
     private List<String> authors;
     private String description;
     private String thumbnailUrl;
+    private RewardEarningBasis earningBasis;
 
     public BookSummaryDto() {}
 
@@ -41,6 +42,9 @@ public class BookSummaryDto {
 
     public String getThumbnailUrl() { return thumbnailUrl; }
     public void setThumbnailUrl(String thumbnailUrl) { this.thumbnailUrl = thumbnailUrl; }
+
+    public RewardEarningBasis getEarningBasis() { return earningBasis; }
+    public void setEarningBasis(RewardEarningBasis earningBasis) { this.earningBasis = earningBasis; }
 
     public record BookRollupDto(
         String googleBookId,

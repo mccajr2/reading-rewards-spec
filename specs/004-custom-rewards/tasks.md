@@ -115,6 +115,12 @@ description: "Task list for Parent Reward Customization (Feature 004)"
 - [X] T053 [US2] Backend: Require per-book basis selection (per chapter, per book, per page milestone) at book start before progress events can earn rewards
 - [X] T054 [US2] Backend/Frontend: Support completion-time reward choice when basis is per chapter or per page milestone and multiple eligible options are available
 - [X] T055 [US2] Backend/Frontend: Add integration tests for start-of-book basis selection and completion-time option selection behavior
+- [X] T056 [US1] Backend/Frontend: Infer reward labels from value fields, remove manual name/description entry, and make the default $1/chapter rule view-only except for activation state
+- [X] T057 [US1] Backend/Frontend: Enforce at least one active reward option and block deactivation of the last active option with clear validation messaging
+- [X] T058 [US3] Backend/Frontend: Require tracking basis selection when a book is added, persist the basis on the assignment, and expose PER_BOOK-only completion controls
+- [X] T059 [US2] Backend/Frontend: Prompt for reward choice inline during chapter/page progress only when multiple eligible options exist, without a persistent reward-switching control
+- [X] T060 [US3] Backend/Frontend: Trigger PER_BOOK earning and reward selection from a dedicated Mark as Complete action available only on PER_BOOK assignments
+- [X] T061 [US1][US2][US3] Backend/Frontend: Add focused tests for inferred labels, default activation rules, inline reward-choice prompts, and PER_BOOK completion flow
 
 ---
 
@@ -124,12 +130,14 @@ description: "Task list for Parent Reward Customization (Feature 004)"
 - **Foundational (Phase 2)**: Blocks all user stories
 - **User Stories (Phases 3-6)**: Can proceed in parallel after Foundational
 - **Polish (Final Phase)**: After all stories complete
+- **Clarification Addendum (T056-T061)**: Depends on T051-T055 and should be executed before broader Phase 5/6 work resumes because it changes reward configuration and reading-progress UX already in flight
 
 ## Parallel Execution Examples
 
 - All [P] tasks can be run in parallel
 - User stories can be implemented/tested independently
 - Backend and frontend tasks for each story can be parallelized
+- T056/T057 can proceed in parallel with T058 once shared DTO/API impacts are agreed
 
 ## MVP Scope
 
@@ -139,7 +147,9 @@ description: "Task list for Parent Reward Customization (Feature 004)"
 
 - Each user story phase includes a test task for backend and frontend
 - All test tasks are independently executable
+- Clarification addendum is independently validated when a parent can manage rewards without custom names, a child is only prompted for reward choice when multiple options apply, and PER_BOOK completion is driven by a Mark as Complete action
 
 ---
 
 # END
+

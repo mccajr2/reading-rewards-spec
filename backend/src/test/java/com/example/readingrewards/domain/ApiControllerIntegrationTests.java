@@ -383,13 +383,15 @@ class ApiControllerIntegrationTests {
 
     @Test
     void rewardOptionCrudCreateUpdateDeactivateWorksForParent() throws Exception {
+        mockMvc.perform(get("/api/reward-options")
+            .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk());
+
         MvcResult createResult = mockMvc.perform(post("/api/reward-options")
                 .header("Authorization", "Bearer " + jwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
-                      "name": "Movie Night",
-                      "description": "One movie reward",
                       "scopeType": "FAMILY",
                       "earningBasis": "PER_BOOK",
                       "amount": 5.0,
@@ -397,7 +399,7 @@ class ApiControllerIntegrationTests {
                     }
                     """))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.name").value("Movie Night"))
+            .andExpect(jsonPath("$.name").value("$5 per book"))
             .andReturn();
 
         String rewardOptionId = objectMapper.readTree(createResult.getResponse().getContentAsString())
@@ -409,8 +411,6 @@ class ApiControllerIntegrationTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
-                      "name": "Movie Night Plus",
-                      "description": "Updated reward",
                       "scopeType": "FAMILY",
                       "earningBasis": "PER_BOOK",
                       "amount": 7.5,
@@ -418,7 +418,7 @@ class ApiControllerIntegrationTests {
                     }
                     """))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name").value("Movie Night Plus"))
+                        .andExpect(jsonPath("$.name").value("$7.5 per book"))
             .andExpect(jsonPath("$.moneyAmount").value(7.5));
 
         mockMvc.perform(delete("/api/reward-options/" + rewardOptionId)
@@ -427,6 +427,57 @@ class ApiControllerIntegrationTests {
 
         RewardOption stored = rewardOptionRepository.findById(UUID.fromString(rewardOptionId)).orElseThrow();
         assertThat(stored.getActive()).isFalse();
+        assertThat(stored.getName()).isEqualTo("$7.5 per book");
+        assertThat(stored.getDescription()).isNull();
+    }
+
+    @Test
+    void defaultRewardCannotBeEditedAndLastActiveRewardCannotBeDeactivated() throws Exception {
+        mockMvc.perform(get("/api/reward-options")
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.options[0].name").value("$1 per chapter"));
+
+        RewardOption defaultOption = rewardOptionRepository.findByOwnerUserIdOrderByCreatedAtAsc(getCurrentParent().getId()).stream()
+            .filter(option -> option.getScopeType() == RewardScopeType.FAMILY)
+            .findFirst()
+            .orElseThrow();
+
+        String defaultRewardOptionId = defaultOption.getId().toString();
+
+        mockMvc.perform(put("/api/reward-options/" + defaultRewardOptionId)
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "amount": 2.0
+                    }
+                    """))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(delete("/api/reward-options/" + defaultRewardOptionId)
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/reward-options")
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "scopeType": "FAMILY",
+                      "earningBasis": "PER_BOOK",
+                      "amount": 5.0,
+                      "active": true
+                    }
+                    """))
+            .andExpect(status().isCreated());
+
+        mockMvc.perform(delete("/api/reward-options/" + defaultRewardOptionId)
+                .header("Authorization", "Bearer " + jwt))
+            .andExpect(status().isNoContent());
+
+        RewardOption storedDefault = rewardOptionRepository.findById(UUID.fromString(defaultRewardOptionId)).orElseThrow();
+        assertThat(storedDefault.getActive()).isFalse();
     }
 
     @Test
@@ -509,8 +560,8 @@ class ApiControllerIntegrationTests {
             .withArray("options")
             .findValuesAsText("name");
 
-        assertThat(names).contains("Family chapter reward", "Kid A bonus");
-        assertThat(names).doesNotContain("Kid B bonus");
+        assertThat(names).contains("$1 per chapter", "$3 per book");
+        assertThat(names).doesNotContain("$4 per book");
     }
 
         @Test
@@ -985,9 +1036,12 @@ class ApiControllerIntegrationTests {
 
     @Test
     void finishBookSetsEndDateAndRereadCreatesNewBookRead() throws Exception {
+        createChildForCurrentParent("kid_finish_flow", "Kid Finish");
+        String childJwt = loginAndGetToken("kid_finish_flow", "kidpass");
+
         // Add book
         mockMvc.perform(post("/api/books")
-                .header("Authorization", "Bearer " + jwt)
+            .header("Authorization", "Bearer " + childJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {"googleBookId":"gbk-finish","title":"Finish Book","authors":["Auth"],"description":"","thumbnailUrl":""}
@@ -998,14 +1052,14 @@ class ApiControllerIntegrationTests {
 
         // Finish book
         mockMvc.perform(post("/api/books/gbk-finish/finish")
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childJwt))
             .andExpect(status().isOk());
 
         assertThat(bookReadRepository.findAll().get(0).isInProgress()).isFalse();
 
         // Reread creates a new BookRead
         mockMvc.perform(post("/api/books/gbk-finish/reread")
-                .header("Authorization", "Bearer " + jwt))
+            .header("Authorization", "Bearer " + childJwt))
             .andExpect(status().isOk());
 
         assertThat(bookReadRepository.findAll()).hasSize(2);

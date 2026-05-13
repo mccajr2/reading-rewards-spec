@@ -189,6 +189,7 @@ describe('ReadingListPage', () => {
         thumbnailUrl: '',
         authors: ['Author'],
         startDate: '2026-01-01',
+        bookEarningBasis: 'PER_CHAPTER',
         readCount: 0,
         readChapterIds: [],
       },
@@ -232,6 +233,63 @@ describe('ReadingListPage', () => {
     await waitFor(() => {
       const retryCall = fetchSpy.mock.calls.find(call =>
         call[0] === '/bookreads/br-4/chapters/c-1/read'
+        && call[2]?.method === 'POST'
+        && typeof call[2]?.body === 'string'
+      );
+      expect(retryCall).toBeTruthy();
+      const body = JSON.parse(String(retryCall?.[2]?.body));
+      expect(body.rewardOptionId).toBe('opt-2');
+    });
+  });
+
+  it('shows a PER_BOOK mark as complete action and prompts for reward choice when needed', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-5',
+        googleBookId: 'g-5',
+        title: 'Per Book Choice',
+        description: '',
+        thumbnailUrl: '',
+        authors: ['Author'],
+        startDate: '2026-01-01',
+        bookEarningBasis: 'PER_BOOK',
+        readCount: 0,
+        readChapterIds: [],
+      },
+    ];
+
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('2');
+
+    const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path === '/bookreads/br-5/chapters') return Promise.resolve(mockOkResponse([]));
+      if (path === '/bookreads/br-5/chapterreads') return Promise.resolve(mockOkResponse([]));
+      if (path === '/books/g-5/finish' && options?.method === 'POST' && !options?.body) {
+        return Promise.resolve(mockResponse(409, {
+          availableOptions: [
+            { id: 'opt-1', name: 'Option A' },
+            { id: 'opt-2', name: 'Option B' },
+          ],
+        }));
+      }
+      if (path === '/books/g-5/finish' && options?.method === 'POST' && options?.body) {
+        return Promise.resolve(mockOkResponse({}));
+      }
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /mark as complete/i }));
+
+    await waitFor(() => expect(promptSpy).toHaveBeenCalled());
+    await waitFor(() => {
+      const retryCall = fetchSpy.mock.calls.find(call =>
+        call[0] === '/books/g-5/finish'
         && call[2]?.method === 'POST'
         && typeof call[2]?.body === 'string'
       );

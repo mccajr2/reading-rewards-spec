@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -81,14 +82,82 @@ public class ApiController {
         RewardOption rewardOption = new RewardOption();
         rewardOption.setOwnerUserId(parent.getId());
         rewardOption.setScopeType(RewardScopeType.FAMILY);
-        rewardOption.setName("Default $1 per chapter");
-        rewardOption.setDescription("Starter option for chapter-based earnings");
         rewardOption.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
         rewardOption.setValueType(RewardValueType.MONEY);
         rewardOption.setCurrencyCode("USD");
         rewardOption.setMoneyAmount(1.0);
         rewardOption.setActive(Boolean.TRUE);
+        applyInferredRewardPresentation(rewardOption);
         return rewardOptionRepo.save(rewardOption);
+    }
+
+    private boolean isDefaultFamilyOption(RewardOption rewardOption) {
+        return rewardOption != null
+                && rewardOption.getScopeType() == RewardScopeType.FAMILY
+                && rewardOption.getChildUserId() == null
+                && rewardOption.getValueType() == RewardValueType.MONEY
+                && rewardOption.getEarningBasis() == RewardEarningBasis.PER_CHAPTER
+                && rewardOption.getPageMilestoneSize() == null
+                && rewardOption.getMoneyAmount() != null
+                && Double.compare(rewardOption.getMoneyAmount(), 1.0d) == 0;
+    }
+
+    private void validateDefinitionEditAllowed(RewardOption existing, Map<String, Object> body) {
+        if (!isDefaultFamilyOption(existing)) {
+            return;
+        }
+        boolean changesDefinition = body.keySet().stream().anyMatch(key -> !"active".equals(key));
+        if (changesDefinition) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Default $1 per chapter reward cannot be edited");
+        }
+    }
+
+    private void ensureCanDeactivateRewardOption(User parent, RewardOption option) {
+        if (!Boolean.TRUE.equals(option.getActive())) {
+            return;
+        }
+        long activeOptions = rewardOptionRepo.findByOwnerUserIdOrderByCreatedAtAsc(parent.getId()).stream()
+                .filter(existing -> Boolean.TRUE.equals(existing.getActive()))
+                .count();
+        if (activeOptions <= 1) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "At least one reward option must remain active");
+        }
+    }
+
+    private void deactivateSelectionsForOption(UUID rewardOptionId) {
+        rewardSelectionRepo.findByRewardOptionIdAndActiveTrue(rewardOptionId).forEach(selection -> {
+            selection.setActive(Boolean.FALSE);
+            rewardSelectionRepo.save(selection);
+        });
+    }
+
+    private void applyInferredRewardPresentation(RewardOption rewardOption) {
+        rewardOption.setName(inferRewardOptionName(rewardOption));
+        rewardOption.setDescription(null);
+    }
+
+    private String inferRewardOptionName(RewardOption rewardOption) {
+        String valueLabel;
+        if (rewardOption.getValueType() == RewardValueType.NON_MONEY) {
+            valueLabel = formatNumber(rewardOption.getNonMoneyQuantity()) + " " + String.valueOf(rewardOption.getNonMoneyUnitLabel()).trim();
+        } else {
+            valueLabel = "$" + formatNumber(rewardOption.getMoneyAmount());
+        }
+
+        return switch (rewardOption.getEarningBasis()) {
+            case PER_BOOK -> valueLabel + " per book";
+            case PER_PAGE_MILESTONE -> valueLabel + " per " + rewardOption.getPageMilestoneSize() + " pages";
+            case PER_CHAPTER -> valueLabel + " per chapter";
+        };
+    }
+
+    private String formatNumber(Double value) {
+        if (value == null) {
+            return "0";
+        }
+        return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
     }
 
     private RewardOption ensureDefaultFamilyOption(User parent) {
@@ -163,16 +232,6 @@ public class ApiController {
             rewardOption.setScopeType(RewardScopeType.valueOf(String.valueOf(scopeType).toUpperCase(Locale.ROOT)));
         }
 
-        Object name = body.get("name");
-        if (name != null) {
-            rewardOption.setName(String.valueOf(name).trim());
-        }
-
-        if (body.containsKey("description")) {
-            Object description = body.get("description");
-            rewardOption.setDescription(description == null ? null : String.valueOf(description).trim());
-        }
-
         Object earningBasis = body.get("earningBasis");
         if (earningBasis != null) {
             rewardOption.setEarningBasis(RewardEarningBasis.valueOf(String.valueOf(earningBasis).toUpperCase(Locale.ROOT)));
@@ -245,9 +304,6 @@ public class ApiController {
             rewardOption.setChildUserId(null);
         }
 
-        if (rewardOption.getName() == null || rewardOption.getName().isBlank()) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "name is required");
-        }
         if (rewardOption.getValueType() == RewardValueType.MONEY) {
             if (rewardOption.getMoneyAmount() == null || rewardOption.getMoneyAmount() <= 0) {
                 throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "moneyAmount must be positive for MONEY reward options");
@@ -277,6 +333,8 @@ public class ApiController {
             rewardOption.setPageMilestoneSize(null);
         }
 
+        applyInferredRewardPresentation(rewardOption);
+
         return rewardOption;
     }
 
@@ -286,8 +344,8 @@ public class ApiController {
                 rewardOption.getOwnerUserId(),
                 rewardOption.getChildUserId(),
                 rewardOption.getScopeType(),
-                rewardOption.getName(),
-                rewardOption.getDescription(),
+                inferRewardOptionName(rewardOption),
+                null,
                 rewardOption.getValueType(),
                 rewardOption.getCurrencyCode(),
                 rewardOption.getMoneyAmount(),
@@ -371,6 +429,11 @@ public class ApiController {
         );
         if (existingInProgress.isPresent()) {
             BookRead existing = existingInProgress.get();
+            if (existing.getBookEarningBasis() == null && dto.getEarningBasis() != null) {
+                existing.setBookEarningBasis(dto.getEarningBasis());
+                existing.setBasisLockedAt(LocalDateTime.now());
+                existing = bookReadRepo.save(existing);
+            }
             return new BookSummaryDto.SavedBookDto(
                 existing.getId(),
                 existing.getGoogleBookId(),
@@ -384,6 +447,10 @@ public class ApiController {
         br.setGoogleBookId(book.getGoogleBookId());
         br.setUserId(user.getId());
         br.setStartDate(LocalDateTime.now());
+        if (dto.getEarningBasis() != null) {
+            br.setBookEarningBasis(dto.getEarningBasis());
+            br.setBasisLockedAt(LocalDateTime.now());
+        }
         BookRead savedBr = bookReadRepo.save(br);
         return new BookSummaryDto.SavedBookDto(
             savedBr.getId(),
@@ -444,24 +511,59 @@ public class ApiController {
     @PostMapping("/books/{googleBookId}/finish")
     @Transactional
     public ResponseEntity<?> finishBook(@PathVariable String googleBookId,
+                                        @RequestBody(required = false) Map<String, Object> body,
                                         @AuthenticationPrincipal UserDetails userDetails) {
         User user = requireChild(getCurrentUser(userDetails));
         List<BookRead> bookReads = bookReadRepo.findByUserId(user.getId());
         boolean found = false;
-        RewardOption selectedOption = resolveVisibleSelection(user);
         for (BookRead br : bookReads) {
             if (googleBookId.equals(br.getGoogleBookId()) && br.isInProgress()) {
+                RewardOption completionOption = null;
+                if (br.getBookEarningBasis() == RewardEarningBasis.PER_BOOK) {
+                    User parent = userRepo.findById(user.getParentId())
+                        .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Parent not found"));
+
+                    List<RewardOption> eligibleOptions = rewardOptionRepo.findByOwnerUserIdOrderByCreatedAtAsc(parent.getId())
+                        .stream()
+                        .filter(option -> Boolean.TRUE.equals(option.getActive()))
+                        .filter(option -> option.getEarningBasis() == RewardEarningBasis.PER_BOOK)
+                        .filter(option -> isVisibleToChild(user, option))
+                        .toList();
+
+                    String requestedOptionId = body != null && body.get("rewardOptionId") != null
+                        ? String.valueOf(body.get("rewardOptionId"))
+                        : null;
+
+                    if (requestedOptionId != null && !requestedOptionId.isBlank()) {
+                        UUID requestedId = UUID.fromString(requestedOptionId);
+                        completionOption = eligibleOptions.stream()
+                            .filter(option -> requestedId.equals(option.getId()))
+                            .findFirst()
+                            .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                                "Selected reward option is not eligible for this completion event"));
+                    } else if (eligibleOptions.size() == 1) {
+                        completionOption = eligibleOptions.get(0);
+                    } else if (eligibleOptions.size() > 1) {
+                        List<Map<String, Object>> options = eligibleOptions.stream()
+                            .map(option -> Map.<String, Object>of("id", option.getId(), "name", option.getName()))
+                            .toList();
+                        return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).body(Map.of(
+                            "error", "Multiple eligible reward options found; explicit completion selection is required",
+                            "availableOptions", options
+                        ));
+                    }
+                }
+
                 br.setEndDate(LocalDateTime.now());
                 bookReadRepo.save(br);
                 found = true;
-                if (selectedOption != null && selectedOption.getEarningBasis() == RewardEarningBasis.PER_BOOK
-                        && br.getBookEarningBasis() == RewardEarningBasis.PER_BOOK) {
+                if (completionOption != null) {
                     Reward reward = new Reward();
                     reward.setType(RewardType.EARN);
                     reward.setUserId(user.getId());
-                    reward.setRewardOptionId(selectedOption.getId());
-                    reward.setAmount(selectedOption.getEffectiveAmount());
-                    reward.setNote(selectedOption.getName());
+                    reward.setRewardOptionId(completionOption.getId());
+                    reward.setAmount(completionOption.getEffectiveAmount());
+                    reward.setNote(completionOption.getName());
                     rewardRepo.save(reward);
                 }
             }
@@ -749,7 +851,7 @@ public class ApiController {
         return new BookSummaryDto.RewardRollupDto(earned, paidOut, spent, earned - paidOut - spent, balancesByUnit);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     @GetMapping("/reward-options")
     public BookSummaryDto.RewardOptionsResponseDto getRewardOptions(@AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
@@ -798,8 +900,16 @@ public class ApiController {
         User parent = requireParent(getCurrentUser(userDetails));
         RewardOption existing = rewardOptionRepo.findByIdAndOwnerUserId(rewardOptionId, parent.getId())
                 .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Reward option not found"));
+        validateDefinitionEditAllowed(existing, body);
         RewardOption rewardOption = parseRewardOptionPayload(body, existing, parent);
-        return ResponseEntity.ok(rewardOptionToDto(rewardOptionRepo.save(rewardOption)));
+        if (Boolean.TRUE.equals(existing.getActive()) && Boolean.FALSE.equals(rewardOption.getActive())) {
+            ensureCanDeactivateRewardOption(parent, existing);
+        }
+        RewardOption saved = rewardOptionRepo.save(rewardOption);
+        if (!Boolean.TRUE.equals(saved.getActive())) {
+            deactivateSelectionsForOption(saved.getId());
+        }
+        return ResponseEntity.ok(rewardOptionToDto(saved));
     }
 
     @DeleteMapping("/reward-options/{rewardOptionId}")
@@ -808,12 +918,10 @@ public class ApiController {
         User parent = requireParent(getCurrentUser(userDetails));
         RewardOption existing = rewardOptionRepo.findByIdAndOwnerUserId(rewardOptionId, parent.getId())
                 .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Reward option not found"));
+        ensureCanDeactivateRewardOption(parent, existing);
         existing.setActive(Boolean.FALSE);
         rewardOptionRepo.save(existing);
-        rewardSelectionRepo.findByRewardOptionIdAndActiveTrue(existing.getId()).forEach(selection -> {
-            selection.setActive(Boolean.FALSE);
-            rewardSelectionRepo.save(selection);
-        });
+        deactivateSelectionsForOption(existing.getId());
         return ResponseEntity.noContent().build();
     }
 

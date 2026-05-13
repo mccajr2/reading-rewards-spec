@@ -26,7 +26,7 @@ type PendingChapterSeed = {
 };
 
 export function SearchPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
@@ -35,8 +35,9 @@ export function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [pendingChapterSeed, setPendingChapterSeed] = useState<PendingChapterSeed | null>(null);
+  const [pendingChapterSeed, setPendingChapterSeed] = useState<(PendingChapterSeed & { shouldSeedChapters: boolean }) | null>(null);
   const [chapterCount, setChapterCount] = useState('');
+  const [earningBasis, setEarningBasis] = useState<'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE'>('PER_CHAPTER');
   const [chapterCountError, setChapterCountError] = useState('');
   const [savingChapters, setSavingChapters] = useState(false);
 
@@ -90,18 +91,15 @@ export function SearchPage() {
         shouldSeedChapters = !Array.isArray(existing) || existing.length === 0;
       }
 
-      if (shouldSeedChapters) {
-        setChapterCount('');
-        setChapterCountError('');
-        setPendingChapterSeed({
-          bookReadId: added.id,
-          googleBookId: added.googleBookId,
-          title: book.title,
-        });
-        return;
-      }
-
-      navigate('/reading-list', { state: { newGoogleBookId: added.googleBookId } });
+      setChapterCount('');
+      setChapterCountError('');
+      setEarningBasis('PER_CHAPTER');
+      setPendingChapterSeed({
+        bookReadId: added.id,
+        googleBookId: added.googleBookId,
+        title: book.title,
+        shouldSeedChapters,
+      });
     } finally {
       setAdding(null);
     }
@@ -113,6 +111,7 @@ export function SearchPage() {
     }
     setPendingChapterSeed(null);
     setChapterCount('');
+    setEarningBasis('PER_CHAPTER');
     setChapterCountError('');
     setSavingChapters(false);
   };
@@ -120,33 +119,47 @@ export function SearchPage() {
   const submitChapterSeed = async () => {
     if (!pendingChapterSeed) return;
 
-    const parsedCount = parseInt(chapterCount, 10);
-    if (Number.isNaN(parsedCount) || parsedCount < 1) {
-      setChapterCountError('Enter a chapter count of 1 or more.');
+    const basisRes = await fetchWithAuth(`/children/${user?.id}/books/${pendingChapterSeed.googleBookId}/basis-selection`, token, {
+      method: 'PUT',
+      body: JSON.stringify({ earningBasis }),
+    });
+    if (!basisRes.ok) {
+      setChapterCountError('Could not save this reading setup right now. Please try again.');
       return;
     }
 
-    setSavingChapters(true);
-    setChapterCountError('');
-    try {
-      const chapters = Array.from({ length: parsedCount }, (_, idx) => ({
-        chapterIndex: idx + 1,
-        name: `Chapter ${idx + 1}`,
-      }));
-      const res = await fetchWithAuth(`/bookreads/${pendingChapterSeed.bookReadId}/chapters`, token, {
-        method: 'POST',
-        body: JSON.stringify(chapters),
-      });
-      if (!res.ok) {
-        setChapterCountError('Could not save chapters right now. You can add them later from My Reading List.');
-        setSavingChapters(false);
+    if (pendingChapterSeed.shouldSeedChapters && earningBasis === 'PER_CHAPTER') {
+      const parsedCount = parseInt(chapterCount, 10);
+      if (Number.isNaN(parsedCount) || parsedCount < 1) {
+        setChapterCountError('Enter a chapter count of 1 or more.');
         return;
       }
-      closeChapterSeedModal(true);
-    } catch {
-      setChapterCountError('Could not save chapters right now. You can add them later from My Reading List.');
-      setSavingChapters(false);
+
+      setSavingChapters(true);
+      setChapterCountError('');
+      try {
+        const chapters = Array.from({ length: parsedCount }, (_, idx) => ({
+          chapterIndex: idx + 1,
+          name: `Chapter ${idx + 1}`,
+        }));
+        const res = await fetchWithAuth(`/bookreads/${pendingChapterSeed.bookReadId}/chapters`, token, {
+          method: 'POST',
+          body: JSON.stringify(chapters),
+        });
+        if (!res.ok) {
+          setChapterCountError('Could not save chapters right now. You can add them later from My Reading List.');
+          setSavingChapters(false);
+          return;
+        }
+        closeChapterSeedModal(true);
+      } catch {
+        setChapterCountError('Could not save chapters right now. You can add them later from My Reading List.');
+        setSavingChapters(false);
+      }
+      return;
     }
+
+    closeChapterSeedModal(true);
   };
 
   const handleScan = async (isbnOrUpc: string) => {
@@ -237,9 +250,9 @@ export function SearchPage() {
             closeChapterSeedModal(true);
           }
         }}
-        title="Set Up Chapters"
+        title="Set Up Reading"
         description={pendingChapterSeed
-          ? `"${pendingChapterSeed.title}" is now in your reading list. Add the total number of chapters so we can create a starting checklist.`
+          ? `"${pendingChapterSeed.title}" is now in your reading list. Choose how you want to track rewards for this book.`
           : undefined}
         footer={(
           <>
@@ -253,28 +266,39 @@ export function SearchPage() {
         )}
       >
         <div className="grid gap-4">
-          <FormField
-            label="Chapter count"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            step={1}
-            value={chapterCount}
-            error={chapterCountError || undefined}
-            helperText="We will create shared chapter names like Chapter 1, Chapter 2, and so on."
-            onChange={e => {
-              setChapterCount(e.target.value);
-              if (chapterCountError) {
-                setChapterCountError('');
-              }
-            }}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void submitChapterSeed();
-              }
-            }}
-          />
+          <label className="reward-select-field">
+            <span>Reward tracking</span>
+            <select className="input" value={earningBasis} onChange={e => setEarningBasis(e.target.value as 'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE')}>
+              <option value="PER_CHAPTER">Per chapter</option>
+              <option value="PER_BOOK">Per book</option>
+              <option value="PER_PAGE_MILESTONE">Per page milestone</option>
+            </select>
+          </label>
+          {pendingChapterSeed?.shouldSeedChapters && earningBasis === 'PER_CHAPTER' && (
+            <FormField
+              label="Chapter count"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              step={1}
+              value={chapterCount}
+              error={chapterCountError || undefined}
+              helperText="We will create shared chapter names like Chapter 1, Chapter 2, and so on."
+              onChange={e => {
+                setChapterCount(e.target.value);
+                if (chapterCountError) {
+                  setChapterCountError('');
+                }
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void submitChapterSeed();
+                }
+              }}
+            />
+          )}
+          {earningBasis !== 'PER_CHAPTER' && chapterCountError && <p className="error-msg">{chapterCountError}</p>}
         </div>
       </Modal>
     </div>
