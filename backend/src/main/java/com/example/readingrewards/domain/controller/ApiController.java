@@ -706,10 +706,47 @@ public class ApiController {
     @GetMapping("/rewards/summary")
     public BookSummaryDto.RewardRollupDto getRewardsSummary(@AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
-        double earned = rewardRepo.getTotalEarnedByUserId(user.getId());
-        double paidOut = rewardRepo.getTotalPaidOutByUserId(user.getId());
-        double spent = rewardRepo.getTotalSpentByUserId(user.getId());
-        return new BookSummaryDto.RewardRollupDto(earned, paidOut, spent, earned - paidOut - spent);
+        List<Reward> rewards = rewardRepo.findByUserId(user.getId());
+
+        double earned = rewards.stream()
+            .filter(r -> r.getType() == RewardType.EARN)
+            .mapToDouble(Reward::getAmount)
+            .sum();
+        double paidOut = rewards.stream()
+            .filter(r -> r.getType() == RewardType.PAYOUT)
+            .mapToDouble(Reward::getAmount)
+            .sum();
+        double spent = rewards.stream()
+            .filter(r -> r.getType() == RewardType.SPEND)
+            .mapToDouble(Reward::getAmount)
+            .sum();
+
+        Map<String, UnitAccumulator> unitAcc = new LinkedHashMap<>();
+        for (Reward reward : rewards) {
+            UnitInfo unit = resolveUnitInfo(reward);
+            UnitAccumulator acc = unitAcc.computeIfAbsent(unit.key(),
+                _k -> new UnitAccumulator(unit.unitType(), unit.unitLabel()));
+            if (reward.getType() == RewardType.EARN) {
+            acc.totalEarned += reward.getAmount();
+            } else if (reward.getType() == RewardType.PAYOUT) {
+            acc.totalPaidOut += reward.getAmount();
+            } else if (reward.getType() == RewardType.SPEND) {
+            acc.totalSpent += reward.getAmount();
+            }
+        }
+
+        List<BookSummaryDto.UnitBalanceDto> balancesByUnit = unitAcc.values().stream()
+            .map(acc -> new BookSummaryDto.UnitBalanceDto(
+                acc.unitType,
+                acc.unitLabel,
+                acc.totalEarned,
+                acc.totalPaidOut,
+                acc.totalSpent,
+                acc.totalEarned - acc.totalPaidOut - acc.totalSpent
+            ))
+            .toList();
+
+        return new BookSummaryDto.RewardRollupDto(earned, paidOut, spent, earned - paidOut - spent, balancesByUnit);
     }
 
     @Transactional(readOnly = true)
@@ -828,13 +865,16 @@ public class ApiController {
 
     @PostMapping("/rewards/spend")
     public ResponseEntity<?> spendReward(@RequestParam double amount,
+                                         @RequestParam(required = false) UUID rewardOptionId,
                                          @RequestParam String note,
                                          @AuthenticationPrincipal UserDetails userDetails) {
         if (amount <= 0) return badRequest("Amount must be positive");
         User user = getCurrentUser(userDetails);
+        RewardOption selectedOption = resolveOptionForSettlement(user, rewardOptionId);
         Reward reward = new Reward();
         reward.setType(RewardType.SPEND);
         reward.setUserId(user.getId());
+        reward.setRewardOptionId(selectedOption != null ? selectedOption.getId() : null);
         reward.setAmount(amount);
         reward.setNote(note);
         rewardRepo.save(reward);
@@ -843,12 +883,15 @@ public class ApiController {
 
     @PostMapping("/rewards/payout")
     public ResponseEntity<?> payoutReward(@RequestParam double amount,
+                                          @RequestParam(required = false) UUID rewardOptionId,
                                           @AuthenticationPrincipal UserDetails userDetails) {
         if (amount <= 0) return badRequest("Amount must be positive");
         User user = getCurrentUser(userDetails);
+        RewardOption selectedOption = resolveOptionForSettlement(user, rewardOptionId);
         Reward reward = new Reward();
         reward.setType(RewardType.PAYOUT);
         reward.setUserId(user.getId());
+        reward.setRewardOptionId(selectedOption != null ? selectedOption.getId() : null);
         reward.setAmount(amount);
         reward.setNote("Payout");
         rewardRepo.save(reward);
@@ -893,6 +936,7 @@ public class ApiController {
                 );
             }
         }
+        UnitInfo unit = resolveUnitInfo(reward);
         return new BookSummaryDto.RewardHistoryItemDto(
                 reward.getId(),
                 reward.getType(),
@@ -902,11 +946,45 @@ public class ApiController {
             reward.getRewardOptionId(),
             reward.getRewardOption() != null ? reward.getRewardOption().getName() : null,
             reward.getRewardOption() != null ? reward.getRewardOption().getEarningBasis() : null,
+                unit.unitType(),
+                unit.unitLabel(),
                 chapterReadId,
                 completionDate,
                 chapterDto,
                 bookReadDto
         );
+    }
+
+    private RewardOption resolveOptionForSettlement(User user, UUID rewardOptionId) {
+        if (rewardOptionId != null) {
+            RewardOption option = rewardOptionRepo.findById(rewardOptionId)
+                    .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Reward option not found"));
+            if (user.getRole() == User.UserRole.CHILD && !isVisibleToChild(user, option)) {
+                throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "Reward option is not available to this child");
+            }
+            return option;
+        }
+        if (user.getRole() == User.UserRole.CHILD) {
+            return resolveVisibleSelection(user);
+        }
+        return null;
+    }
+
+    private UnitInfo resolveUnitInfo(Reward reward) {
+        RewardOption option = reward.getRewardOptionId() != null
+                ? rewardOptionRepo.findById(reward.getRewardOptionId()).orElse(null)
+                : null;
+        if (option == null || option.getValueType() == null || option.getValueType() == RewardValueType.MONEY) {
+            String currency = option != null && option.getCurrencyCode() != null && !option.getCurrencyCode().isBlank()
+                    ? option.getCurrencyCode().toUpperCase(Locale.ROOT)
+                    : "USD";
+            return new UnitInfo("MONEY", currency, "MONEY|" + currency);
+        }
+
+        String label = option.getNonMoneyUnitLabel() != null && !option.getNonMoneyUnitLabel().isBlank()
+                ? option.getNonMoneyUnitLabel().trim()
+                : "units";
+        return new UnitInfo("NON_MONEY", label, "NON_MONEY|" + label.toLowerCase(Locale.ROOT));
     }
 
     private ResponseEntity<ErrorResponse> badRequest(String message) {
@@ -939,6 +1017,21 @@ public class ApiController {
             this.endDate = endDate;
         }
     }
+
+    private static final class UnitAccumulator {
+        private final String unitType;
+        private final String unitLabel;
+        private double totalEarned;
+        private double totalPaidOut;
+        private double totalSpent;
+
+        private UnitAccumulator(String unitType, String unitLabel) {
+            this.unitType = unitType;
+            this.unitLabel = unitLabel;
+        }
+    }
+
+    private record UnitInfo(String unitType, String unitLabel, String key) {}
 
     private record ErrorResponse(String error, String message, int status) {}
 }

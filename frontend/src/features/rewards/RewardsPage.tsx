@@ -58,7 +58,10 @@ export function RewardsPage() {
   const handleSpend = async () => {
     if (!spend || !spendNote) return;
     setLoading(true);
-    await fetchWithAuth(`/rewards/spend?amount=${encodeURIComponent(spend)}&note=${encodeURIComponent(spendNote)}`, token, { method: 'POST' });
+    const spendPath = activeSelectionOptionId
+      ? `/rewards/spend?amount=${encodeURIComponent(spend)}&note=${encodeURIComponent(spendNote)}&rewardOptionId=${encodeURIComponent(activeSelectionOptionId)}`
+      : `/rewards/spend?amount=${encodeURIComponent(spend)}&note=${encodeURIComponent(spendNote)}`;
+    await fetchWithAuth(spendPath, token, { method: 'POST' });
     setSpend(''); setSpendNote('');
     await loadSummary(); await loadRewards(page);
     (window as any).updateCredits?.();
@@ -68,7 +71,10 @@ export function RewardsPage() {
   const handlePayout = async () => {
     if (!payout) return;
     setLoading(true);
-    await fetchWithAuth(`/rewards/payout?amount=${encodeURIComponent(payout)}`, token, { method: 'POST' });
+    const payoutPath = activeSelectionOptionId
+      ? `/rewards/payout?amount=${encodeURIComponent(payout)}&rewardOptionId=${encodeURIComponent(activeSelectionOptionId)}`
+      : `/rewards/payout?amount=${encodeURIComponent(payout)}`;
+    await fetchWithAuth(payoutPath, token, { method: 'POST' });
     setPayout('');
     await loadSummary(); await loadRewards(page);
     (window as any).updateCredits?.();
@@ -88,6 +94,12 @@ export function RewardsPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const isChild = user?.role === 'CHILD';
   const activeOption = rewardOptions.find(option => option.id === activeSelectionOptionId);
+  const formatOptionValue = (option: RewardOptionDto) => {
+    if (option.valueType === 'NON_MONEY') {
+      return `${option.nonMoneyQuantity ?? 0} ${option.nonMoneyUnitLabel ?? 'units'}`;
+    }
+    return `$${(option.moneyAmount ?? 0).toFixed(2)}`;
+  };
 
   return (
     <div className="page rewards-page">
@@ -125,6 +137,29 @@ export function RewardsPage() {
         </Card>
       </div>
 
+      {isChild && (summary.balancesByUnit?.length ?? 0) > 0 && (
+        <section className="reward-options-section">
+          <h2>Balances By Reward Unit</h2>
+          <div className="reward-option-list">
+            {summary.balancesByUnit!.map(unit => (
+              <Card key={`${unit.unitType}-${unit.unitLabel}`} className="reward-option-card">
+                <CardContent className="reward-option-content">
+                  <div>
+                    <h3>{unit.unitType === 'MONEY' ? unit.unitLabel : unit.unitLabel}</h3>
+                    <p className="reward-option-meta">
+                      Earned: {unit.unitType === 'MONEY' ? `$${unit.totalEarned.toFixed(2)}` : `${unit.totalEarned.toFixed(2)} ${unit.unitLabel}`}
+                    </p>
+                    <p className="reward-option-meta">
+                      Balance: {unit.unitType === 'MONEY' ? `$${unit.currentBalance.toFixed(2)}` : `${unit.currentBalance.toFixed(2)} ${unit.unitLabel}`}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="rewards-actions">
         <div className="action-group">
           <Input className="input" type="number" min="0" step="0.01" placeholder="Payout amount" value={payout} onChange={e => setPayout(e.target.value)} />
@@ -143,7 +178,7 @@ export function RewardsPage() {
           <p className="muted">Choose which reward rule should apply to your future reading progress.</p>
           {activeOption ? (
             <p className="muted current-option">
-              Active option: <strong>{activeOption.name}</strong> ({activeOption.earningBasis}, ${activeOption.amount.toFixed(2)})
+              Active option: <strong>{activeOption.name}</strong> ({activeOption.earningBasis}, {formatOptionValue(activeOption)})
             </p>
           ) : (
             <p className="muted current-option">No reward option selected yet.</p>
@@ -156,7 +191,7 @@ export function RewardsPage() {
                   <div>
                     <h3>{option.name}</h3>
                     <p className="reward-option-meta">
-                      {option.scopeType === 'FAMILY' ? 'Family option' : 'Child option'} · {option.earningBasis} · ${option.amount.toFixed(2)}
+                      {option.scopeType === 'FAMILY' ? 'Family option' : 'Child option'} · {option.earningBasis} · {formatOptionValue(option)}
                     </p>
                     {option.description && <p className="reward-option-description">{option.description}</p>}
                   </div>
@@ -187,7 +222,12 @@ export function RewardsPage() {
               {r.note && <span className="reward-desc">{r.note}</span>}
             </CardContent>
             <div className="reward-right">
-              <span className="reward-amount">{r.type !== 'EARN' ? '-' : '+'}${r.amount.toFixed(2)}</span>
+              <span className="reward-amount">
+                {r.type !== 'EARN' ? '-' : '+'}
+                {r.unitType === 'NON_MONEY'
+                  ? `${r.amount.toFixed(2)} ${r.unitLabel ?? 'units'}`
+                  : `$${r.amount.toFixed(2)}`}
+              </span>
               <span className="reward-date">{new Date(r.createdAt).toLocaleString()}</span>
             </div>
           </Card>

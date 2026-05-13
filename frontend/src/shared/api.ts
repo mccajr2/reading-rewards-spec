@@ -43,6 +43,16 @@ export type RewardSummaryDto = {
   totalPaidOut: number;
   totalSpent: number;
   currentBalance: number;
+  balancesByUnit?: RewardUnitBalanceDto[];
+};
+
+export type RewardUnitBalanceDto = {
+  unitType: 'MONEY' | 'NON_MONEY';
+  unitLabel: string;
+  totalEarned: number;
+  totalPaidOut: number;
+  totalSpent: number;
+  currentBalance: number;
 };
 
 export type RewardHistoryItemDto = {
@@ -54,6 +64,8 @@ export type RewardHistoryItemDto = {
   rewardOptionId?: string;
   rewardOptionName?: string;
   rewardOptionBasis?: 'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE';
+  unitType?: 'MONEY' | 'NON_MONEY';
+  unitLabel?: string;
   chapterReadId?: string;
   completionDate?: string;
   chapter?: ChapterDto;

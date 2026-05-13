@@ -55,12 +55,12 @@ description: "Task list for Parent Reward Customization (Feature 004)"
 
 - [X] T022 [P] [US2] Backend: Implement ChildRewardSelection endpoints and logic in backend/src/main/java/[...]/web/ and service/
 - [X] T023 [P] [US2] Backend: Update earnings engine for selected reward rule in backend/src/main/java/[...]/service/
-- [ ] T024 [P] [US2] Backend: Implement ledger separation by unit type in backend/src/main/java/[...]/domain/
+- [X] T024 [P] [US2] Backend: Implement ledger separation by unit type in backend/src/main/java/[...]/domain/
 - [X] T025 [P] [US2] Frontend: Implement child reward selection UI in frontend/src/components/ChildRewardSelection.tsx
-- [ ] T026 [P] [US2] Frontend: Show balances grouped by unit type in frontend/src/components/ChildRewardBalances.tsx
+- [X] T026 [P] [US2] Frontend: Show balances grouped by unit type in frontend/src/components/ChildRewardBalances.tsx
 - [X] T027 [P] [US2] Frontend: Integrate selection and ledger APIs in frontend/src/services/
-- [ ] T028 [US2] Backend: Add tests for selection, earnings, and ledger separation in backend/src/test/java/[...]/
-- [ ] T029 [US2] Frontend: Add tests for selection UI and ledger display in frontend/src/tests/
+- [X] T028 [US2] Backend: Add tests for selection, earnings, and ledger separation in backend/src/test/java/[...]/
+- [X] T029 [US2] Frontend: Add tests for selection UI and ledger display in frontend/src/tests/
 
 ---
 

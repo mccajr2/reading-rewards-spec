@@ -1279,4 +1279,106 @@ class ApiControllerIntegrationTests {
         assertThat(bookReadRepository.findAll().get(0).getUserId()).isEqualTo(getCurrentParent().getId());
         assertThat(child.getParentId()).isEqualTo(getCurrentParent().getId());
     }
+
+
+    @Test
+    void rewardsSummarySeparatesBalancesByUnitType() throws Exception {
+        User parent = getCurrentParent();
+        User child = createChildForCurrentParent("kid_unit_sep", "Kid Unit");
+        String childJwt = loginAndGetToken("kid_unit_sep", "kidpass");
+
+        RewardOption moneyOption = new RewardOption();
+        moneyOption.setOwnerUserId(parent.getId());
+        moneyOption.setScopeType(RewardScopeType.FAMILY);
+        moneyOption.setName("Dollar Reward");
+        moneyOption.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
+        moneyOption.setValueType(RewardValueType.MONEY);
+        moneyOption.setCurrencyCode("USD");
+        moneyOption.setMoneyAmount(1.0);
+        moneyOption.setActive(Boolean.TRUE);
+        RewardOption savedMoneyOption = rewardOptionRepository.save(moneyOption);
+
+        RewardOption nonMoneyOption = new RewardOption();
+        nonMoneyOption.setOwnerUserId(parent.getId());
+        nonMoneyOption.setScopeType(RewardScopeType.FAMILY);
+        nonMoneyOption.setName("Screen Time Reward");
+        nonMoneyOption.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
+        nonMoneyOption.setValueType(RewardValueType.NON_MONEY);
+        nonMoneyOption.setNonMoneyQuantity(30.0);
+        nonMoneyOption.setNonMoneyUnitLabel("minutes screen time");
+        nonMoneyOption.setActive(Boolean.TRUE);
+        RewardOption savedNonMoneyOption = rewardOptionRepository.save(nonMoneyOption);
+
+        Reward earnMoney = new Reward();
+        earnMoney.setType(RewardType.EARN);
+        earnMoney.setUserId(child.getId());
+        earnMoney.setRewardOptionId(savedMoneyOption.getId());
+        earnMoney.setAmount(2.0);
+        earnMoney.setNote("Money earn");
+        rewardRepository.save(earnMoney);
+
+        Reward earnNonMoney = new Reward();
+        earnNonMoney.setType(RewardType.EARN);
+        earnNonMoney.setUserId(child.getId());
+        earnNonMoney.setRewardOptionId(savedNonMoneyOption.getId());
+        earnNonMoney.setAmount(60.0);
+        earnNonMoney.setNote("Time earn");
+        rewardRepository.save(earnNonMoney);
+
+        Reward spendMoney = new Reward();
+        spendMoney.setType(RewardType.SPEND);
+        spendMoney.setUserId(child.getId());
+        spendMoney.setRewardOptionId(savedMoneyOption.getId());
+        spendMoney.setAmount(0.5);
+        spendMoney.setNote("Money spend");
+        rewardRepository.save(spendMoney);
+
+        mockMvc.perform(get("/api/rewards/summary")
+                .header("Authorization", "Bearer " + childJwt))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.balancesByUnit").isArray())
+            .andExpect(jsonPath("$.balancesByUnit.length()").value(2))
+            .andExpect(jsonPath("$.balancesByUnit[?(@.unitType == 'MONEY' && @.unitLabel == 'USD')].currentBalance").value(org.hamcrest.Matchers.contains(1.5)))
+            .andExpect(jsonPath("$.balancesByUnit[?(@.unitType == 'NON_MONEY' && @.unitLabel == 'minutes screen time')].currentBalance").value(org.hamcrest.Matchers.contains(60.0)));
+    }
+
+    @Test
+    void spendAndPayoutCanBeAttributedToSelectedRewardUnit() throws Exception {
+        User parent = getCurrentParent();
+        User child = createChildForCurrentParent("kid_spend_unit", "Kid Spend Unit");
+        String childJwt = loginAndGetToken("kid_spend_unit", "kidpass");
+
+        RewardOption moneyOption = new RewardOption();
+        moneyOption.setOwnerUserId(parent.getId());
+        moneyOption.setScopeType(RewardScopeType.FAMILY);
+        moneyOption.setName("Dollar Reward");
+        moneyOption.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
+        moneyOption.setValueType(RewardValueType.MONEY);
+        moneyOption.setCurrencyCode("USD");
+        moneyOption.setMoneyAmount(1.0);
+        moneyOption.setActive(Boolean.TRUE);
+        RewardOption savedMoneyOption = rewardOptionRepository.save(moneyOption);
+
+        mockMvc.perform(post("/api/rewards/spend")
+                .header("Authorization", "Bearer " + childJwt)
+                .param("amount", "0.25")
+                .param("note", "snack")
+                .param("rewardOptionId", savedMoneyOption.getId().toString()))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/rewards/payout")
+                .header("Authorization", "Bearer " + childJwt)
+                .param("amount", "0.50")
+                .param("rewardOptionId", savedMoneyOption.getId().toString()))
+            .andExpect(status().isOk());
+
+        List<Reward> settlementEntries = rewardRepository.findByUserId(child.getId()).stream()
+                .filter(r -> r.getType() == RewardType.SPEND || r.getType() == RewardType.PAYOUT)
+                .toList();
+
+        assertThat(settlementEntries).hasSize(2);
+        assertThat(settlementEntries)
+                .extracting(Reward::getRewardOptionId)
+                .containsOnly(savedMoneyOption.getId());
+    }
 }

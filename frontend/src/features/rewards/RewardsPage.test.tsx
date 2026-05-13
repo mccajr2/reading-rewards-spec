@@ -118,9 +118,41 @@ describe('RewardsPage', () => {
 
   it('submits spend and payout actions and refreshes summary', async () => {
     const user = userEvent.setup();
+    const rewardOptionsPayload = {
+      options: [
+        {
+          id: 'opt-1',
+          ownerUserId: 'parent-1',
+          scopeType: 'FAMILY',
+          name: 'Dollar Reward',
+          description: '',
+          valueType: 'MONEY',
+          currencyCode: 'USD',
+          moneyAmount: 1,
+          earningBasis: 'PER_CHAPTER',
+          active: true,
+          createdAt: '2026-03-01T00:00:00Z',
+          updatedAt: '2026-03-01T00:00:00Z',
+        },
+      ],
+      activeSelectionOptionId: 'opt-1',
+    };
+
     const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
       if (path.includes('/rewards/summary')) {
-        return Promise.resolve(mockOkResponse({ totalEarned: 3, totalPaidOut: 1, totalSpent: 0.5, currentBalance: 1.5 }));
+        return Promise.resolve(mockOkResponse({
+          totalEarned: 3,
+          totalPaidOut: 1,
+          totalSpent: 0.5,
+          currentBalance: 1.5,
+          balancesByUnit: [
+            { unitType: 'MONEY', unitLabel: 'USD', totalEarned: 3, totalPaidOut: 1, totalSpent: 0.5, currentBalance: 1.5 },
+            { unitType: 'NON_MONEY', unitLabel: 'minutes screen time', totalEarned: 60, totalPaidOut: 0, totalSpent: 15, currentBalance: 45 },
+          ],
+        }));
+      }
+      if (path.includes('/reward-options')) {
+        return Promise.resolve(mockOkResponse(rewardOptionsPayload));
       }
       if (path.includes('/rewards?page=')) {
         return Promise.resolve(mockOkResponse({ rewards: [], totalCount: 0 }));
@@ -144,9 +176,12 @@ describe('RewardsPage', () => {
     await user.type(screen.getByPlaceholderText(/what did you buy/i), 'Pencil');
     await user.click(screen.getByRole('button', { name: /^spend$/i }));
 
-    // Amount gets normalized to 0.5 without trailing zero
+    await waitFor(() => expect(screen.getByText(/balances by reward unit/i)).toBeInTheDocument());
+    expect(screen.getAllByText(/minutes screen time/i).length).toBeGreaterThan(0);
+
+    // Amount gets normalized to 0.5 without trailing zero and is attributed to active reward option
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(
-      '/rewards/spend?amount=0.5&note=Pencil',
+      '/rewards/spend?amount=0.5&note=Pencil&rewardOptionId=opt-1',
       'test-token',
       expect.objectContaining({ method: 'POST' })
     ));
@@ -154,9 +189,9 @@ describe('RewardsPage', () => {
     await user.type(screen.getByPlaceholderText(/payout amount/i), '1.00');
     await user.click(screen.getByRole('button', { name: /mark paid out/i }));
 
-    // Amount gets normalized to 1 without trailing zeros
+    // Amount gets normalized to 1 without trailing zeros and is attributed to active reward option
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(
-      '/rewards/payout?amount=1',
+      '/rewards/payout?amount=1&rewardOptionId=opt-1',
       'test-token',
       expect.objectContaining({ method: 'POST' })
     ));

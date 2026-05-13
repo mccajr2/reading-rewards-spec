@@ -68,7 +68,8 @@ public class BookSummaryDto {
         double totalEarned,
         double totalPaidOut,
         double totalSpent,
-        double currentBalance
+        double currentBalance,
+        List<UnitBalanceDto> balancesByUnit
     ) {}
 
     public record RewardHistoryPageDto(List<RewardHistoryItemDto> rewards, int totalCount) {}
@@ -82,10 +83,21 @@ public class BookSummaryDto {
         UUID rewardOptionId,
         String rewardOptionName,
         RewardEarningBasis rewardOptionBasis,
+        String unitType,
+        String unitLabel,
         UUID chapterReadId,
         LocalDateTime completionDate,
         ChapterRefDto chapter,
         BookReadRefDto bookRead
+    ) {}
+
+    public record UnitBalanceDto(
+        String unitType,
+        String unitLabel,
+        double totalEarned,
+        double totalPaidOut,
+        double totalSpent,
+        double currentBalance
     ) {}
 
     public record RewardOptionDto(
