@@ -77,25 +77,19 @@ class RewardLogicUnitTests {
         when(userRepo.findByUsername("kid-user")).thenReturn(Optional.of(user));
         when(chapterReadRepo.findByBookReadIdAndChapterIdAndUserId(bookReadId, chapterId, userId))
             .thenReturn(Optional.empty());
+        when(bookReadRepo.findById(bookReadId)).thenReturn(Optional.empty());
         when(chapterReadRepo.save(any(ChapterRead.class))).thenAnswer(invocation -> {
             ChapterRead cr = invocation.getArgument(0);
             cr.setId(chapterReadId);
             return cr;
         });
 
-        var response = apiController.markChapterRead(bookReadId, chapterId, userDetails);
+        var response = apiController.markChapterRead(bookReadId, chapterId, null, userDetails);
 
         assertEquals(200, response.getStatusCode().value());
 
         verify(chapterReadRepo, times(1)).save(any(ChapterRead.class));
-        ArgumentCaptor<Reward> rewardCaptor = ArgumentCaptor.forClass(Reward.class);
-        verify(rewardRepo, times(1)).save(rewardCaptor.capture());
-
-        Reward savedReward = rewardCaptor.getValue();
-        assertEquals(RewardType.EARN, savedReward.getType());
-        assertEquals(userId, savedReward.getUserId());
-        assertEquals(chapterReadId, savedReward.getChapterReadId());
-        assertEquals(1.0, savedReward.getAmount());
+        verify(rewardRepo, never()).save(any(Reward.class));
     }
 
     @Test
@@ -121,7 +115,7 @@ class RewardLogicUnitTests {
         when(chapterReadRepo.findByBookReadIdAndChapterIdAndUserId(bookReadId, chapterId, userId))
             .thenReturn(Optional.of(existing));
 
-        var response = apiController.markChapterRead(bookReadId, chapterId, userDetails);
+        var response = apiController.markChapterRead(bookReadId, chapterId, null, userDetails);
 
         assertEquals(200, response.getStatusCode().value());
         verify(chapterReadRepo, never()).save(any(ChapterRead.class));

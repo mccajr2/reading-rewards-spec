@@ -48,8 +48,21 @@ public class RewardOption {
     @Column(name = "earning_basis", nullable = false, length = 30)
     private RewardEarningBasis earningBasis;
 
-    @Column(nullable = false)
-    private Double amount;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "value_type", nullable = false, length = 10)
+    private RewardValueType valueType = RewardValueType.MONEY;
+
+    @Column(name = "currency_code", length = 10)
+    private String currencyCode;
+
+    @Column(name = "money_amount")
+    private Double moneyAmount;
+
+    @Column(name = "non_money_quantity")
+    private Double nonMoneyQuantity;
+
+    @Column(name = "non_money_unit_label", length = 40)
+    private String nonMoneyUnitLabel;
 
     @Column(name = "page_milestone_size")
     private Integer pageMilestoneSize;
@@ -90,14 +103,31 @@ public class RewardOption {
     public RewardEarningBasis getEarningBasis() { return earningBasis; }
     public void setEarningBasis(RewardEarningBasis earningBasis) { this.earningBasis = earningBasis; }
 
-    public Double getAmount() { return amount; }
-    public void setAmount(Double amount) { this.amount = amount; }
+    public RewardValueType getValueType() { return valueType; }
+    public void setValueType(RewardValueType valueType) { this.valueType = valueType; }
+
+    public String getCurrencyCode() { return currencyCode; }
+    public void setCurrencyCode(String currencyCode) { this.currencyCode = currencyCode; }
+
+    public Double getMoneyAmount() { return moneyAmount; }
+    public void setMoneyAmount(Double moneyAmount) { this.moneyAmount = moneyAmount; }
+
+    public Double getNonMoneyQuantity() { return nonMoneyQuantity; }
+    public void setNonMoneyQuantity(Double nonMoneyQuantity) { this.nonMoneyQuantity = nonMoneyQuantity; }
+
+    public String getNonMoneyUnitLabel() { return nonMoneyUnitLabel; }
+    public void setNonMoneyUnitLabel(String nonMoneyUnitLabel) { this.nonMoneyUnitLabel = nonMoneyUnitLabel; }
 
     public Integer getPageMilestoneSize() { return pageMilestoneSize; }
     public void setPageMilestoneSize(Integer pageMilestoneSize) { this.pageMilestoneSize = pageMilestoneSize; }
 
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+
+    /** Returns the earneable amount for ledger entries: moneyAmount for MONEY, nonMoneyQuantity for NON_MONEY. */
+    public Double getEffectiveAmount() {
+        return valueType == RewardValueType.NON_MONEY ? nonMoneyQuantity : moneyAmount;
+    }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

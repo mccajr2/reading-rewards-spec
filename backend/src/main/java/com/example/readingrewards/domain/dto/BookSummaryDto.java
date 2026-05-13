@@ -3,6 +3,7 @@ package com.example.readingrewards.domain.dto;
 import com.example.readingrewards.domain.model.RewardType;
 import com.example.readingrewards.domain.model.RewardEarningBasis;
 import com.example.readingrewards.domain.model.RewardScopeType;
+import com.example.readingrewards.domain.model.RewardValueType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -57,7 +58,8 @@ public class BookSummaryDto {
         String googleBookId,
         String title,
         UUID userId,
-        LocalDateTime startDate
+        LocalDateTime startDate,
+        RewardEarningBasis bookEarningBasis
     ) {}
 
     public record CreditsDto(int cents, double dollars) {}
@@ -93,8 +95,12 @@ public class BookSummaryDto {
         RewardScopeType scopeType,
         String name,
         String description,
+        RewardValueType valueType,
+        String currencyCode,
+        Double moneyAmount,
+        Double nonMoneyQuantity,
+        String nonMoneyUnitLabel,
         RewardEarningBasis earningBasis,
-        double amount,
         Integer pageMilestoneSize,
         boolean active,
         LocalDateTime createdAt,

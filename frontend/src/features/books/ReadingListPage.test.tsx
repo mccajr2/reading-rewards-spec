@@ -19,6 +19,15 @@ function mockOkResponse(data: unknown): Response {
   } as unknown as Response;
 }
 
+function mockResponse(status: number, data: unknown): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    json: () => Promise.resolve(data),
+    text: () => Promise.resolve(JSON.stringify(data)),
+    status,
+  } as unknown as Response;
+}
+
 describe('ReadingListPage', () => {
   beforeEach(() => {
     vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
@@ -168,5 +177,67 @@ describe('ReadingListPage', () => {
       expect.objectContaining({ method: 'PUT' })
     ));
     await waitFor(() => expect(screen.getByText('The New Name')).toBeInTheDocument());
+  });
+
+  it('prompts for explicit reward option when completion event has multiple eligible options', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-4',
+        googleBookId: 'g-4',
+        title: 'Option Choice Book',
+        description: '',
+        thumbnailUrl: '',
+        authors: ['Author'],
+        startDate: '2026-01-01',
+        readCount: 0,
+        readChapterIds: [],
+      },
+    ];
+
+    const chapterRows = [
+      { id: 'c-1', name: 'Chapter 1', chapterIndex: 0 },
+      { id: 'c-2', name: 'Chapter 2', chapterIndex: 1 },
+    ];
+
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('2');
+
+    const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path === '/bookreads/br-4/chapters') return Promise.resolve(mockOkResponse(chapterRows));
+      if (path === '/bookreads/br-4/chapterreads') return Promise.resolve(mockOkResponse([]));
+      if (path === '/bookreads/br-4/chapters/c-1/read' && options?.method === 'POST' && !options?.body) {
+        return Promise.resolve(mockResponse(409, {
+          availableOptions: [
+            { id: 'opt-1', name: 'Option A' },
+            { id: 'opt-2', name: 'Option B' },
+          ],
+        }));
+      }
+      if (path === '/bookreads/br-4/chapters/c-1/read' && options?.method === 'POST' && options?.body) {
+        return Promise.resolve(mockOkResponse({}));
+      }
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    const checkboxes = await screen.findAllByRole('checkbox');
+    fireEvent.click(checkboxes[0]);
+
+    await waitFor(() => expect(promptSpy).toHaveBeenCalled());
+    await waitFor(() => {
+      const retryCall = fetchSpy.mock.calls.find(call =>
+        call[0] === '/bookreads/br-4/chapters/c-1/read'
+        && call[2]?.method === 'POST'
+        && typeof call[2]?.body === 'string'
+      );
+      expect(retryCall).toBeTruthy();
+      const body = JSON.parse(String(retryCall?.[2]?.body));
+      expect(body.rewardOptionId).toBe('opt-2');
+    });
   });
 });

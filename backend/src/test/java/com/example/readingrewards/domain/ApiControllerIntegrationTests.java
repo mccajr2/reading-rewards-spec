@@ -13,6 +13,7 @@ import com.example.readingrewards.domain.model.RewardEarningBasis;
 import com.example.readingrewards.domain.model.RewardOption;
 import com.example.readingrewards.domain.model.RewardScopeType;
 import com.example.readingrewards.domain.model.RewardType;
+import com.example.readingrewards.domain.model.RewardValueType;
 import com.example.readingrewards.domain.repo.BookReadRepository;
 import com.example.readingrewards.domain.repo.BookRepository;
 import com.example.readingrewards.domain.repo.ChildRewardSelectionRepository;
@@ -92,8 +93,8 @@ class ApiControllerIntegrationTests {
     @BeforeEach
     void setUp() throws Exception {
         childRewardSelectionRepository.deleteAll();
-        rewardOptionRepository.deleteAll();
         rewardRepository.deleteAll();
+        rewardOptionRepository.deleteAll();
         chapterReadRepository.deleteAll();
         chapterRepository.deleteAll();
         bookReadRepository.deleteAll();
@@ -418,7 +419,7 @@ class ApiControllerIntegrationTests {
                     """))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("Movie Night Plus"))
-            .andExpect(jsonPath("$.amount").value(7.5));
+            .andExpect(jsonPath("$.moneyAmount").value(7.5));
 
         mockMvc.perform(delete("/api/reward-options/" + rewardOptionId)
                 .header("Authorization", "Bearer " + jwt))
@@ -471,7 +472,8 @@ class ApiControllerIntegrationTests {
         familyOption.setScopeType(RewardScopeType.FAMILY);
         familyOption.setName("Family chapter reward");
         familyOption.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
-        familyOption.setAmount(1.0);
+        familyOption.setValueType(com.example.readingrewards.domain.model.RewardValueType.MONEY);
+        familyOption.setMoneyAmount(1.0);
         familyOption.setActive(Boolean.TRUE);
         rewardOptionRepository.save(familyOption);
 
@@ -481,7 +483,8 @@ class ApiControllerIntegrationTests {
         childAOption.setChildUserId(childA.getId());
         childAOption.setName("Kid A bonus");
         childAOption.setEarningBasis(RewardEarningBasis.PER_BOOK);
-        childAOption.setAmount(3.0);
+        childAOption.setValueType(com.example.readingrewards.domain.model.RewardValueType.MONEY);
+        childAOption.setMoneyAmount(3.0);
         childAOption.setActive(Boolean.TRUE);
         rewardOptionRepository.save(childAOption);
 
@@ -491,7 +494,8 @@ class ApiControllerIntegrationTests {
         childBOption.setChildUserId(childB.getId());
         childBOption.setName("Kid B bonus");
         childBOption.setEarningBasis(RewardEarningBasis.PER_BOOK);
-        childBOption.setAmount(4.0);
+        childBOption.setValueType(com.example.readingrewards.domain.model.RewardValueType.MONEY);
+        childBOption.setMoneyAmount(4.0);
         childBOption.setActive(Boolean.TRUE);
         rewardOptionRepository.save(childBOption);
 
@@ -508,6 +512,123 @@ class ApiControllerIntegrationTests {
         assertThat(names).contains("Family chapter reward", "Kid A bonus");
         assertThat(names).doesNotContain("Kid B bonus");
     }
+
+        @Test
+        void bookBasisSelectionLocksOncePerInProgressBook() throws Exception {
+                User child = createChildForCurrentParent("kid_basis_lock", "Kid Basis");
+                String childToken = loginAndGetToken("kid_basis_lock", "kidpass");
+
+                mockMvc.perform(post("/api/books")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "googleBookId": "book-basis-lock",
+                                            "title": "Basis Lock Book",
+                                            "authors": ["Author One"],
+                                            "description": "desc",
+                                            "thumbnailUrl": ""
+                                        }
+                                        """))
+                        .andExpect(status().isOk());
+
+                mockMvc.perform(put("/api/children/" + child.getId() + "/books/book-basis-lock/basis-selection")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "earningBasis": "PER_CHAPTER"
+                                        }
+                                        """))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.bookEarningBasis").value("PER_CHAPTER"));
+
+                mockMvc.perform(put("/api/children/" + child.getId() + "/books/book-basis-lock/basis-selection")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "earningBasis": "PER_BOOK"
+                                        }
+                                        """))
+                        .andExpect(status().isConflict());
+        }
+
+        @Test
+        void chapterRewardsRequirePerChapterBasisSelectionBeforeEarning() throws Exception {
+                User parent = getCurrentParent();
+                User child = createChildForCurrentParent("kid_basis_gate", "Kid Gate");
+                String childToken = loginAndGetToken("kid_basis_gate", "kidpass");
+
+                RewardOption chapterOption = new RewardOption();
+                chapterOption.setOwnerUserId(parent.getId());
+                chapterOption.setScopeType(RewardScopeType.FAMILY);
+                chapterOption.setName("Chapter Reward");
+                chapterOption.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
+                chapterOption.setValueType(RewardValueType.MONEY);
+                chapterOption.setCurrencyCode("USD");
+                chapterOption.setMoneyAmount(1.0);
+                chapterOption.setActive(Boolean.TRUE);
+                RewardOption savedOption = rewardOptionRepository.save(chapterOption);
+
+                mockMvc.perform(post("/api/reward-options/" + savedOption.getId() + "/select")
+                    .header("Authorization", "Bearer " + childToken))
+                        .andExpect(status().isOk());
+
+                MvcResult addBook = mockMvc.perform(post("/api/books")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "googleBookId": "book-basis-gate",
+                                            "title": "Basis Gate Book",
+                                            "authors": ["Author One"],
+                                            "description": "desc",
+                                            "thumbnailUrl": ""
+                                        }
+                                        """))
+                        .andExpect(status().isOk())
+                        .andReturn();
+
+                UUID bookReadId = UUID.fromString(objectMapper.readTree(addBook.getResponse().getContentAsString()).get("id").asText());
+
+                MvcResult chapterResult = mockMvc.perform(post("/api/books/book-basis-gate/chapters")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        [
+                                            {"name":"Chapter 1","chapterIndex":1},
+                                            {"name":"Chapter 2","chapterIndex":2}
+                                        ]
+                                        """))
+                        .andExpect(status().isOk())
+                        .andReturn();
+
+                UUID chapter1Id = UUID.fromString(objectMapper.readTree(chapterResult.getResponse().getContentAsString()).get(0).get("id").asText());
+                UUID chapter2Id = UUID.fromString(objectMapper.readTree(chapterResult.getResponse().getContentAsString()).get(1).get("id").asText());
+
+                mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapter1Id + "/read")
+                                .header("Authorization", "Bearer " + childToken))
+                        .andExpect(status().isOk());
+
+                assertThat(rewardRepository.findByUserId(child.getId())).isEmpty();
+
+                mockMvc.perform(put("/api/children/" + child.getId() + "/books/book-basis-gate/basis-selection")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "earningBasis": "PER_CHAPTER"
+                                        }
+                                        """))
+                        .andExpect(status().isOk());
+
+                mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapter2Id + "/read")
+                                .header("Authorization", "Bearer " + childToken))
+                        .andExpect(status().isOk());
+
+                assertThat(rewardRepository.findByUserId(child.getId())).hasSize(1);
+        }
 
     @Test
     void creditsReflectEarnedRewards() throws Exception {
@@ -700,6 +821,167 @@ class ApiControllerIntegrationTests {
         assertThat(chapterReadRepository.findByUserId(child.getId())).hasSize(1);
         assertThat(rewardRepository.findByUserId(child.getId())).hasSize(1);
     }
+
+        @Test
+        void chapterCompletionBlocksWhenMultipleEligibleOptionsAndNoExplicitChoice() throws Exception {
+                User parent = getCurrentParent();
+                User child = createChildForCurrentParent("kid_multi_options", "Kid Multi");
+                String childToken = loginAndGetToken("kid_multi_options", "kidpass");
+
+                RewardOption optionA = new RewardOption();
+                optionA.setOwnerUserId(parent.getId());
+                optionA.setScopeType(RewardScopeType.FAMILY);
+                optionA.setName("Option A");
+                optionA.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
+                optionA.setValueType(RewardValueType.MONEY);
+                optionA.setCurrencyCode("USD");
+                optionA.setMoneyAmount(1.0);
+                optionA.setActive(Boolean.TRUE);
+                rewardOptionRepository.save(optionA);
+
+                RewardOption optionB = new RewardOption();
+                optionB.setOwnerUserId(parent.getId());
+                optionB.setScopeType(RewardScopeType.FAMILY);
+                optionB.setName("Option B");
+                optionB.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
+                optionB.setValueType(RewardValueType.MONEY);
+                optionB.setCurrencyCode("USD");
+                optionB.setMoneyAmount(2.0);
+                optionB.setActive(Boolean.TRUE);
+                rewardOptionRepository.save(optionB);
+
+                MvcResult addBook = mockMvc.perform(post("/api/books")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "googleBookId": "book-multi-options",
+                                            "title": "Multi Option Book",
+                                            "authors": ["Author One"],
+                                            "description": "desc",
+                                            "thumbnailUrl": ""
+                                        }
+                                        """))
+                        .andExpect(status().isOk())
+                        .andReturn();
+
+                UUID bookReadId = UUID.fromString(objectMapper.readTree(addBook.getResponse().getContentAsString()).get("id").asText());
+
+                MvcResult chapterResult = mockMvc.perform(post("/api/books/book-multi-options/chapters")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        [
+                                            {"name":"Chapter 1","chapterIndex":1}
+                                        ]
+                                        """))
+                        .andExpect(status().isOk())
+                        .andReturn();
+
+                UUID chapter1Id = UUID.fromString(objectMapper.readTree(chapterResult.getResponse().getContentAsString()).get(0).get("id").asText());
+
+                mockMvc.perform(put("/api/children/" + child.getId() + "/books/book-multi-options/basis-selection")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "earningBasis": "PER_CHAPTER"
+                                        }
+                                        """))
+                        .andExpect(status().isOk());
+
+                mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapter1Id + "/read")
+                                .header("Authorization", "Bearer " + childToken))
+                        .andExpect(status().isConflict())
+                        .andExpect(jsonPath("$.availableOptions").isArray())
+                        .andExpect(jsonPath("$.availableOptions.length()").value(2));
+
+                assertThat(rewardRepository.findByUserId(child.getId())).isEmpty();
+        }
+
+        @Test
+        void chapterCompletionUsesExplicitSelectedOptionWhenProvided() throws Exception {
+                User parent = getCurrentParent();
+                User child = createChildForCurrentParent("kid_explicit_option", "Kid Explicit");
+                String childToken = loginAndGetToken("kid_explicit_option", "kidpass");
+
+                RewardOption optionA = new RewardOption();
+                optionA.setOwnerUserId(parent.getId());
+                optionA.setScopeType(RewardScopeType.FAMILY);
+                optionA.setName("Option A");
+                optionA.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
+                optionA.setValueType(RewardValueType.MONEY);
+                optionA.setCurrencyCode("USD");
+                optionA.setMoneyAmount(1.0);
+                optionA.setActive(Boolean.TRUE);
+                rewardOptionRepository.save(optionA);
+
+                RewardOption optionB = new RewardOption();
+                optionB.setOwnerUserId(parent.getId());
+                optionB.setScopeType(RewardScopeType.FAMILY);
+                optionB.setName("Option B");
+                optionB.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
+                optionB.setValueType(RewardValueType.MONEY);
+                optionB.setCurrencyCode("USD");
+                optionB.setMoneyAmount(2.0);
+                optionB.setActive(Boolean.TRUE);
+                RewardOption savedB = rewardOptionRepository.save(optionB);
+
+                MvcResult addBook = mockMvc.perform(post("/api/books")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "googleBookId": "book-explicit-option",
+                                            "title": "Explicit Option Book",
+                                            "authors": ["Author One"],
+                                            "description": "desc",
+                                            "thumbnailUrl": ""
+                                        }
+                                        """))
+                        .andExpect(status().isOk())
+                        .andReturn();
+
+                UUID bookReadId = UUID.fromString(objectMapper.readTree(addBook.getResponse().getContentAsString()).get("id").asText());
+
+                MvcResult chapterResult = mockMvc.perform(post("/api/books/book-explicit-option/chapters")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        [
+                                            {"name":"Chapter 1","chapterIndex":1}
+                                        ]
+                                        """))
+                        .andExpect(status().isOk())
+                        .andReturn();
+
+                UUID chapter1Id = UUID.fromString(objectMapper.readTree(chapterResult.getResponse().getContentAsString()).get(0).get("id").asText());
+
+                mockMvc.perform(put("/api/children/" + child.getId() + "/books/book-explicit-option/basis-selection")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "earningBasis": "PER_CHAPTER"
+                                        }
+                                        """))
+                        .andExpect(status().isOk());
+
+                mockMvc.perform(post("/api/bookreads/" + bookReadId + "/chapters/" + chapter1Id + "/read")
+                                .header("Authorization", "Bearer " + childToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "rewardOptionId": "%s"
+                                        }
+                                        """.formatted(savedB.getId())))
+                        .andExpect(status().isOk());
+
+                List<Reward> rewards = rewardRepository.findByUserId(child.getId());
+                assertThat(rewards).hasSize(1);
+                assertThat(rewards.get(0).getRewardOptionId()).isEqualTo(savedB.getId());
+                assertThat(rewards.get(0).getAmount()).isEqualTo(2.0);
+        }
 
     @Test
     void finishBookSetsEndDateAndRereadCreatesNewBookRead() throws Exception {

@@ -34,6 +34,13 @@ public class BookRead {
     @Column(name = "end_date")
     private LocalDateTime endDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "book_earning_basis", length = 30)
+    private RewardEarningBasis bookEarningBasis;
+
+    @Column(name = "basis_locked_at")
+    private LocalDateTime basisLockedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -65,6 +72,12 @@ public class BookRead {
 
     public LocalDateTime getEndDate() { return endDate; }
     public void setEndDate(LocalDateTime endDate) { this.endDate = endDate; }
+
+    public RewardEarningBasis getBookEarningBasis() { return bookEarningBasis; }
+    public void setBookEarningBasis(RewardEarningBasis bookEarningBasis) { this.bookEarningBasis = bookEarningBasis; }
+
+    public LocalDateTime getBasisLockedAt() { return basisLockedAt; }
+    public void setBasisLockedAt(LocalDateTime basisLockedAt) { this.basisLockedAt = basisLockedAt; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

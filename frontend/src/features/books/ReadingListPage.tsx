@@ -28,6 +28,11 @@ type ChapterRead = {
   completionDate: string;
 };
 
+type CompletionOption = {
+  id: string;
+  name: string;
+};
+
 export function ReadingListPage() {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -79,7 +84,29 @@ export function ReadingListPage() {
   const handleCheck = async (br: BookReadProgress, chapter: Chapter, isRead: boolean) => {
     const chapList = chapters[br.googleBookId] ?? [];
     if (!isRead) {
-      const res = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapters/${chapter.id}/read`, token, { method: 'POST' });
+      let res = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapters/${chapter.id}/read`, token, { method: 'POST' });
+
+      if (res.status === 409) {
+        const conflictBody = await res.json().catch(() => null) as { availableOptions?: CompletionOption[] } | null;
+        const options = conflictBody?.availableOptions ?? [];
+        if (options.length > 0) {
+          const choice = window.prompt(
+            `Choose a reward option for this chapter:\n${options.map((o, i) => `${i + 1}. ${o.name}`).join('\n')}`,
+            '1'
+          );
+          if (!choice) return;
+          const selected = options[Number(choice) - 1];
+          if (!selected) {
+            window.alert('Invalid option number.');
+            return;
+          }
+          res = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapters/${chapter.id}/read`, token, {
+            method: 'POST',
+            body: JSON.stringify({ rewardOptionId: selected.id }),
+          });
+        }
+      }
+
       if (res.ok) {
         const date = new Date().toLocaleDateString();
         setReadDates(prev => ({
@@ -101,6 +128,9 @@ export function ReadingListPage() {
             navigate('/history');
           }
         }
+      } else if (res.status >= 400) {
+        const msg = await res.text();
+        if (msg) window.alert(msg);
       }
     } else {
       // Only allow unchecking the most recently read chapter

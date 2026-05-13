@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { fetchWithAuth, RewardOptionDto, RewardOptionsResponseDto } from '../../shared/api';
+import { fetchWithAuth, RewardOptionDto, RewardOptionsResponseDto, RewardValueType } from '../../shared/api';
 import { Button, Input, PageGuidance } from '../../components/shared';
 import './ParentRewardsPage.css';
 
@@ -22,10 +22,13 @@ export function ParentRewardsPage() {
   const [rewardForm, setRewardForm] = useState({
     name: 'Default $1 per chapter',
     description: 'Starter option for chapter-based earnings',
+    valueType: 'MONEY' as RewardValueType,
     scopeType: 'FAMILY',
     childUserId: '',
     earningBasis: 'PER_CHAPTER',
-    amount: '1.00',
+    moneyAmount: '1.00',
+    nonMoneyQuantity: '',
+    nonMoneyUnitLabel: '',
     pageMilestoneSize: '',
   });
   const [editingRewardOptionId, setEditingRewardOptionId] = useState<string | null>(null);
@@ -65,10 +68,13 @@ export function ParentRewardsPage() {
     setRewardForm({
       name: 'Default $1 per chapter',
       description: 'Starter option for chapter-based earnings',
+      valueType: 'MONEY',
       scopeType: 'FAMILY',
       childUserId: '',
       earningBasis: 'PER_CHAPTER',
-      amount: '1.00',
+      moneyAmount: '1.00',
+      nonMoneyQuantity: '',
+      nonMoneyUnitLabel: '',
       pageMilestoneSize: '',
     });
   };
@@ -81,11 +87,18 @@ export function ParentRewardsPage() {
     const payload: Record<string, unknown> = {
       name: rewardForm.name,
       description: rewardForm.description,
+      valueType: rewardForm.valueType,
       scopeType: rewardForm.scopeType,
       earningBasis: rewardForm.earningBasis,
-      amount: Number(rewardForm.amount),
       active: true,
     };
+
+    if (rewardForm.valueType === 'MONEY') {
+      payload.moneyAmount = Number(rewardForm.moneyAmount);
+    } else {
+      payload.nonMoneyQuantity = Number(rewardForm.nonMoneyQuantity);
+      payload.nonMoneyUnitLabel = rewardForm.nonMoneyUnitLabel;
+    }
 
     if (rewardForm.scopeType === 'CHILD') {
       payload.childUserId = rewardForm.childUserId;
@@ -124,10 +137,13 @@ export function ParentRewardsPage() {
     setRewardForm({
       name: option.name,
       description: option.description ?? '',
+      valueType: option.valueType ?? 'MONEY',
       scopeType: option.scopeType,
       childUserId: option.childUserId ?? '',
       earningBasis: option.earningBasis,
-      amount: option.amount.toFixed(2),
+      moneyAmount: option.moneyAmount != null ? option.moneyAmount.toFixed(2) : '',
+      nonMoneyQuantity: option.nonMoneyQuantity != null ? String(option.nonMoneyQuantity) : '',
+      nonMoneyUnitLabel: option.nonMoneyUnitLabel ?? '',
       pageMilestoneSize: option.pageMilestoneSize ? String(option.pageMilestoneSize) : '',
     });
   };
@@ -169,6 +185,14 @@ export function ParentRewardsPage() {
                 <option value="PER_PAGE_MILESTONE">Per page milestone</option>
               </select>
             </label>
+
+            <label className="reward-select-field">
+              <span>Reward type</span>
+              <select className="input" value={rewardForm.valueType} onChange={e => handleRewardFormChange('valueType', e.target.value)}>
+                <option value="MONEY">Money (e.g. $1.00)</option>
+                <option value="NON_MONEY">Non-money (e.g. 30 minutes screen time)</option>
+              </select>
+            </label>
           </div>
 
           {rewardForm.scopeType === 'CHILD' && (
@@ -182,7 +206,14 @@ export function ParentRewardsPage() {
           )}
 
           <div className="reward-form-row">
-            <Input className="input" type="number" min="0" step="0.01" placeholder="Amount" value={rewardForm.amount} onChange={e => handleRewardFormChange('amount', e.target.value)} required />
+            {rewardForm.valueType === 'MONEY' ? (
+              <Input className="input" type="number" min="0" step="0.01" placeholder="Dollar amount" value={rewardForm.moneyAmount} onChange={e => handleRewardFormChange('moneyAmount', e.target.value)} required />
+            ) : (
+              <>
+                <Input className="input" type="number" min="0" step="any" placeholder="Quantity (e.g. 30)" value={rewardForm.nonMoneyQuantity} onChange={e => handleRewardFormChange('nonMoneyQuantity', e.target.value)} required />
+                <Input className="input" type="text" placeholder="Unit label (e.g. minutes screen time)" value={rewardForm.nonMoneyUnitLabel} onChange={e => handleRewardFormChange('nonMoneyUnitLabel', e.target.value)} required />
+              </>
+            )}
             <Input className="input" type="number" min="1" step="1" placeholder="Page milestone size" value={rewardForm.pageMilestoneSize} onChange={e => handleRewardFormChange('pageMilestoneSize', e.target.value)} disabled={rewardForm.earningBasis !== 'PER_PAGE_MILESTONE'} />
           </div>
 
@@ -206,7 +237,7 @@ export function ParentRewardsPage() {
                   <article className="reward-option-card" key={option.id}>
                     <div>
                       <strong>{option.name}</strong>
-                      <p className="muted">{option.earningBasis} · ${option.amount.toFixed(2)}</p>
+                      <p className="muted">{option.earningBasis} · {option.valueType === 'MONEY' ? `$${(option.moneyAmount ?? 0).toFixed(2)}` : `${option.nonMoneyQuantity} ${option.nonMoneyUnitLabel}`}</p>
                       {option.description && <p className="muted">{option.description}</p>}
                     </div>
                     <div className="table-actions">
@@ -229,7 +260,7 @@ export function ParentRewardsPage() {
                   <article className="reward-option-card" key={option.id}>
                     <div>
                       <strong>{option.name}</strong>
-                      <p className="muted">{childNameById.get(option.childUserId ?? '') ?? 'Unknown child'} · {option.earningBasis} · ${option.amount.toFixed(2)}</p>
+                      <p className="muted">{childNameById.get(option.childUserId ?? '') ?? 'Unknown child'} · {option.earningBasis} · {option.valueType === 'MONEY' ? `$${(option.moneyAmount ?? 0).toFixed(2)}` : `${option.nonMoneyQuantity} ${option.nonMoneyUnitLabel}`}</p>
                       {option.description && <p className="muted">{option.description}</p>}
                     </div>
                     <div className="table-actions">

@@ -65,8 +65,8 @@ describe('ParentRewardsPage', () => {
 
     await user.clear(screen.getByPlaceholderText(/reward name/i));
     await user.type(screen.getByPlaceholderText(/reward name/i), 'Movie Night');
-    await user.clear(screen.getByPlaceholderText(/^amount$/i));
-    await user.type(screen.getByPlaceholderText(/^amount$/i), '5.00');
+    await user.clear(screen.getByPlaceholderText(/dollar amount/i));
+    await user.type(screen.getByPlaceholderText(/dollar amount/i), '5.00');
     await user.click(screen.getByRole('button', { name: /save reward option/i }));
 
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(
@@ -103,8 +103,8 @@ describe('ParentRewardsPage', () => {
     await user.selectOptions(screen.getByLabelText(/earning basis/i), 'PER_PAGE_MILESTONE');
     await user.clear(screen.getByPlaceholderText(/reward name/i));
     await user.type(screen.getByPlaceholderText(/reward name/i), 'Pages Reward');
-    await user.clear(screen.getByPlaceholderText(/^amount$/i));
-    await user.type(screen.getByPlaceholderText(/^amount$/i), '2');
+    await user.clear(screen.getByPlaceholderText(/dollar amount/i));
+    await user.type(screen.getByPlaceholderText(/dollar amount/i), '2');
     await user.type(screen.getByPlaceholderText(/page milestone size/i), '25');
     await user.click(screen.getByRole('button', { name: /save reward option/i }));
 

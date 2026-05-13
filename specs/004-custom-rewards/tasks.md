@@ -111,10 +111,10 @@ description: "Task list for Parent Reward Customization (Feature 004)"
 ## Scope Alignment Addendum (Spec Delta from UX Feedback)
 
 - [X] T051 [US1] Frontend: Split parent flows so Manage Rewards is a dedicated page and remove reward configuration UI from kid-management page
-- [ ] T052 [US1] Backend/Frontend: Add reward value model (monetary vs non-monetary) and enforce unit-aware validation/display (no dollar amount for non-monetary rewards)
-- [ ] T053 [US2] Backend: Require per-book basis selection (per chapter, per book, per page milestone) at book start before progress events can earn rewards
-- [ ] T054 [US2] Backend/Frontend: Support completion-time reward choice when basis is per chapter or per page milestone and multiple eligible options are available
-- [ ] T055 [US2] Backend/Frontend: Add integration tests for start-of-book basis selection and completion-time option selection behavior
+- [X] T052 [US1] Backend/Frontend: Add reward value model (monetary vs non-monetary) and enforce unit-aware validation/display (no dollar amount for non-monetary rewards)
+- [X] T053 [US2] Backend: Require per-book basis selection (per chapter, per book, per page milestone) at book start before progress events can earn rewards
+- [X] T054 [US2] Backend/Frontend: Support completion-time reward choice when basis is per chapter or per page milestone and multiple eligible options are available
+- [X] T055 [US2] Backend/Frontend: Add integration tests for start-of-book basis selection and completion-time option selection behavior
 
 ---
 

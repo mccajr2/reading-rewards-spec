@@ -77,6 +77,7 @@ export type RewardsPageResponseDto = {
 
 export type RewardScopeType = 'FAMILY' | 'CHILD';
 export type RewardEarningBasis = 'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE';
+export type RewardValueType = 'MONEY' | 'NON_MONEY';
 
 export type RewardOptionDto = {
   id: string;
@@ -85,8 +86,12 @@ export type RewardOptionDto = {
   scopeType: RewardScopeType;
   name: string;
   description?: string | null;
+  valueType: RewardValueType;
+  currencyCode?: string | null;
+  moneyAmount?: number | null;
+  nonMoneyQuantity?: number | null;
+  nonMoneyUnitLabel?: string | null;
   earningBasis: RewardEarningBasis;
-  amount: number;
   pageMilestoneSize?: number | null;
   active: boolean;
   createdAt: string;
