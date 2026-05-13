@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -1507,5 +1508,297 @@ class ApiControllerIntegrationTests {
         assertThat(settlementEntries)
                 .extracting(Reward::getRewardOptionId)
                 .containsOnly(savedMoneyOption.getId());
+    }
+
+    @Test
+    void pageProgressLoggingCalculatesMilestonesWithCarryForward() throws Exception {
+        User parent = getCurrentParent();
+        User child = createChildForCurrentParent("kid_page_progress", "Kid Pages");
+        String childToken = loginAndGetToken("kid_page_progress", "kidpass");
+
+        // Create a per-page-milestone reward option (50 pages per milestone)
+        RewardOption pageOption = new RewardOption();
+        pageOption.setOwnerUserId(parent.getId());
+        pageOption.setScopeType(RewardScopeType.FAMILY);
+        pageOption.setName("50 Pages = $1");
+        pageOption.setEarningBasis(RewardEarningBasis.PER_PAGE_MILESTONE);
+        pageOption.setPageMilestoneSize(50);
+        pageOption.setValueType(RewardValueType.MONEY);
+        pageOption.setCurrencyCode("USD");
+        pageOption.setMoneyAmount(1.0);
+        pageOption.setActive(Boolean.TRUE);
+        RewardOption savedOption = rewardOptionRepository.save(pageOption);
+
+        // Create a book with page tracking
+        mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "googleBookId": "book-page-progress",
+                        "title": "Page Progress Book",
+                        "authors": ["Author One"],
+                        "description": "desc",
+                        "thumbnailUrl": "",
+                        "pageCount": 200
+                    }
+                    """))
+            .andExpect(status().isOk());
+
+        // Select PER_PAGE_MILESTONE basis and confirm page count
+        MvcResult selectBasisResult = mockMvc.perform(put("/api/children/" + child.getId() + "/books/book-page-progress/basis-selection")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "earningBasis": "PER_PAGE_MILESTONE",
+                        "pageCount": 200
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String content = selectBasisResult.getResponse().getContentAsString();
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> response = mapper.readValue(content, Map.class);
+        UUID bookReadId = UUID.fromString((String) response.get("bookReadId"));
+
+        // Log page progress: read 75 pages (1 milestone completed, 25 pages carry-forward)
+        MvcResult pageResult1 = mockMvc.perform(post("/api/bookreads/" + bookReadId + "/pages")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "currentPage": 75
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String pageContent1 = pageResult1.getResponse().getContentAsString();
+        Map<String, Object> pageResponse1 = mapper.readValue(pageContent1, Map.class);
+        assertThat(pageResponse1.get("milestonesCompleted")).isEqualTo(1);
+        assertThat(pageResponse1.get("pageMilestoneCarryForward")).isEqualTo(25);
+
+        // Verify 1 reward was earned
+        List<Reward> rewards1 = rewardRepository.findByUserId(child.getId());
+        assertThat(rewards1).hasSize(1);
+        assertThat(rewards1.get(0).getAmount()).isEqualTo(1.0);
+
+        // Log more pages: read 60 more pages (total 135, 1 more milestone, 35 carry-forward)
+        MvcResult pageResult2 = mockMvc.perform(post("/api/bookreads/" + bookReadId + "/pages")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "currentPage": 135
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String pageContent2 = pageResult2.getResponse().getContentAsString();
+        Map<String, Object> pageResponse2 = mapper.readValue(pageContent2, Map.class);
+        assertThat(pageResponse2.get("milestonesCompleted")).isEqualTo(1);
+        assertThat(pageResponse2.get("pageMilestoneCarryForward")).isEqualTo(35);
+
+        // Verify 2 rewards total now earned
+        List<Reward> rewards2 = rewardRepository.findByUserId(child.getId());
+        assertThat(rewards2).hasSize(2);
+    }
+
+    @Test
+    void pageProgressLoggingRequiresConfirmedPageCount() throws Exception {
+        User child = createChildForCurrentParent("kid_no_confirm", "Kid No Confirm");
+        String childToken = loginAndGetToken("kid_no_confirm", "kidpass");
+
+        // Create a book without confirming page count
+        mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "googleBookId": "book-no-confirm",
+                        "title": "No Confirm Book",
+                        "authors": ["Author One"],
+                        "description": "desc",
+                        "thumbnailUrl": "",
+                        "pageCount": 200
+                    }
+                    """))
+            .andExpect(status().isOk());
+
+        // Select PER_PAGE_MILESTONE basis but don't confirm page count
+        MvcResult selectBasisResult = mockMvc.perform(put("/api/children/" + child.getId() + "/books/book-no-confirm/basis-selection")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "earningBasis": "PER_PAGE_MILESTONE",
+                        "suggestedPageCount": 200
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String content = selectBasisResult.getResponse().getContentAsString();
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> response = mapper.readValue(content, Map.class);
+        UUID bookReadId = UUID.fromString((String) response.get("bookReadId"));
+
+        // Attempt to log page progress without confirming page count - should fail
+        mockMvc.perform(post("/api/bookreads/" + bookReadId + "/pages")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "currentPage": 50
+                    }
+                    """))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().string(containsString("Page count must be confirmed")));
+    }
+
+    @Test
+    void pageProgressLoggingRequiresPerPageBasis() throws Exception {
+        User parent = getCurrentParent();
+        User child = createChildForCurrentParent("kid_chapter_basis", "Kid Chapter");
+        String childToken = loginAndGetToken("kid_chapter_basis", "kidpass");
+
+        // Create a chapter reward and select it
+        RewardOption chapterOption = new RewardOption();
+        chapterOption.setOwnerUserId(parent.getId());
+        chapterOption.setScopeType(RewardScopeType.FAMILY);
+        chapterOption.setName("Chapter Reward");
+        chapterOption.setEarningBasis(RewardEarningBasis.PER_CHAPTER);
+        chapterOption.setValueType(RewardValueType.MONEY);
+        chapterOption.setCurrencyCode("USD");
+        chapterOption.setMoneyAmount(1.0);
+        chapterOption.setActive(Boolean.TRUE);
+        RewardOption savedOption = rewardOptionRepository.save(chapterOption);
+
+        mockMvc.perform(post("/api/reward-options/" + savedOption.getId() + "/select")
+            .header("Authorization", "Bearer " + childToken))
+                .andExpect(status().isOk());
+
+        // Create a book
+        mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "googleBookId": "book-chapter-basis",
+                        "title": "Chapter Basis Book",
+                        "authors": ["Author One"],
+                        "description": "desc",
+                        "thumbnailUrl": ""
+                    }
+                    """))
+            .andExpect(status().isOk());
+
+        // Select PER_CHAPTER basis
+        MvcResult selectBasisResult = mockMvc.perform(put("/api/children/" + child.getId() + "/books/book-chapter-basis/basis-selection")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "earningBasis": "PER_CHAPTER"
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String content = selectBasisResult.getResponse().getContentAsString();
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> response = mapper.readValue(content, Map.class);
+        UUID bookReadId = UUID.fromString((String) response.get("bookReadId"));
+
+        // Attempt to log page progress with PER_CHAPTER basis - should fail
+        mockMvc.perform(post("/api/bookreads/" + bookReadId + "/pages")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "currentPage": 50
+                    }
+                    """))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().string(containsString("Page progress logging only valid for PER_PAGE_MILESTONE")));
+    }
+
+    @Test
+    void pageProgressLoggingHandlesMultipleMilestonesInOneEvent() throws Exception {
+        User parent = getCurrentParent();
+        User child = createChildForCurrentParent("kid_multi_milestone", "Kid Multi");
+        String childToken = loginAndGetToken("kid_multi_milestone", "kidpass");
+
+        // Create a per-page-milestone reward option (25 pages per milestone)
+        RewardOption pageOption = new RewardOption();
+        pageOption.setOwnerUserId(parent.getId());
+        pageOption.setScopeType(RewardScopeType.FAMILY);
+        pageOption.setName("25 Pages = $2");
+        pageOption.setEarningBasis(RewardEarningBasis.PER_PAGE_MILESTONE);
+        pageOption.setPageMilestoneSize(25);
+        pageOption.setValueType(RewardValueType.MONEY);
+        pageOption.setCurrencyCode("USD");
+        pageOption.setMoneyAmount(2.0);
+        pageOption.setActive(Boolean.TRUE);
+        RewardOption savedOption = rewardOptionRepository.save(pageOption);
+
+        // Create a book
+        mockMvc.perform(post("/api/books")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "googleBookId": "book-multi-milestone",
+                        "title": "Multi Milestone Book",
+                        "authors": ["Author One"],
+                        "description": "desc",
+                        "thumbnailUrl": "",
+                        "pageCount": 500
+                    }
+                    """))
+            .andExpect(status().isOk());
+
+        // Select PER_PAGE_MILESTONE basis
+        MvcResult selectBasisResult = mockMvc.perform(put("/api/children/" + child.getId() + "/books/book-multi-milestone/basis-selection")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "earningBasis": "PER_PAGE_MILESTONE",
+                        "pageCount": 500
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String content = selectBasisResult.getResponse().getContentAsString();
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> response = mapper.readValue(content, Map.class);
+        UUID bookReadId = UUID.fromString((String) response.get("bookReadId"));
+
+        // Log page progress: read 103 pages (4 milestones: 25+25+25+25=100, with 3 carry-forward)
+        MvcResult pageResult = mockMvc.perform(post("/api/bookreads/" + bookReadId + "/pages")
+                .header("Authorization", "Bearer " + childToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "currentPage": 103
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String pageContent = pageResult.getResponse().getContentAsString();
+        Map<String, Object> pageResponse = mapper.readValue(pageContent, Map.class);
+        assertThat(pageResponse.get("milestonesCompleted")).isEqualTo(4);
+        assertThat(pageResponse.get("pageMilestoneCarryForward")).isEqualTo(3);
+
+        // Verify 4 rewards were earned ($2 each)
+        List<Reward> rewards = rewardRepository.findByUserId(child.getId());
+        assertThat(rewards).hasSize(4);
+        assertThat(rewards).allMatch(r -> r.getAmount().equals(2.0));
     }
 }
