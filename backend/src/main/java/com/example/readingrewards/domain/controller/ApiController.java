@@ -509,6 +509,31 @@ public class ApiController {
             return badRequest("Invalid earningBasis value");
         }
 
+        Integer suggestedPageCount = null;
+        if (body.containsKey("suggestedPageCount")) {
+            Object rawPageCount = body.get("suggestedPageCount");
+            if (rawPageCount != null && !String.valueOf(rawPageCount).isBlank()) {
+                try {
+                    suggestedPageCount = Integer.valueOf(String.valueOf(rawPageCount));
+                } catch (NumberFormatException ex) {
+                    return badRequest("Invalid suggestedPageCount value");
+                }
+            }
+        }
+
+        Integer totalPagesOverride = null;
+        if (body.containsKey("totalPagesOverride")) {
+            Object rawOverride = body.get("totalPagesOverride");
+            if (rawOverride != null && !String.valueOf(rawOverride).isBlank()) {
+                try {
+                    totalPagesOverride = Integer.valueOf(String.valueOf(rawOverride));
+                } catch (NumberFormatException ex) {
+                    return badRequest("Invalid totalPagesOverride value");
+                }
+            }
+        }
+
+        // Support legacy "pageCount" parameter for backward compatibility
         Integer pageCount = null;
         if (body.containsKey("pageCount")) {
             Object rawPageCount = body.get("pageCount");
@@ -521,16 +546,37 @@ public class ApiController {
             }
         }
 
-        if (basis == RewardEarningBasis.PER_PAGE_MILESTONE && (pageCount == null || pageCount < 1)) {
+        Boolean pageCountConfirmed = null;
+        if (body.containsKey("pageCountConfirmed")) {
+            Object rawConfirmed = body.get("pageCountConfirmed");
+            if (rawConfirmed != null) {
+                pageCountConfirmed = Boolean.parseBoolean(String.valueOf(rawConfirmed));
+            }
+        }
+
+        // For PER_PAGE_MILESTONE, page count must be provided or confirmed
+        if (basis == RewardEarningBasis.PER_PAGE_MILESTONE && totalPagesOverride == null && pageCount == null && suggestedPageCount == null) {
             return badRequest("pageCount is required for PER_PAGE_MILESTONE");
         }
 
         br.setBookEarningBasis(basis);
         br.setBasisLockedAt(LocalDateTime.now());
-        if (pageCount != null) {
-            br.setPageCount(pageCount);
-            br.setPageCountConfirmed(Boolean.TRUE);
+
+        // Handle page count for PER_PAGE_MILESTONE basis
+        if (basis == RewardEarningBasis.PER_PAGE_MILESTONE) {
+            // Priority: totalPagesOverride > pageCount (legacy) > suggestedPageCount
+            if (totalPagesOverride != null) {
+                br.setPageCount(totalPagesOverride);
+                br.setPageCountConfirmed(Boolean.TRUE);
+            } else if (pageCount != null) {
+                br.setPageCount(pageCount);
+                br.setPageCountConfirmed(Boolean.TRUE);
+            } else if (suggestedPageCount != null) {
+                br.setPageCount(suggestedPageCount);
+                br.setPageCountConfirmed(pageCountConfirmed != null && pageCountConfirmed);
+            }
         }
+
         BookRead saved = bookReadRepo.save(br);
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("bookReadId", saved.getId());
@@ -540,6 +586,65 @@ public class ApiController {
         response.put("pageCount", saved.getPageCount());
         response.put("pageCountConfirmed", saved.getPageCountConfirmed());
         response.put("basisLockedAt", saved.getBasisLockedAt());
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/children/{childId}/books/{bookId}/page-count-confirmation")
+    @Transactional
+    public ResponseEntity<?> confirmPageCount(@PathVariable UUID childId,
+                                              @PathVariable String bookId,
+                                              @RequestBody Map<String, Object> body,
+                                              @AuthenticationPrincipal UserDetails userDetails) {
+        User user = requireChild(getCurrentUser(userDetails));
+        if (!user.getId().equals(childId)) {
+            return notFound("Book read not found for this user");
+        }
+
+        Optional<BookRead> opt = bookReadRepo.findByUserIdAndGoogleBookIdAndEndDateIsNull(childId, bookId);
+        if (opt.isEmpty()) {
+            return notFound("In-progress book read not found for this user and book");
+        }
+
+        BookRead br = opt.get();
+
+        // Only valid for PER_PAGE_MILESTONE basis
+        if (br.getBookEarningBasis() != RewardEarningBasis.PER_PAGE_MILESTONE) {
+            return badRequest("Page count confirmation only valid for PER_PAGE_MILESTONE basis");
+        }
+
+        Object totalPagesRaw = body.get("totalPages");
+        if (totalPagesRaw == null || String.valueOf(totalPagesRaw).isBlank()) {
+            return badRequest("totalPages is required");
+        }
+
+        Object confirmedRaw = body.get("confirmed");
+        if (confirmedRaw == null) {
+            return badRequest("confirmed is required");
+        }
+
+        Integer totalPages;
+        Boolean confirmed;
+        try {
+            totalPages = Integer.valueOf(String.valueOf(totalPagesRaw));
+            confirmed = Boolean.parseBoolean(String.valueOf(confirmedRaw));
+        } catch (NumberFormatException ex) {
+            return badRequest("Invalid totalPages or confirmed value");
+        }
+
+        if (totalPages < 1) {
+            return badRequest("totalPages must be at least 1");
+        }
+
+        br.setPageCount(totalPages);
+        br.setPageCountConfirmed(confirmed);
+
+        BookRead saved = bookReadRepo.save(br);
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("bookReadId", saved.getId());
+        response.put("childId", saved.getUserId());
+        response.put("bookId", saved.getGoogleBookId());
+        response.put("pageCount", saved.getPageCount());
+        response.put("pageCountConfirmed", saved.getPageCountConfirmed());
         return ResponseEntity.ok(response);
     }
 
@@ -781,6 +886,110 @@ public class ApiController {
         rewardRepo.deleteAll(rewards);
         chapterReadRepo.delete(cr);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/bookreads/{bookReadId}/pages")
+    @Transactional
+    public ResponseEntity<?> logPageProgress(@PathVariable UUID bookReadId,
+                                            @RequestBody Map<String, Object> body,
+                                            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = requireChild(getCurrentUser(userDetails));
+
+        // Validate that currentPage is provided
+        Object currentPageRaw = body.get("currentPage");
+        if (currentPageRaw == null || String.valueOf(currentPageRaw).isBlank()) {
+            return badRequest("currentPage is required");
+        }
+
+        Integer currentPage;
+        try {
+            currentPage = Integer.valueOf(String.valueOf(currentPageRaw));
+        } catch (NumberFormatException ex) {
+            return badRequest("Invalid currentPage value");
+        }
+
+        // Find the book read
+        Optional<BookRead> bookReadOpt = bookReadRepo.findById(bookReadId);
+        if (bookReadOpt.isEmpty() || !bookReadOpt.get().getUserId().equals(user.getId())) {
+            return notFound("Book read not found for this user");
+        }
+
+        BookRead br = bookReadOpt.get();
+
+        // Validate that basis is locked and is PER_PAGE_MILESTONE
+        if (br.getBookEarningBasis() != RewardEarningBasis.PER_PAGE_MILESTONE) {
+            return badRequest("Page progress logging only valid for PER_PAGE_MILESTONE basis");
+        }
+
+        // Validate that page count is confirmed
+        if (!Boolean.TRUE.equals(br.getPageCountConfirmed())) {
+            return badRequest("Page count must be confirmed before logging page progress");
+        }
+
+        Integer totalPages = br.getPageCount();
+        if (totalPages == null || totalPages < 1) {
+            return badRequest("Total page count must be set for this book");
+        }
+
+        // Validate that currentPage is within bounds
+        if (currentPage < 0 || currentPage > totalPages) {
+            return badRequest("currentPage must be between 0 and " + totalPages);
+        }
+
+        // Get the reward option for this book (must be PER_PAGE_MILESTONE basis)
+        User parent = userRepo.findById(user.getParentId())
+            .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Parent not found"));
+
+        List<RewardOption> eligibleOptions = rewardOptionRepo.findByOwnerUserIdOrderByCreatedAtAsc(parent.getId())
+            .stream()
+            .filter(option -> Boolean.TRUE.equals(option.getActive()))
+            .filter(option -> option.getEarningBasis() == RewardEarningBasis.PER_PAGE_MILESTONE)
+            .filter(option -> isVisibleToChild(user, option))
+            .toList();
+
+        if (eligibleOptions.isEmpty()) {
+            // No reward for page progress if no eligible option
+            br.setCurrentPage(currentPage);
+            bookReadRepo.save(br);
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("bookReadId", br.getId());
+            response.put("currentPage", currentPage);
+            response.put("milestonesCompleted", 0);
+            return ResponseEntity.ok(response);
+        }
+
+        // Calculate milestones completed
+        Integer previousPage = br.getCurrentPage() != null ? br.getCurrentPage() : 0;
+        Integer carryForward = br.getPageMilestoneCarryForward() != null ? br.getPageMilestoneCarryForward() : 0;
+        Integer pageMilestoneSize = eligibleOptions.get(0).getPageMilestoneSize();
+
+        int totalPagesReadSinceLast = currentPage - previousPage;
+        int totalPagesForMilestone = carryForward + totalPagesReadSinceLast;
+        int milestonesCompleted = totalPagesForMilestone / pageMilestoneSize;
+        int newCarryForward = totalPagesForMilestone % pageMilestoneSize;
+
+        // Award one reward per milestone completed
+        for (int i = 0; i < milestonesCompleted; i++) {
+            Reward reward = new Reward();
+            reward.setType(RewardType.EARN);
+            reward.setUserId(user.getId());
+            reward.setRewardOptionId(eligibleOptions.get(0).getId());
+            reward.setAmount(eligibleOptions.get(0).getEffectiveAmount());
+            reward.setNote(eligibleOptions.get(0).getName());
+            rewardRepo.save(reward);
+        }
+
+        // Update book read with new page progress and carry-forward
+        br.setCurrentPage(currentPage);
+        br.setPageMilestoneCarryForward(newCarryForward);
+        BookRead saved = bookReadRepo.save(br);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("bookReadId", saved.getId());
+        response.put("currentPage", saved.getCurrentPage());
+        response.put("milestonesCompleted", milestonesCompleted);
+        response.put("pageMilestoneCarryForward", saved.getPageMilestoneCarryForward());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/bookreads/{bookReadId}/chapterreads")
