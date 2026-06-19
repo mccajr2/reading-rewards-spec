@@ -823,13 +823,10 @@ public class ApiController {
             return ResponseEntity.ok().build();
         }
 
-        ChapterRead cr = new ChapterRead();
-        cr.setBookReadId(bookReadId);
-        cr.setChapterId(chapterId);
-        cr.setUserId(user.getId());
-        cr.setCompletionDate(LocalDateTime.now());
-        ChapterRead saved = chapterReadRepo.save(cr);
-
+        // Resolve reward option BEFORE persisting the chapter read so that a
+        // 409 (multiple options) does not leave an orphaned ChapterRead entry
+        // that would cause the follow-up call (with rewardOptionId) to skip
+        // reward creation via the idempotency check.
         Optional<BookRead> bookReadOpt = bookReadRepo.findById(bookReadId);
         RewardOption completionOption = null;
 
@@ -849,24 +846,34 @@ public class ApiController {
                 : null;
 
             if (requestedOptionId != null && !requestedOptionId.isBlank()) {
-            UUID requestedId = UUID.fromString(requestedOptionId);
-            completionOption = eligibleOptions.stream()
-                .filter(option -> requestedId.equals(option.getId()))
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
-                    "Selected reward option is not eligible for this completion event"));
+                UUID requestedId = UUID.fromString(requestedOptionId);
+                completionOption = eligibleOptions.stream()
+                    .filter(option -> requestedId.equals(option.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                        "Selected reward option is not eligible for this completion event"));
             } else if (eligibleOptions.size() == 1) {
-            completionOption = eligibleOptions.get(0);
+                completionOption = eligibleOptions.get(0);
             } else if (eligibleOptions.size() > 1) {
-            List<Map<String, Object>> options = eligibleOptions.stream()
-                .map(option -> Map.<String, Object>of("id", option.getId(), "name", option.getName()))
-                .toList();
-            return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).body(Map.of(
-                "error", "Multiple eligible reward options found; explicit completion selection is required",
-                "availableOptions", options
-            ));
+                List<Map<String, Object>> options = eligibleOptions.stream()
+                    .map(option -> Map.<String, Object>of("id", option.getId(), "name", option.getName()))
+                    .toList();
+                // Return 409 WITHOUT saving the chapter read so that the
+                // follow-up call (with rewardOptionId selected) can go through
+                // the full save + reward-creation path.
+                return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).body(Map.of(
+                    "error", "Multiple eligible reward options found; explicit completion selection is required",
+                    "availableOptions", options
+                ));
             }
         }
+
+        ChapterRead cr = new ChapterRead();
+        cr.setBookReadId(bookReadId);
+        cr.setChapterId(chapterId);
+        cr.setUserId(user.getId());
+        cr.setCompletionDate(LocalDateTime.now());
+        ChapterRead saved = chapterReadRepo.save(cr);
 
         if (completionOption != null) {
             Reward reward = new Reward();
