@@ -13,11 +13,11 @@ the Neon database was likely deployed with only `V1__init.sql` while newer migra
 
 `application-prod.yml` configures Flyway to:
 
-- apply pending migrations on startup
+- apply pending migrations on startup (`validate-on-migrate: false` during recovery)
 - allow out-of-order gap filling when needed
-- ignore pending scripts during validation so migrate can run
+- ignore pending/ignored scripts during validation (`ProdFlywayConfiguration` + YAML patterns)
 
-Redeploy the backend after merging the config change.
+Redeploy the backend **from an image that includes this change** (merge to `main` and let CI push GHCR, or trigger Render manually after merge).
 
 ## Verify on Neon
 

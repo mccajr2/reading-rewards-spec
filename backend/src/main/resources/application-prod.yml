@@ -10,6 +10,9 @@ spring:
     enabled: true
     locations: classpath:db/migration
     # Prod was deployed with V1 only; V2–V7 were added later on feature branches.
-    # Flyway 11 validates before migrate and fails on pending scripts unless configured.
     out-of-order: true
-    ignore-migration-patterns: "*:pending"
+    validate-on-migrate: false
+    ignore-migration-patterns:
+      - "versioned:pending"
+      - "*:pending"
+      - "*:ignored"
