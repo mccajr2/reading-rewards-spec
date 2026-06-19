@@ -1,0 +1,17 @@
+name: Keep Alive
+
+on:
+  schedule:
+    # Render free tier sleeps after ~15 minutes of inactivity.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health
+        run: curl -fsS https://reading-rewards-spec-backend.onrender.com/actuator/health
+
+      - name: Ping frontend
+        run: curl -fsS https://reading-rewards-spec-frontend.onrender.com/
