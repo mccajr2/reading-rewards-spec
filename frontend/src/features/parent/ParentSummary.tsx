@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth } from '../../shared/api';
 import { Button, PageGuidance } from '../../components/shared';
+import { ParentSettlementPanel } from '../../components/ParentSettlementPanel';
 import './ParentDashboard.css';
 
 type KidSummary = {
@@ -127,7 +128,6 @@ export function ParentSummary() {
       );
       if (res.ok) {
         setPageOverrideInput(prev => ({ ...prev, [book.bookReadId]: '' }));
-        // Refresh child detail
         const detailR = await fetchWithAuth(`/parent/${childId}/child-detail`, token);
         if (detailR.ok) {
           const data = await detailR.json();
@@ -162,6 +162,19 @@ export function ParentSummary() {
     } catch (err) {
       console.error('Error reversing chapter read:', err);
       alert('Error reversing chapter read');
+    }
+  };
+
+  const refreshChildDetail = async () => {
+    if (!childId) return;
+    const detailR = await fetchWithAuth(`/parent/${childId}/child-detail`, token);
+    if (detailR.ok) {
+      setChildDetail(await detailR.json());
+    }
+    const summaryR = await fetchWithAuth('/parent/kids/summary', token);
+    if (summaryR.ok) {
+      const data = await summaryR.json();
+      setKids(data.kids ?? []);
     }
   };
 
@@ -202,6 +215,13 @@ export function ParentSummary() {
                 </table>
               </div>
             </div>
+
+            <ParentSettlementPanel
+              token={token}
+              targetChildId={childDetail.child.id}
+              childName={childDetail.child.firstName}
+              onSettlementChange={refreshChildDetail}
+            />
 
             {childDetail.books.length > 0 && (
               <div>
@@ -354,7 +374,9 @@ export function ParentSummary() {
       ) : kids.length === 0 ? (
         <p className="muted">No children found.</p>
       ) : (
-        <div className="table-scroll">
+        <>
+          <ParentSettlementPanel token={token} />
+          <div className="table-scroll">
           <table className="kids-table">
             <thead>
               <tr>
@@ -393,6 +415,7 @@ export function ParentSummary() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );

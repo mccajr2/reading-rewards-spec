@@ -116,6 +116,140 @@ export type RewardOptionsResponseDto = {
   activeSelectionOptionId?: string | null;
 };
 
+// ── Settlement & Messaging Types ─────────────────────────────────────────────
+
+export type SettlementRequestType = 'PAYOUT' | 'SPEND';
+export type SettlementRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type MessageType = 'NUDGE' | 'ENCOURAGEMENT';
+
+export type SettlementRequestDto = {
+  id: string;
+  childUserId: string;
+  requestType: SettlementRequestType;
+  requestedAmount: number;
+  status: SettlementRequestStatus;
+  note?: string | null;
+  requestedAt: string;
+  resolvedAt?: string | null;
+  resolvedByParentId?: string | null;
+  rewardOptionId?: string | null;
+};
+
+export type FamilyMessageDto = {
+  id: string;
+  senderRole: 'PARENT' | 'CHILD';
+  senderUserId: string;
+  recipientUserId: string;
+  messageType: MessageType;
+  body: string;
+  linkedSettlementRequestId?: string | null;
+  emailNotificationSent: boolean;
+  createdAt: string;
+};
+
+// ── Settlement API helpers ────────────────────────────────────────────────────
+
+export async function createSettlementRequest(
+  token: string | null,
+  childId: string,
+  payload: { requestType: SettlementRequestType; requestedAmount: number; note?: string; rewardOptionId?: string }
+): Promise<SettlementRequestDto> {
+  const r = await fetchWithAuth(`/children/${childId}/settlement-requests`, token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function listSettlementRequests(
+  token: string | null,
+  childId: string
+): Promise<SettlementRequestDto[]> {
+  const r = await fetchWithAuth(`/children/${childId}/settlement-requests`, token);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function approveSettlementRequest(
+  token: string | null,
+  requestId: string
+): Promise<SettlementRequestDto> {
+  const r = await fetchWithAuth(`/settlement-requests/${requestId}/approve`, token, { method: 'POST' });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function rejectSettlementRequest(
+  token: string | null,
+  requestId: string
+): Promise<SettlementRequestDto> {
+  const r = await fetchWithAuth(`/settlement-requests/${requestId}/reject`, token, { method: 'POST' });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function cancelSettlementRequest(
+  token: string | null,
+  requestId: string
+): Promise<SettlementRequestDto> {
+  const r = await fetchWithAuth(`/settlement-requests/${requestId}`, token, { method: 'DELETE' });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function listParentPendingRequests(
+  token: string | null
+): Promise<SettlementRequestDto[]> {
+  const r = await fetchWithAuth('/parent/settlement-requests', token);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ── Messaging API helpers ─────────────────────────────────────────────────────
+
+export async function sendNudge(
+  token: string | null,
+  body: string,
+  linkedSettlementRequestId?: string
+): Promise<FamilyMessageDto> {
+  const r = await fetchWithAuth('/messages/nudge', token, {
+    method: 'POST',
+    body: JSON.stringify({ body, linkedSettlementRequestId }),
+  });
+  if (r.status === 429) throw new Error('NUDGE_COOLDOWN');
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function sendEncouragement(
+  token: string | null,
+  childId: string,
+  body: string,
+  linkedSettlementRequestId?: string
+): Promise<FamilyMessageDto> {
+  const r = await fetchWithAuth(`/messages/encouragement/${childId}`, token, {
+    method: 'POST',
+    body: JSON.stringify({ body, linkedSettlementRequestId }),
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function getMessageInbox(token: string | null): Promise<FamilyMessageDto[]> {
+  const r = await fetchWithAuth('/messages/inbox', token);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function getAllMessages(token: string | null): Promise<FamilyMessageDto[]> {
+  const r = await fetchWithAuth('/messages', token);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ── Generic HTTP helpers ──────────────────────────────────────────────────────
+
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     method: 'POST',

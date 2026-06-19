@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth, RewardHistoryItemDto, RewardOptionDto, RewardOptionsResponseDto, RewardsPageResponseDto, RewardSummaryDto } from '../../shared/api';
-import { Button, Card, CardContent, Input, PageGuidance, Pagination } from '../../components/shared';
+import { Button, Card, CardContent, PageGuidance, Pagination } from '../../components/shared';
+import { ChildPayoutRequest } from '../../components/ChildPayoutRequest';
+import { ChildNudgePanel } from '../../components/ChildNudgePanel';
 import './RewardsPage.css';
 
 export function RewardsPage() {
@@ -13,9 +15,6 @@ export function RewardsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [totalCount, setTotalCount] = useState(0);
-  const [spend, setSpend] = useState('');
-  const [spendNote, setSpendNote] = useState('');
-  const [payout, setPayout] = useState('');
   const [loading, setLoading] = useState(false);
 
   const loadSummary = async () => {
@@ -55,30 +54,10 @@ export function RewardsPage() {
 
   useEffect(() => { loadRewards(page); }, [page]);
 
-  const handleSpend = async () => {
-    if (!spend || !spendNote) return;
-    setLoading(true);
-    const spendPath = activeSelectionOptionId
-      ? `/rewards/spend?amount=${encodeURIComponent(spend)}&note=${encodeURIComponent(spendNote)}&rewardOptionId=${encodeURIComponent(activeSelectionOptionId)}`
-      : `/rewards/spend?amount=${encodeURIComponent(spend)}&note=${encodeURIComponent(spendNote)}`;
-    await fetchWithAuth(spendPath, token, { method: 'POST' });
-    setSpend(''); setSpendNote('');
-    await loadSummary(); await loadRewards(page);
-    (window as any).updateCredits?.();
-    setLoading(false);
-  };
-
-  const handlePayout = async () => {
-    if (!payout) return;
-    setLoading(true);
-    const payoutPath = activeSelectionOptionId
-      ? `/rewards/payout?amount=${encodeURIComponent(payout)}&rewardOptionId=${encodeURIComponent(activeSelectionOptionId)}`
-      : `/rewards/payout?amount=${encodeURIComponent(payout)}`;
-    await fetchWithAuth(payoutPath, token, { method: 'POST' });
-    setPayout('');
-    await loadSummary(); await loadRewards(page);
-    (window as any).updateCredits?.();
-    setLoading(false);
+  const refreshRewards = async () => {
+    await loadSummary();
+    await loadRewards(page);
+    (window as { updateCredits?: () => void }).updateCredits?.();
   };
 
   const handleSelectRewardOption = async (optionId: string) => {
@@ -112,8 +91,8 @@ export function RewardsPage() {
         }
         instructions={
           isChild
-            ? 'Check your balance, celebrate your progress, and use your points for fun rewards.'
-            : 'Use payout and spend actions below to keep reward balances accurate and up to date.'
+            ? 'Check your balance, request payouts or spends for parent approval, and nudge your parent when needed.'
+            : 'Review reward summaries and history. Approve child requests from Manage Kids.'
         }
         tone={isChild ? 'child' : 'parent'}
       />
@@ -160,17 +139,18 @@ export function RewardsPage() {
         </section>
       )}
 
-      <div className="rewards-actions">
-        <div className="action-group">
-          <Input className="input" type="number" min="0" step="0.01" placeholder="Payout amount" value={payout} onChange={e => setPayout(e.target.value)} />
-          <Button onClick={handlePayout} disabled={loading || !payout}>Mark Paid Out</Button>
-        </div>
-        <div className="action-group">
-          <Input className="input" type="number" min="0" step="0.01" placeholder="Spend amount" value={spend} onChange={e => setSpend(e.target.value)} />
-          <Input className="input" type="text" placeholder="What did you buy?" value={spendNote} onChange={e => setSpendNote(e.target.value)} />
-          <Button variant="secondary" onClick={handleSpend} disabled={loading || !spend || !spendNote}>Spend</Button>
-        </div>
-      </div>
+      {isChild && user?.id && (
+        <section className="reward-options-section space-y-4">
+          <ChildPayoutRequest
+            token={token}
+            childId={user.id}
+            rewardOptionId={activeSelectionOptionId ?? undefined}
+            balancesByUnit={summary.balancesByUnit}
+            onSuccess={refreshRewards}
+          />
+          <ChildNudgePanel token={token} />
+        </section>
+      )}
 
       {isChild && (
         <section className="reward-options-section">

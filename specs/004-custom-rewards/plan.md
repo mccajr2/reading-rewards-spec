@@ -19,8 +19,8 @@ All changes affect backend, frontend, and test coverage. See below for details.
 
 ## Technical Context
 
-**Language/Version**: Java 21 (backend), TypeScript 5.9 and React 19 (frontend)  
-**Primary Dependencies**: Spring Boot 3.5.6, Spring Security, Spring Data JPA, Flyway, PostgreSQL, Vite 7, React Router 7, Vitest, Testing Library  
+**Language/Version**: Java 25 (backend), TypeScript 5.9 and React 19 (frontend)  
+**Primary Dependencies**: Spring Boot 3.5.14, Spring Security, Spring Data JPA, Flyway, PostgreSQL, Vite 7, React Router 7, Vitest, Testing Library  
 **Storage**: PostgreSQL primary, H2 fallback for local/testing profiles  
 **Testing**: JUnit and Spring Boot Test, Spring Security Test, Vitest and Testing Library, Playwright smoke coverage  
 **Target Platform**: Web application on browser frontend plus JVM backend (local macOS dev, Linux deploy target)  

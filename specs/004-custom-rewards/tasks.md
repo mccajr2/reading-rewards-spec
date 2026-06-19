@@ -86,25 +86,25 @@ description: "Task list for Parent Reward Customization (Feature 004)"
 
 **Independent Test**: Earn unpaid rewards, send nudges, send encouragement, record payout/spend actions.
 
-- [ ] T037 [P] [US4] Backend: Implement RewardSettlementRequest endpoints and approval logic in backend/src/main/java/[...]/web/ and service/
-- [ ] T038 [P] [US4] Backend: Implement FamilyMessage endpoints and nudge/encouragement logic in backend/src/main/java/[...]/web/ and service/
-- [ ] T039 [P] [US4] Backend: Enforce nudge cooldown and email notification in backend/src/main/java/[...]/service/
-- [ ] T040 [P] [US4] Frontend: Implement payout/spend request UI in frontend/src/components/ChildPayoutRequest.tsx
-- [ ] T041 [P] [US4] Frontend: Implement nudge/encouragement message UI in frontend/src/components/FamilyMessages.tsx
-- [ ] T042 [P] [US4] Frontend: Integrate settlement and messaging APIs in frontend/src/services/
-- [ ] T043 [US4] Backend: Add tests for settlement, messaging, and cooldown logic in backend/src/test/java/[...]/
-- [ ] T044 [US4] Frontend: Add tests for payout, nudge, and encouragement UI in frontend/src/tests/
+- [X] T037 [P] [US4] Backend: Implement RewardSettlementRequest endpoints and approval logic in backend/src/main/java/[...]/web/ and service/
+- [X] T038 [P] [US4] Backend: Implement FamilyMessage endpoints and nudge/encouragement logic in backend/src/main/java/[...]/web/ and service/
+- [X] T039 [P] [US4] Backend: Enforce nudge cooldown and email notification in backend/src/main/java/[...]/service/
+- [X] T040 [P] [US4] Frontend: Implement payout/spend request UI in frontend/src/components/ChildPayoutRequest.tsx
+- [X] T041 [P] [US4] Frontend: Implement nudge/encouragement message UI in frontend/src/components/FamilyMessages.tsx
+- [X] T042 [P] [US4] Frontend: Integrate settlement and messaging APIs in frontend/src/services/
+- [X] T043 [US4] Backend: Add tests for settlement, messaging, and cooldown logic in backend/src/test/java/[...]/
+- [X] T044 [US4] Frontend: Add tests for payout, nudge, and encouragement UI in frontend/src/tests/
 
 ---
 
 ## Final Phase: Polish & Cross-Cutting Concerns
 
-- [ ] T045 [P] Documentation updates in docs/
-- [ ] T046 Code cleanup and refactoring across backend/frontend
-- [ ] T047 Performance optimization for reward, ledger, and messaging flows
-- [ ] T048 [P] Additional unit tests in backend/src/test/java/[...]/ and frontend/src/tests/
-- [ ] T049 Security hardening for new endpoints and UI
-- [ ] T050 Run quickstart.md validation steps
+- [X] T045 [P] Documentation updates in docs/
+- [X] T046 Code cleanup and refactoring across backend/frontend
+- [X] T047 Performance optimization for reward, ledger, and messaging flows
+- [X] T048 [P] Additional unit tests in backend/src/test/java/[...]/ and frontend/src/tests/
+- [X] T049 Security hardening for new endpoints and UI
+- [X] T050 Run quickstart.md validation steps
 
 ---
 
