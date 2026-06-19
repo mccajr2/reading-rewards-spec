@@ -67,6 +67,11 @@ public class GoogleBooksService {
             // Open Library doesn't provide descriptions directly, omit for now
             String description = null;
 
+            Integer pageCount = null;
+            if (doc.get("number_of_pages_median") instanceof Number pages) {
+                pageCount = pages.intValue();
+            }
+
             // Thumbnail from cover ID
             String thumbnailUrl = null;
             if (doc.get("cover_i") instanceof Number coverId) {
@@ -74,7 +79,9 @@ public class GoogleBooksService {
             }
 
             if (titleVal != null) {
-                books.add(new BookSummaryDto(volumeId, titleVal, authors, description, thumbnailUrl));
+                BookSummaryDto book = new BookSummaryDto(volumeId, titleVal, authors, description, thumbnailUrl);
+                book.setPageCount(pageCount);
+                books.add(book);
             }
         }
         return books;

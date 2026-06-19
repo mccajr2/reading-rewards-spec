@@ -34,6 +34,35 @@ public class BookRead {
     @Column(name = "end_date")
     private LocalDateTime endDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "book_earning_basis", length = 30)
+    private RewardEarningBasis bookEarningBasis;
+
+    @Column(name = "basis_locked_at")
+    private LocalDateTime basisLockedAt;
+
+    @Column(name = "page_count")
+    private Integer pageCount;
+
+    @Column(name = "page_count_confirmed", nullable = false)
+    private Boolean pageCountConfirmed = Boolean.FALSE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tracking_mode", length = 20)
+    private ReadingTrackingMode trackingMode;
+
+    @Column(name = "chapter_count_planned")
+    private Integer chapterCountPlanned;
+
+    @Column(name = "chapters_completed", nullable = false)
+    private Integer chaptersCompleted = 0;
+
+    @Column(name = "current_page")
+    private Integer currentPage;
+
+    @Column(name = "page_milestone_carry_forward", nullable = false)
+    private Integer pageMilestoneCarryForward = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -65,6 +94,33 @@ public class BookRead {
 
     public LocalDateTime getEndDate() { return endDate; }
     public void setEndDate(LocalDateTime endDate) { this.endDate = endDate; }
+
+    public RewardEarningBasis getBookEarningBasis() { return bookEarningBasis; }
+    public void setBookEarningBasis(RewardEarningBasis bookEarningBasis) { this.bookEarningBasis = bookEarningBasis; }
+
+    public LocalDateTime getBasisLockedAt() { return basisLockedAt; }
+    public void setBasisLockedAt(LocalDateTime basisLockedAt) { this.basisLockedAt = basisLockedAt; }
+
+    public Integer getPageCount() { return pageCount; }
+    public void setPageCount(Integer pageCount) { this.pageCount = pageCount; }
+
+    public Boolean getPageCountConfirmed() { return pageCountConfirmed; }
+    public void setPageCountConfirmed(Boolean pageCountConfirmed) { this.pageCountConfirmed = pageCountConfirmed; }
+
+    public ReadingTrackingMode getTrackingMode() { return trackingMode; }
+    public void setTrackingMode(ReadingTrackingMode trackingMode) { this.trackingMode = trackingMode; }
+
+    public Integer getChapterCountPlanned() { return chapterCountPlanned; }
+    public void setChapterCountPlanned(Integer chapterCountPlanned) { this.chapterCountPlanned = chapterCountPlanned; }
+
+    public Integer getChaptersCompleted() { return chaptersCompleted; }
+    public void setChaptersCompleted(Integer chaptersCompleted) { this.chaptersCompleted = chaptersCompleted; }
+
+    public Integer getCurrentPage() { return currentPage; }
+    public void setCurrentPage(Integer currentPage) { this.currentPage = currentPage; }
+
+    public Integer getPageMilestoneCarryForward() { return pageMilestoneCarryForward; }
+    public void setPageMilestoneCarryForward(Integer pageMilestoneCarryForward) { this.pageMilestoneCarryForward = pageMilestoneCarryForward; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

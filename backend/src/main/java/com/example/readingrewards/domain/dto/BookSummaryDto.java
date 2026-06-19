@@ -1,6 +1,9 @@
 package com.example.readingrewards.domain.dto;
 
 import com.example.readingrewards.domain.model.RewardType;
+import com.example.readingrewards.domain.model.RewardEarningBasis;
+import com.example.readingrewards.domain.model.RewardScopeType;
+import com.example.readingrewards.domain.model.RewardValueType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,7 +14,9 @@ public class BookSummaryDto {
     private String title;
     private List<String> authors;
     private String description;
+    private Integer pageCount;
     private String thumbnailUrl;
+    private RewardEarningBasis earningBasis;
 
     public BookSummaryDto() {}
 
@@ -36,8 +41,14 @@ public class BookSummaryDto {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
+    public Integer getPageCount() { return pageCount; }
+    public void setPageCount(Integer pageCount) { this.pageCount = pageCount; }
+
     public String getThumbnailUrl() { return thumbnailUrl; }
     public void setThumbnailUrl(String thumbnailUrl) { this.thumbnailUrl = thumbnailUrl; }
+
+    public RewardEarningBasis getEarningBasis() { return earningBasis; }
+    public void setEarningBasis(RewardEarningBasis earningBasis) { this.earningBasis = earningBasis; }
 
     public record BookRollupDto(
         String googleBookId,
@@ -55,7 +66,8 @@ public class BookSummaryDto {
         String googleBookId,
         String title,
         UUID userId,
-        LocalDateTime startDate
+        LocalDateTime startDate,
+        RewardEarningBasis bookEarningBasis
     ) {}
 
     public record CreditsDto(int cents, double dollars) {}
@@ -64,7 +76,8 @@ public class BookSummaryDto {
         double totalEarned,
         double totalPaidOut,
         double totalSpent,
-        double currentBalance
+        double currentBalance,
+        List<UnitBalanceDto> balancesByUnit
     ) {}
 
     public record RewardHistoryPageDto(List<RewardHistoryItemDto> rewards, int totalCount) {}
@@ -75,10 +88,49 @@ public class BookSummaryDto {
         double amount,
         String note,
         LocalDateTime createdAt,
+        UUID rewardOptionId,
+        String rewardOptionName,
+        RewardEarningBasis rewardOptionBasis,
+        String unitType,
+        String unitLabel,
         UUID chapterReadId,
         LocalDateTime completionDate,
         ChapterRefDto chapter,
         BookReadRefDto bookRead
+    ) {}
+
+    public record UnitBalanceDto(
+        String unitType,
+        String unitLabel,
+        double totalEarned,
+        double totalPaidOut,
+        double totalSpent,
+        double currentBalance
+    ) {}
+
+    public record RewardOptionDto(
+        UUID id,
+        UUID ownerUserId,
+        UUID childUserId,
+        RewardScopeType scopeType,
+        String name,
+        String description,
+        RewardValueType valueType,
+        String currencyCode,
+        Double moneyAmount,
+        Double nonMoneyQuantity,
+        String nonMoneyUnitLabel,
+        RewardEarningBasis earningBasis,
+        Integer pageMilestoneSize,
+        boolean active,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+    ) {}
+
+    public record RewardOptionsResponseDto(
+        List<RewardOptionDto> options,
+        UUID activeSelectionId,
+        UUID activeSelectionOptionId
     ) {}
 
     public record ChapterRefDto(

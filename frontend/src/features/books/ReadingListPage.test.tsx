@@ -19,6 +19,15 @@ function mockOkResponse(data: unknown): Response {
   } as unknown as Response;
 }
 
+function mockResponse(status: number, data: unknown): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    json: () => Promise.resolve(data),
+    text: () => Promise.resolve(JSON.stringify(data)),
+    status,
+  } as unknown as Response;
+}
+
 describe('ReadingListPage', () => {
   beforeEach(() => {
     vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
@@ -168,5 +177,262 @@ describe('ReadingListPage', () => {
       expect.objectContaining({ method: 'PUT' })
     ));
     await waitFor(() => expect(screen.getByText('The New Name')).toBeInTheDocument());
+  });
+
+  it('prompts for explicit reward option when completion event has multiple eligible options', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-4',
+        googleBookId: 'g-4',
+        title: 'Option Choice Book',
+        description: '',
+        thumbnailUrl: '',
+        authors: ['Author'],
+        startDate: '2026-01-01',
+        bookEarningBasis: 'PER_CHAPTER',
+        readCount: 0,
+        readChapterIds: [],
+      },
+    ];
+
+    const chapterRows = [
+      { id: 'c-1', name: 'Chapter 1', chapterIndex: 0 },
+      { id: 'c-2', name: 'Chapter 2', chapterIndex: 1 },
+    ];
+
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('2');
+
+    const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path === '/bookreads/br-4/chapters') return Promise.resolve(mockOkResponse(chapterRows));
+      if (path === '/bookreads/br-4/chapterreads') return Promise.resolve(mockOkResponse([]));
+      if (path === '/bookreads/br-4/chapters/c-1/read' && options?.method === 'POST' && !options?.body) {
+        return Promise.resolve(mockResponse(409, {
+          availableOptions: [
+            { id: 'opt-1', name: 'Option A' },
+            { id: 'opt-2', name: 'Option B' },
+          ],
+        }));
+      }
+      if (path === '/bookreads/br-4/chapters/c-1/read' && options?.method === 'POST' && options?.body) {
+        return Promise.resolve(mockOkResponse({}));
+      }
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    const checkboxes = await screen.findAllByRole('checkbox');
+    fireEvent.click(checkboxes[0]);
+
+    await waitFor(() => expect(promptSpy).toHaveBeenCalled());
+    await waitFor(() => {
+      const retryCall = fetchSpy.mock.calls.find(call =>
+        call[0] === '/bookreads/br-4/chapters/c-1/read'
+        && call[2]?.method === 'POST'
+        && typeof call[2]?.body === 'string'
+      );
+      expect(retryCall).toBeTruthy();
+      const body = JSON.parse(String(retryCall?.[2]?.body));
+      expect(body.rewardOptionId).toBe('opt-2');
+    });
+  });
+
+  it('shows a PER_BOOK mark as complete action and prompts for reward choice when needed', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-5',
+        googleBookId: 'g-5',
+        title: 'Per Book Choice',
+        description: '',
+        thumbnailUrl: '',
+        authors: ['Author'],
+        startDate: '2026-01-01',
+        bookEarningBasis: 'PER_BOOK',
+        readCount: 0,
+        readChapterIds: [],
+      },
+    ];
+
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('2');
+
+    const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path === '/bookreads/br-5/chapters') return Promise.resolve(mockOkResponse([]));
+      if (path === '/bookreads/br-5/chapterreads') return Promise.resolve(mockOkResponse([]));
+      if (path === '/books/g-5/finish' && options?.method === 'POST' && !options?.body) {
+        return Promise.resolve(mockResponse(409, {
+          availableOptions: [
+            { id: 'opt-1', name: 'Option A' },
+            { id: 'opt-2', name: 'Option B' },
+          ],
+        }));
+      }
+      if (path === '/books/g-5/finish' && options?.method === 'POST' && options?.body) {
+        return Promise.resolve(mockOkResponse({}));
+      }
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /mark as complete/i }));
+
+    await waitFor(() => expect(promptSpy).toHaveBeenCalled());
+    await waitFor(() => {
+      const retryCall = fetchSpy.mock.calls.find(call =>
+        call[0] === '/books/g-5/finish'
+        && call[2]?.method === 'POST'
+        && typeof call[2]?.body === 'string'
+      );
+      expect(retryCall).toBeTruthy();
+      const body = JSON.parse(String(retryCall?.[2]?.body));
+      expect(body.rewardOptionId).toBe('opt-2');
+    });
+  });
+
+  it('shows page progress input for PER_PAGE_MILESTONE books with confirmed page count', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-page-1',
+        googleBookId: 'g-page-1',
+        title: 'Page Milestone Book',
+        description: '',
+        thumbnailUrl: '',
+        authors: ['Author'],
+        startDate: '2026-01-01',
+        bookEarningBasis: 'PER_PAGE_MILESTONE',
+        trackingMode: 'PAGES',
+        pageCount: 200,
+        pageCountConfirmed: true,
+        currentPage: null,
+        pageMilestoneCarryForward: null,
+        readCount: 0,
+        readChapterIds: [],
+      },
+    ];
+
+    vi.spyOn(api, 'fetchWithAuth').mockImplementation((path) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path.includes('/chapters')) return Promise.resolve(mockOkResponse([]));
+      if (path.includes('/chapterreads')) return Promise.resolve(mockOkResponse([]));
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText('Page Milestone Book')).toBeInTheDocument());
+    expect(screen.getByText(/log reading progress/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /log pages/i })).toBeInTheDocument();
+  });
+
+  it('sends page progress and shows milestone reward alert', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-page-2',
+        googleBookId: 'g-page-2',
+        title: 'Milestone Alert Book',
+        description: '',
+        thumbnailUrl: '',
+        authors: ['Author'],
+        startDate: '2026-01-01',
+        bookEarningBasis: 'PER_PAGE_MILESTONE',
+        trackingMode: 'PAGES',
+        pageCount: 300,
+        pageCountConfirmed: true,
+        currentPage: null,
+        pageMilestoneCarryForward: null,
+        readCount: 0,
+        readChapterIds: [],
+      },
+    ];
+
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path.includes('/chapters') && !path.includes('/chapterreads')) return Promise.resolve(mockOkResponse([]));
+      if (path.includes('/chapterreads')) return Promise.resolve(mockOkResponse([]));
+      if (path === '/bookreads/br-page-2/pages' && options?.method === 'POST') {
+        return Promise.resolve(mockOkResponse({ milestonesCompleted: 2, pageMilestoneCarryForward: 10 }));
+      }
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText('Milestone Alert Book')).toBeInTheDocument());
+
+    const pageInput = screen.getByPlaceholderText(/1–300/i);
+    fireEvent.change(pageInput, { target: { value: '110' } });
+    fireEvent.click(screen.getByRole('button', { name: /log pages/i }));
+
+    await waitFor(() => {
+      const pageCall = fetchSpy.mock.calls.find(call =>
+        call[0] === '/bookreads/br-page-2/pages' && call[2]?.method === 'POST'
+      );
+      expect(pageCall).toBeTruthy();
+      const body = JSON.parse(String(pageCall?.[2]?.body));
+      expect(body.currentPage).toBe(110);
+    });
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(
+      expect.stringContaining('2 milestones')
+    ));
+  });
+
+  it('shows page milestone info with carry-forward when pages have been logged', async () => {
+    const bookReads = [
+      {
+        bookReadId: 'br-page-3',
+        googleBookId: 'g-page-3',
+        title: 'Carry Forward Book',
+        description: '',
+        thumbnailUrl: '',
+        authors: ['Author'],
+        startDate: '2026-01-01',
+        bookEarningBasis: 'PER_PAGE_MILESTONE',
+        trackingMode: 'PAGES',
+        pageCount: 200,
+        pageCountConfirmed: true,
+        currentPage: 75,
+        pageMilestoneCarryForward: 25,
+        readCount: 0,
+        readChapterIds: [],
+      },
+    ];
+
+    vi.spyOn(api, 'fetchWithAuth').mockImplementation((path) => {
+      if (path === '/bookreads/in-progress') return Promise.resolve(mockOkResponse(bookReads));
+      if (path.includes('/chapters')) return Promise.resolve(mockOkResponse([]));
+      if (path.includes('/chapterreads')) return Promise.resolve(mockOkResponse([]));
+      return Promise.resolve(mockOkResponse([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <ReadingListPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText('Carry Forward Book')).toBeInTheDocument());
+    expect(screen.getByText(/75 of 200 pages read/i)).toBeInTheDocument();
+    expect(screen.getByText(/25 pages toward next milestone/i)).toBeInTheDocument();
   });
 });

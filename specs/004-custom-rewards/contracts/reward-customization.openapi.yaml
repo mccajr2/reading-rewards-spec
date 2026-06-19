@@ -1,0 +1,234 @@
+openapi: 3.0.3
+info:
+  title: Reading Rewards - Reward Customization API
+  version: 0.1.0
+  description: Contracts for customizable rewards, child selection, earnings, settlement requests, and messaging.
+paths:
+  /api/families/{familyId}/reward-options:
+    get:
+      summary: List family-level reward options
+      parameters:
+        - in: path
+          name: familyId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Family reward options
+    post:
+      summary: Create family-level reward option
+      responses:
+        '201':
+          description: Created
+  /api/children/{childId}/reward-options:
+    get:
+      summary: List additive reward options visible to child
+      description: Returns active family options plus active child-specific options.
+      responses:
+        '200':
+          description: Additive visible options
+  /api/children/{childId}/reward-selection:
+    put:
+      summary: Set active reward selection for child
+      description: Sets global fallback selection. Per-book basis and completion-time explicit choice can override this fallback.
+      responses:
+        '200':
+          description: Active selection updated
+  /api/children/{childId}/books/{bookId}/basis-selection:
+    put:
+      summary: Select and lock earning basis at book start
+      description: Required before earnings progress for a new book. Basis is immutable while the book is in progress. For PER_PAGE, suggested page count must be user-confirmed or overridden before earnings post.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [earningBasis]
+              properties:
+                earningBasis:
+                  type: string
+                  enum: [PER_CHAPTER, PER_BOOK, PER_PAGE_MILESTONE]
+                suggestedPageCount:
+                  type: integer
+                  nullable: true
+                totalPagesOverride:
+                  type: integer
+                  nullable: true
+                pageCountConfirmed:
+                  type: boolean
+                  nullable: true
+      responses:
+        '200':
+          description: Basis selected and locked for the assignment
+        '409':
+          description: Basis already locked for in-progress book
+  /api/children/{childId}/books/{bookId}/page-count-confirmation:
+    put:
+      summary: Confirm or override total page count for PER_PAGE basis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [totalPages, confirmed]
+              properties:
+                totalPages:
+                  type: integer
+                confirmed:
+                  type: boolean
+      responses:
+        '200':
+          description: Page count confirmed and PER_PAGE earnings unblocked
+        '400':
+          description: Invalid page count or non-PER_PAGE assignment
+  /api/children/{childId}/books/{bookId}/completion-option-selection:
+    post:
+      summary: Select reward option for a completion event when multiple eligible options exist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletionOptionSelectionRequest'
+      responses:
+        '200':
+          description: Event-level reward option selected
+        '400':
+          description: Invalid event or option choice
+  /api/children/{childId}/reward-ledgers:
+    get:
+      summary: List child balances grouped by reward unit type
+      responses:
+        '200':
+          description: Unit-specific balances and summaries
+  /api/children/{childId}/settlement-requests:
+    post:
+      summary: Child requests payout or spend
+      responses:
+        '201':
+          description: Request created in pending state
+  /api/settlement-requests/{requestId}/approve:
+    post:
+      summary: Parent approves child settlement request
+      responses:
+        '200':
+          description: Request approved and ledger finalized
+  /api/settlement-requests/{requestId}/reject:
+    post:
+      summary: Parent rejects child settlement request
+      responses:
+        '200':
+          description: Request rejected
+  /api/children/{childId}/messages/nudge:
+    post:
+      summary: Child sends nudge to parent
+      description: Enforces one nudge per child per 24 hours; triggers parent email notification.
+      responses:
+        '201':
+          description: Nudge created
+        '429':
+          description: Nudge cooldown active
+  /api/parents/{parentId}/messages/encouragement:
+    post:
+      summary: Parent sends encouragement to child
+      description: In-app only, no email delivery to child.
+      responses:
+        '201':
+          description: Encouragement created
+components:
+  schemas:
+    RewardOption:
+      type: object
+      required: [id, scopeType, valueType, earningBasis, isActive]
+      properties:
+        id:
+          type: string
+          format: uuid
+        scopeType:
+          type: string
+          enum: [FAMILY, CHILD]
+        scopeChildId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        valueType:
+          type: string
+          enum: [MONEY, NON_MONEY]
+        currencyCode:
+          type: string
+          nullable: true
+        moneyAmount:
+          type: number
+          nullable: true
+        nonMoneyQuantity:
+          type: number
+          nullable: true
+        nonMoneyUnitLabel:
+          type: string
+          nullable: true
+        earningBasis:
+          type: string
+          enum: [PER_CHAPTER, PER_BOOK, PER_PAGE_MILESTONE]
+        pageMilestoneSize:
+          type: integer
+          nullable: true
+        isActive:
+          type: boolean
+    RewardLedgerSummary:
+      type: object
+      required: [unitType, availableBalance]
+      properties:
+        unitType:
+          type: string
+        availableBalance:
+          type: number
+        pendingPayoutBalance:
+          type: number
+    ReadingAssignmentConfig:
+      type: object
+      properties:
+        earningBasis:
+          type: string
+          enum: [PER_CHAPTER, PER_BOOK, PER_PAGE_MILESTONE]
+        chapterCountPlanned:
+          type: integer
+          nullable: true
+        totalPages:
+          type: integer
+          nullable: true
+        pageCountConfirmed:
+          type: boolean
+      description: For PER_BOOK, chapterCountPlanned and totalPages are optional tracking-only fields and do not gate earning eligibility.
+    SettlementRequest:
+      type: object
+      required: [id, requestType, status, requestedAmount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        requestType:
+          type: string
+          enum: [PAYOUT, SPEND]
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED, CANCELLED]
+        requestedAmount:
+          type: number
+    CompletionOptionSelectionRequest:
+      type: object
+      required: [progressEventType, progressEventRefId, selectedRewardOptionId]
+      properties:
+        progressEventType:
+          type: string
+          enum: [CHAPTER_COMPLETION, PAGE_MILESTONE_COMPLETION]
+        progressEventRefId:
+          type: string
+        selectedRewardOptionId:
+          type: string
+          format: uuid

@@ -45,6 +45,28 @@ describe('ParentDashboard', () => {
     expect(screen.getByLabelText(/your dashboard page guidance/i)).toBeInTheDocument();
   });
 
+    it('keeps reward configuration off the manage kids page', async () => {
+      vi.spyOn(api, 'fetchWithAuth').mockImplementation((path) => {
+        if (path === '/parent/kids') {
+          return Promise.resolve(mockOkResponse([]));
+        }
+        if (path === '/parent/kids/summary') {
+          return Promise.resolve(mockOkResponse({ kids: [] }));
+        }
+        return Promise.resolve(mockOkResponse([]));
+      });
+
+      render(
+        <MemoryRouter>
+          <ParentDashboard />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => expect(screen.getByText(/your kids/i)).toBeInTheDocument());
+      expect(screen.queryByRole('heading', { name: /reward options/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /manage rewards/i })).toBeInTheDocument();
+    });
+
   it('displays child names returned from the API', async () => {
     const kids = [
       { id: 'k-1', firstName: 'Jamie', username: 'jamie' },

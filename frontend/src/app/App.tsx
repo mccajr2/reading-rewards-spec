@@ -10,6 +10,7 @@ import { ReadingListPage } from '../features/books/ReadingListPage';
 import { HistoryPage } from '../features/books/HistoryPage';
 import { RewardsPage } from '../features/rewards/RewardsPage';
 import { ParentDashboard } from '../features/parent/ParentDashboard';
+import { ParentRewardsPage } from '../features/parent/ParentRewardsPage';
 import { ParentSummary } from '../features/parent/ParentSummary';
 import '../styles/global.css';
 import '../features/books/SearchPage.css';
@@ -17,6 +18,7 @@ import '../features/books/ReadingListPage.css';
 import '../features/books/HistoryPage.css';
 import '../features/rewards/RewardsPage.css';
 import '../features/parent/ParentDashboard.css';
+import '../features/parent/ParentRewardsPage.css';
 
 function ParentOnlyRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -46,6 +48,14 @@ function AuthenticatedLayout() {
             element={(
               <ParentOnlyRoute>
                 <ParentDashboard />
+              </ParentOnlyRoute>
+            )}
+          />
+          <Route
+            path="/parent/rewards"
+            element={(
+              <ParentOnlyRoute>
+                <ParentRewardsPage />
               </ParentOnlyRoute>
             )}
           />

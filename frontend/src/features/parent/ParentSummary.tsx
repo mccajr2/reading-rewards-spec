@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { fetchWithAuth } from '../../shared/api';
 import { Button, PageGuidance } from '../../components/shared';
+import { ParentSettlementPanel } from '../../components/ParentSettlementPanel';
 import './ParentDashboard.css';
 
 type KidSummary = {
@@ -33,6 +34,9 @@ type Book = {
   startDate: string;
   endDate?: string;
   inProgress: boolean;
+  bookEarningBasis?: 'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE' | null;
+  pageCount?: number | null;
+  pageCountConfirmed?: boolean;
   chapters: Chapter[];
 };
 
@@ -67,6 +71,8 @@ export function ParentSummary() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState<string | null>(null);
+  const [pageOverrideInput, setPageOverrideInput] = useState<Record<string, string>>({});
+  const [pageOverrideLoading, setPageOverrideLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -103,6 +109,39 @@ export function ParentSummary() {
     loadDetail();
   }, [childId, token]);
 
+  const handlePageCountOverride = async (childId: string, book: Book) => {
+    const raw = pageOverrideInput[book.bookReadId] ?? '';
+    const totalPages = parseInt(raw, 10);
+    if (isNaN(totalPages) || totalPages < 1) {
+      window.alert('Enter a valid page count (minimum 1).');
+      return;
+    }
+    setPageOverrideLoading(prev => ({ ...prev, [book.bookReadId]: true }));
+    try {
+      const res = await fetchWithAuth(
+        `/children/${childId}/books/${book.googleBookId}/page-count-confirmation`,
+        token,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ totalPages, confirmed: true }),
+        }
+      );
+      if (res.ok) {
+        setPageOverrideInput(prev => ({ ...prev, [book.bookReadId]: '' }));
+        const detailR = await fetchWithAuth(`/parent/${childId}/child-detail`, token);
+        if (detailR.ok) {
+          const data = await detailR.json();
+          setChildDetail(data);
+        }
+      } else {
+        const msg = await res.text();
+        window.alert(msg || 'Error updating page count.');
+      }
+    } finally {
+      setPageOverrideLoading(prev => ({ ...prev, [book.bookReadId]: false }));
+    }
+  };
+
   const handleReverse = async (chapterReadId: string) => {
     if (!childId) return;
     try {
@@ -123,6 +162,19 @@ export function ParentSummary() {
     } catch (err) {
       console.error('Error reversing chapter read:', err);
       alert('Error reversing chapter read');
+    }
+  };
+
+  const refreshChildDetail = async () => {
+    if (!childId) return;
+    const detailR = await fetchWithAuth(`/parent/${childId}/child-detail`, token);
+    if (detailR.ok) {
+      setChildDetail(await detailR.json());
+    }
+    const summaryR = await fetchWithAuth('/parent/kids/summary', token);
+    if (summaryR.ok) {
+      const data = await summaryR.json();
+      setKids(data.kids ?? []);
     }
   };
 
@@ -164,6 +216,13 @@ export function ParentSummary() {
               </div>
             </div>
 
+            <ParentSettlementPanel
+              token={token}
+              targetChildId={childDetail.child.id}
+              childName={childDetail.child.firstName}
+              onSettlementChange={refreshChildDetail}
+            />
+
             {childDetail.books.length > 0 && (
               <div>
                 <h3>Books</h3>
@@ -174,6 +233,32 @@ export function ParentSummary() {
                     <p className="muted">
                       {book.inProgress ? 'In Progress' : `Finished on ${new Date(book.endDate!).toLocaleDateString()}`}
                     </p>
+                    {book.inProgress && book.bookEarningBasis === 'PER_PAGE_MILESTONE' && (
+                      <div className="page-override-section" style={{ margin: '0.75rem 0', padding: '0.75rem', background: '#f9f9f9', borderRadius: '4px' }}>
+                        <p className="muted" style={{ marginBottom: '0.5rem' }}>
+                          <strong>Page Milestones</strong> — Current page count: {book.pageCount ?? 'not set'}
+                          {book.pageCountConfirmed ? ' ✓ Confirmed' : ' (not yet confirmed)'}
+                        </p>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="Override page count"
+                            value={pageOverrideInput[book.bookReadId] ?? ''}
+                            onChange={e => setPageOverrideInput(prev => ({ ...prev, [book.bookReadId]: e.target.value }))}
+                            style={{ padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid #ccc', width: '160px' }}
+                          />
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handlePageCountOverride(childDetail!.child.id, book)}
+                            disabled={pageOverrideLoading[book.bookReadId] || !pageOverrideInput[book.bookReadId]}
+                          >
+                            {pageOverrideLoading[book.bookReadId] ? 'Saving…' : 'Set Page Count'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                     {book.chapters.length > 0 && (
                       <div>
                         <h5>Chapters ({book.chapters.filter(ch => ch.isRead).length}/{book.chapters.length} read)</h5>
@@ -289,7 +374,9 @@ export function ParentSummary() {
       ) : kids.length === 0 ? (
         <p className="muted">No children found.</p>
       ) : (
-        <div className="table-scroll">
+        <>
+          <ParentSettlementPanel token={token} />
+          <div className="table-scroll">
           <table className="kids-table">
             <thead>
               <tr>
@@ -328,6 +415,7 @@ export function ParentSummary() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );

@@ -43,11 +43,15 @@ describe('SearchPage chapter seeding', () => {
             authors: ['J. K. Rowling'],
             description: 'desc',
             thumbnailUrl: null,
+            pageCount: 223,
           },
         ]));
       }
       if (path === '/books' && options?.method === 'POST') {
         return Promise.resolve(okJson({ id: 'br-1', googleBookId: 'works/OL82563W' }));
+      }
+      if (path === '/children/u1/books/works/OL82563W/basis-selection' && options?.method === 'PUT') {
+        return Promise.resolve(okJson({ bookReadId: 'br-1', bookEarningBasis: 'PER_CHAPTER' }));
       }
       if (path === '/bookreads/br-1/chapters' && !options?.method) {
         return Promise.resolve(okJson([]));
@@ -74,10 +78,16 @@ describe('SearchPage chapter seeding', () => {
     fireEvent.click(screen.getByRole('button', { name: /add to reading list/i }));
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/reward tracking/i), { target: { value: 'PER_CHAPTER' } });
     fireEvent.change(screen.getByLabelText(/chapter count/i), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: /save chapters/i }));
 
     await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/children/u1/books/works/OL82563W/basis-selection',
+        'test-token',
+        expect.objectContaining({ method: 'PUT' })
+      );
       expect(fetchMock).toHaveBeenCalledWith(
         '/bookreads/br-1/chapters',
         'test-token',
@@ -97,11 +107,15 @@ describe('SearchPage chapter seeding', () => {
             authors: ['J. K. Rowling'],
             description: 'desc',
             thumbnailUrl: null,
+            pageCount: 251,
           },
         ]));
       }
       if (path === '/books' && options?.method === 'POST') {
         return Promise.resolve(okJson({ id: 'br-2', googleBookId: 'works/OL82563W' }));
+      }
+      if (path === '/children/u1/books/works/OL82563W/basis-selection' && options?.method === 'PUT') {
+        return Promise.resolve(okJson({ bookReadId: 'br-2', bookEarningBasis: 'PER_BOOK' }));
       }
       if (path === '/bookreads/br-2/chapters' && !options?.method) {
         return Promise.resolve(okJson([{ id: 'c1', name: 'Chapter 1', chapterIndex: 1 }]));
@@ -123,11 +137,70 @@ describe('SearchPage chapter seeding', () => {
 
     await waitFor(() => expect(screen.getByText(/harry potter and the chamber of secrets/i)).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /add to reading list/i }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/reward tracking/i), { target: { value: 'PER_BOOK' } });
+    fireEvent.click(screen.getByRole('button', { name: /save chapters/i }));
 
     await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/children/u1/books/works/OL82563W/basis-selection',
+      'test-token',
+      expect.objectContaining({ method: 'PUT' })
+    );
     expect(fetchMock).not.toHaveBeenCalledWith(
       '/bookreads/br-2/chapters',
+      'test-token',
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+
+  it('submits a confirmed page count when PER_PAGE_MILESTONE is selected', async () => {
+    const fetchMock = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
+      if (path.startsWith('/search?')) {
+        return Promise.resolve(okJson([
+          {
+            googleBookId: 'works/OL82563W',
+            title: 'Page Track Book',
+            authors: ['J. K. Rowling'],
+            description: 'desc',
+            thumbnailUrl: null,
+            pageCount: 300,
+          },
+        ]));
+      }
+      if (path === '/books' && options?.method === 'POST') {
+        return Promise.resolve(okJson({ id: 'br-3', googleBookId: 'works/OL82563W' }));
+      }
+      if (path === '/children/u1/books/works/OL82563W/basis-selection' && options?.method === 'PUT') {
+        return Promise.resolve(okJson({ bookReadId: 'br-3', bookEarningBasis: 'PER_PAGE_MILESTONE', pageCount: 333, pageCountConfirmed: true }));
+      }
+      return Promise.resolve(okJson([]));
+    });
+
+    render(
+      <MemoryRouter>
+        <SearchPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText(/title/i), { target: { value: 'Page Track' } });
+    fireEvent.click(screen.getByRole('button', { name: /search/i }));
+
+    await waitFor(() => expect(screen.getByText(/page track book/i)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /add to reading list/i }));
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/reward tracking/i), { target: { value: 'PER_PAGE_MILESTONE' } });
+    fireEvent.change(screen.getByLabelText(/page count/i), { target: { value: '333' } });
+    fireEvent.click(screen.getByRole('button', { name: /save chapters/i }));
+
+    await waitFor(() => {
+      const basisCall = fetchMock.mock.calls.find(call => call[0] === '/children/u1/books/works/OL82563W/basis-selection');
+      expect(basisCall).toBeTruthy();
+      expect(JSON.parse(String(basisCall?.[2]?.body))).toMatchObject({ earningBasis: 'PER_PAGE_MILESTONE', pageCount: 333 });
+    });
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      '/bookreads/br-3/chapters',
       'test-token',
       expect.objectContaining({ method: 'POST' })
     );

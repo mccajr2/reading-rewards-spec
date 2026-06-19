@@ -21,3 +21,11 @@ build/
 Thumbs.db
 *.tmp
 *.swp
+
+# Local manual-testing helpers (machine-specific)
+scripts/local/
+# Essential additions
+node_modules/
+dist/
+.terraform/
+.helm/

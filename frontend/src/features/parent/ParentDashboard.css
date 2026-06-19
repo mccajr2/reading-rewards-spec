@@ -1,8 +1,57 @@
 .kids-section,
 .add-kid-section,
 .summary-cards-section,
-.quick-actions-section {
+.quick-actions-section,
+.reward-options-section {
   margin-bottom: 2rem;
+}
+
+.reward-option-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.reward-form-row,
+.reward-form-actions,
+.reward-options-grid,
+.reward-option-card-list {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.reward-form-row,
+.reward-options-grid {
+  flex-wrap: wrap;
+}
+
+.reward-form-row > .input,
+.reward-select-field {
+  flex: 1;
+  min-width: 220px;
+}
+
+.reward-select-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.reward-option-card-list {
+  flex-direction: column;
+  margin-top: 0.75rem;
+}
+
+.reward-option-card {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
 }
 
 .quick-actions-row {
@@ -132,6 +181,11 @@
 }
 
 @media (max-width: 640px) {
+  .reward-option-card,
+  .reward-form-actions {
+    flex-direction: column;
+  }
+
   .kids-table th,
   .kids-table td {
     padding: 0.5rem;

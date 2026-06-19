@@ -116,20 +116,54 @@ describe('RewardsPage', () => {
     expect(screen.getByText(/sticker/i)).toBeInTheDocument();
   });
 
-  it('submits spend and payout actions and refreshes summary', async () => {
+  it('renders child settlement request form instead of direct payout/spend', async () => {
     const user = userEvent.setup();
-    const fetchSpy = vi.spyOn(api, 'fetchWithAuth').mockImplementation((path, _token, options) => {
+    const createSettlementSpy = vi.spyOn(api, 'createSettlementRequest').mockResolvedValue({
+      id: 'req-1',
+      childUserId: '1',
+      requestType: 'SPEND',
+      requestedAmount: 0.5,
+      status: 'PENDING',
+      note: 'Pencil',
+      requestedAt: '2026-03-01T00:00:00Z',
+    });
+    vi.spyOn(api, 'listSettlementRequests').mockResolvedValue([]);
+    vi.spyOn(api, 'getAllMessages').mockResolvedValue([]);
+
+    vi.spyOn(api, 'fetchWithAuth').mockImplementation((path) => {
       if (path.includes('/rewards/summary')) {
-        return Promise.resolve(mockOkResponse({ totalEarned: 3, totalPaidOut: 1, totalSpent: 0.5, currentBalance: 1.5 }));
+        return Promise.resolve(mockOkResponse({
+          totalEarned: 3,
+          totalPaidOut: 1,
+          totalSpent: 0.5,
+          currentBalance: 1.5,
+          balancesByUnit: [
+            { unitType: 'MONEY', unitLabel: 'USD', totalEarned: 3, totalPaidOut: 1, totalSpent: 0.5, currentBalance: 1.5 },
+            { unitType: 'NON_MONEY', unitLabel: 'minutes screen time', totalEarned: 60, totalPaidOut: 0, totalSpent: 15, currentBalance: 45 },
+          ],
+        }));
+      }
+      if (path.includes('/reward-options')) {
+        return Promise.resolve(mockOkResponse({
+          options: [{
+            id: 'opt-1',
+            ownerUserId: 'parent-1',
+            scopeType: 'FAMILY',
+            name: 'Dollar Reward',
+            description: '',
+            valueType: 'MONEY',
+            currencyCode: 'USD',
+            moneyAmount: 1,
+            earningBasis: 'PER_CHAPTER',
+            active: true,
+            createdAt: '2026-03-01T00:00:00Z',
+            updatedAt: '2026-03-01T00:00:00Z',
+          }],
+          activeSelectionOptionId: 'opt-1',
+        }));
       }
       if (path.includes('/rewards?page=')) {
         return Promise.resolve(mockOkResponse({ rewards: [], totalCount: 0 }));
-      }
-      if (path.startsWith('/rewards/spend') && options?.method === 'POST') {
-        return Promise.resolve(mockOkResponse({}));
-      }
-      if (path.startsWith('/rewards/payout') && options?.method === 'POST') {
-        return Promise.resolve(mockOkResponse({}));
       }
       return Promise.resolve(mockOkResponse({}));
     });
@@ -140,25 +174,24 @@ describe('RewardsPage', () => {
       </MemoryRouter>
     );
 
-    await user.type(screen.getByPlaceholderText(/spend amount/i), '0.50');
-    await user.type(screen.getByPlaceholderText(/what did you buy/i), 'Pencil');
-    await user.click(screen.getByRole('button', { name: /^spend$/i }));
+    await waitFor(() => expect(screen.getByText(/balances by reward unit/i)).toBeInTheDocument());
+    expect(screen.getByTestId('payout-request-form')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/payout amount/i)).not.toBeInTheDocument();
 
-    // Amount gets normalized to 0.5 without trailing zero
-    await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(
-      '/rewards/spend?amount=0.5&note=Pencil',
+    await user.click(screen.getByTestId('type-spend'));
+    await user.type(screen.getByTestId('amount-input'), '0.50');
+    await user.type(screen.getByTestId('note-input'), 'Pencil');
+    await user.click(screen.getByTestId('submit-request'));
+
+    await waitFor(() => expect(createSettlementSpy).toHaveBeenCalledWith(
       'test-token',
-      expect.objectContaining({ method: 'POST' })
-    ));
-
-    await user.type(screen.getByPlaceholderText(/payout amount/i), '1.00');
-    await user.click(screen.getByRole('button', { name: /mark paid out/i }));
-
-    // Amount gets normalized to 1 without trailing zeros
-    await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(
-      '/rewards/payout?amount=1',
-      'test-token',
-      expect.objectContaining({ method: 'POST' })
+      '1',
+      expect.objectContaining({
+        requestType: 'SPEND',
+        requestedAmount: 0.5,
+        note: 'Pencil',
+        rewardOptionId: 'opt-1',
+      })
     ));
   });
 });

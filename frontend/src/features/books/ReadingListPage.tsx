@@ -13,6 +13,12 @@ type BookReadProgress = {
   thumbnailUrl: string;
   authors: string[];
   startDate: string;
+  bookEarningBasis?: 'PER_CHAPTER' | 'PER_BOOK' | 'PER_PAGE_MILESTONE' | null;
+  trackingMode?: 'BOOK_ONLY' | 'CHAPTERS' | 'PAGES' | null;
+  pageCount?: number | null;
+  pageCountConfirmed?: boolean;
+  currentPage?: number | null;
+  pageMilestoneCarryForward?: number | null;
   readCount: number;
   readChapterIds: string[];
 };
@@ -28,6 +34,11 @@ type ChapterRead = {
   completionDate: string;
 };
 
+type CompletionOption = {
+  id: string;
+  name: string;
+};
+
 export function ReadingListPage() {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -37,6 +48,8 @@ export function ReadingListPage() {
   const [readDates, setReadDates] = useState<Record<string, Record<string, string>>>({});
   const [editName, setEditName] = useState<Record<string, { editing: boolean; value: string }>>({});
   const [chapterInput, setChapterInput] = useState<Record<string, string>>({});
+  const [pageInput, setPageInput] = useState<Record<string, string>>({});
+  const [pageLogging, setPageLogging] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -76,10 +89,63 @@ export function ReadingListPage() {
 
   useEffect(() => { load(); }, []);
 
+  const promptForRewardChoice = async (message: string, options: CompletionOption[]) => {
+    const choice = window.prompt(
+      `${message}\n${options.map((o, i) => `${i + 1}. ${o.name}`).join('\n')}`,
+      '1'
+    );
+    if (!choice) return null;
+    const selected = options[Number(choice) - 1];
+    if (!selected) {
+      window.alert('Invalid option number.');
+      return null;
+    }
+    return selected;
+  };
+
+  const handleMarkComplete = async (br: BookReadProgress) => {
+    let res = await fetchWithAuth(`/books/${br.googleBookId}/finish`, token, { method: 'POST' });
+
+    if (res.status === 409) {
+      const conflictBody = await res.json().catch(() => null) as { availableOptions?: CompletionOption[] } | null;
+      const options = conflictBody?.availableOptions ?? [];
+      if (options.length > 0) {
+        const selected = await promptForRewardChoice('Choose a reward option for this book:', options);
+        if (!selected) return;
+        res = await fetchWithAuth(`/books/${br.googleBookId}/finish`, token, {
+          method: 'POST',
+          body: JSON.stringify({ rewardOptionId: selected.id }),
+        });
+      }
+    }
+
+    if (res.ok) {
+      navigate('/history');
+      return;
+    }
+
+    const msg = await res.text();
+    if (msg) window.alert(msg);
+  };
+
   const handleCheck = async (br: BookReadProgress, chapter: Chapter, isRead: boolean) => {
     const chapList = chapters[br.googleBookId] ?? [];
     if (!isRead) {
-      const res = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapters/${chapter.id}/read`, token, { method: 'POST' });
+      let res = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapters/${chapter.id}/read`, token, { method: 'POST' });
+
+      if (res.status === 409) {
+        const conflictBody = await res.json().catch(() => null) as { availableOptions?: CompletionOption[] } | null;
+        const options = conflictBody?.availableOptions ?? [];
+        if (options.length > 0) {
+          const selected = await promptForRewardChoice('Choose a reward option for this chapter:', options);
+          if (!selected) return;
+          res = await fetchWithAuth(`/bookreads/${br.bookReadId}/chapters/${chapter.id}/read`, token, {
+            method: 'POST',
+            body: JSON.stringify({ rewardOptionId: selected.id }),
+          });
+        }
+      }
+
       if (res.ok) {
         const date = new Date().toLocaleDateString();
         setReadDates(prev => ({
@@ -95,12 +161,15 @@ export function ReadingListPage() {
 
         // check if all done
         const newReadIds = new Set([...br.readChapterIds, chapter.id]);
-        if (chapList.length > 0 && chapList.every(c => newReadIds.has(c.id))) {
+        if (br.bookEarningBasis !== 'PER_BOOK' && chapList.length > 0 && chapList.every(c => newReadIds.has(c.id))) {
           if (window.confirm('You finished the book! Mark as finished?')) {
             await fetchWithAuth(`/books/${br.googleBookId}/finish`, token, { method: 'POST' });
             navigate('/history');
           }
         }
+      } else if (res.status >= 400) {
+        const msg = await res.text();
+        if (msg) window.alert(msg);
       }
     } else {
       // Only allow unchecking the most recently read chapter
@@ -124,6 +193,50 @@ export function ReadingListPage() {
         });
         (window as any).updateCredits?.();
       }
+    }
+  };
+
+  const handleLogPages = async (br: BookReadProgress) => {
+    const raw = pageInput[br.bookReadId] ?? '';
+    const newPage = parseInt(raw, 10);
+    if (isNaN(newPage) || newPage < 1) {
+      window.alert('Enter a valid page number.');
+      return;
+    }
+    if (br.pageCount && newPage > br.pageCount) {
+      window.alert(`Page number cannot exceed total page count (${br.pageCount}).`);
+      return;
+    }
+    if (br.currentPage != null && newPage <= br.currentPage) {
+      window.alert(`Page number must be greater than your current page (${br.currentPage}).`);
+      return;
+    }
+    setPageLogging(prev => ({ ...prev, [br.bookReadId]: true }));
+    try {
+      const res = await fetchWithAuth(`/bookreads/${br.bookReadId}/pages`, token, {
+        method: 'POST',
+        body: JSON.stringify({ currentPage: newPage }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const milestones: number = data.milestonesCompleted ?? 0;
+        const carryForward: number = data.pageMilestoneCarryForward ?? 0;
+        setBookReads(prev => prev.map(b =>
+          b.bookReadId === br.bookReadId
+            ? { ...b, currentPage: newPage, pageMilestoneCarryForward: carryForward }
+            : b
+        ));
+        setPageInput(prev => ({ ...prev, [br.bookReadId]: '' }));
+        if (milestones > 0) {
+          (window as any).updateCredits?.();
+          window.alert(`Great job! You completed ${milestones} milestone${milestones > 1 ? 's' : ''} and earned a reward!`);
+        }
+      } else {
+        const msg = await res.text();
+        if (msg) window.alert(msg);
+      }
+    } finally {
+      setPageLogging(prev => ({ ...prev, [br.bookReadId]: false }));
     }
   };
 
@@ -208,6 +321,19 @@ export function ReadingListPage() {
               <div className="book-meta">
                 <h2>{br.title}</h2>
                 <p className="book-authors">{br.authors?.join(', ')}</p>
+                {br.bookEarningBasis === 'PER_BOOK' && (
+                  <p className="muted">Reward tracks per book. Use Mark as Complete when you finish.</p>
+                )}
+                {br.bookEarningBasis === 'PER_PAGE_MILESTONE' && (
+                  <div className="page-milestone-info">
+                    <p className="muted">
+                      Page milestones: {br.currentPage != null ? `${br.currentPage} of ${br.pageCount ?? '?'} pages read` : `${br.pageCount ?? '?'} total pages`}.
+                      {br.pageMilestoneCarryForward != null && br.pageMilestoneCarryForward > 0 && (
+                        <span className="carry-forward"> ({br.pageMilestoneCarryForward} pages toward next milestone)</span>
+                      )}
+                    </p>
+                  </div>
+                )}
                 {total > 0 && (
                   <div className="progress-row">
                     <div className="progress-bar">
@@ -217,10 +343,46 @@ export function ReadingListPage() {
                   </div>
                 )}
               </div>
+              {br.bookEarningBasis === 'PER_BOOK' && (
+                <Button variant="secondary" size="sm" onClick={() => handleMarkComplete(br)}>
+                  Mark as Complete
+                </Button>
+              )}
               <Button variant="secondary" size="sm" className="btn-danger-sm" onClick={() => handleDeleteBookRead(br)} title="Remove book">
                 ✕
               </Button>
             </div>
+
+            {br.bookEarningBasis === 'PER_PAGE_MILESTONE' && br.pageCountConfirmed && (
+              <div className="page-progress-section">
+                <h3 className="section-subtitle">Log Reading Progress</h3>
+                <div className="page-progress-row">
+                  <label htmlFor={`page-input-${br.bookReadId}`} className="page-label">
+                    Current page:
+                  </label>
+                  <Input
+                    id={`page-input-${br.bookReadId}`}
+                    type="number"
+                    min={br.currentPage != null ? br.currentPage + 1 : 1}
+                    max={br.pageCount ?? undefined}
+                    placeholder={br.currentPage != null ? `After page ${br.currentPage}` : `1–${br.pageCount ?? '?'}`}
+                    value={pageInput[br.bookReadId] ?? ''}
+                    onChange={e => setPageInput(prev => ({ ...prev, [br.bookReadId]: e.target.value }))}
+                    onKeyDown={e => e.key === 'Enter' && handleLogPages(br)}
+                    className="page-number-input"
+                  />
+                  <Button
+                    onClick={() => handleLogPages(br)}
+                    disabled={pageLogging[br.bookReadId] || !pageInput[br.bookReadId]}
+                  >
+                    {pageLogging[br.bookReadId] ? 'Saving…' : 'Log Pages'}
+                  </Button>
+                </div>
+                {!br.pageCountConfirmed && (
+                  <p className="muted warning">Page count must be confirmed before logging pages.</p>
+                )}
+              </div>
+            )}
 
             {chapList.length === 0 && (
               <div className="chapter-add">

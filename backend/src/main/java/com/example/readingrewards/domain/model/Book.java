@@ -25,6 +25,9 @@ public class Book {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "page_count")
+    private Integer pageCount;
+
     @Column(name = "thumbnail_url", length = 1000)
     private String thumbnailUrl;
 
@@ -53,6 +56,9 @@ public class Book {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public Integer getPageCount() { return pageCount; }
+    public void setPageCount(Integer pageCount) { this.pageCount = pageCount; }
 
     public String getThumbnailUrl() { return thumbnailUrl; }
     public void setThumbnailUrl(String thumbnailUrl) { this.thumbnailUrl = thumbnailUrl; }

@@ -187,6 +187,9 @@ public class ParentController {
             bookMap.put("startDate", br.getStartDate());
             bookMap.put("endDate", br.getEndDate());
             bookMap.put("inProgress", br.isInProgress());
+            bookMap.put("bookEarningBasis", br.getBookEarningBasis());
+            bookMap.put("pageCount", br.getPageCount());
+            bookMap.put("pageCountConfirmed", Boolean.TRUE.equals(br.getPageCountConfirmed()));
             bookMap.put("chapters", chaptersList);
             return bookMap;
         }).filter(b -> b != null).toList();

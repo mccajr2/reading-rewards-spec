@@ -34,6 +34,14 @@ public class Reward {
     @JsonIgnoreProperties({"bookRead", "chapter"})
     private ChapterRead chapterRead;
 
+    @Column(name = "reward_option_id")
+    private UUID rewardOptionId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reward_option_id", insertable = false, updatable = false)
+    @JsonIgnoreProperties({"ownerUser", "childUser"})
+    private RewardOption rewardOption;
+
     @Column(columnDefinition = "TEXT")
     private String note;
 
@@ -59,6 +67,11 @@ public class Reward {
     public void setChapterReadId(UUID chapterReadId) { this.chapterReadId = chapterReadId; }
 
     public ChapterRead getChapterRead() { return chapterRead; }
+
+    public UUID getRewardOptionId() { return rewardOptionId; }
+    public void setRewardOptionId(UUID rewardOptionId) { this.rewardOptionId = rewardOptionId; }
+
+    public RewardOption getRewardOption() { return rewardOption; }
 
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
