@@ -22,6 +22,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,19 +56,24 @@ class SettlementServiceUnitTests {
         parent.setId(UUID.randomUUID());
         parent.setRole(User.UserRole.PARENT);
         child.setParentId(parent.getId());
+    }
 
-        when(userRepo.findById(child.getId())).thenReturn(Optional.of(child));
-        when(rewardRepo.findByUserId(child.getId())).thenReturn(List.of());
+    private void stubBalance(double earned) {
+        Reward earn = new Reward();
+        earn.setType(RewardType.EARN);
+        earn.setAmount(earned);
+        when(rewardRepo.findByUserId(child.getId())).thenReturn(List.of(earn));
         when(settlementRepo.findByChildUserIdAndStatusOrderByRequestedAtDesc(
-                child.getId(), SettlementRequestStatus.PENDING)).thenReturn(List.of());
+                eq(child.getId()), eq(SettlementRequestStatus.PENDING))).thenReturn(List.of());
+    }
+
+    private void stubAuthorizedChild() {
+        when(userRepo.findById(child.getId())).thenReturn(Optional.of(child));
     }
 
     @Test
     void createRequest_savesWithCorrectFields() {
-        Reward earn = new Reward();
-        earn.setType(RewardType.EARN);
-        earn.setAmount(20.0);
-        when(rewardRepo.findByUserId(child.getId())).thenReturn(List.of(earn));
+        stubBalance(20.0);
         when(settlementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         RewardSettlementRequest result = settlementService.createRequest(
@@ -103,14 +109,12 @@ class SettlementServiceUnitTests {
         pending.setRequestedAmount(15.0);
         pending.setStatus(SettlementRequestStatus.PENDING);
 
-        Reward earn = new Reward();
-        earn.setType(RewardType.EARN);
-        earn.setAmount(20.0);
+        stubAuthorizedChild();
+        stubBalance(20.0);
 
         when(settlementRepo.findById(requestId)).thenReturn(Optional.of(pending));
         when(settlementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(rewardRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(rewardRepo.findByUserId(child.getId())).thenReturn(List.of(earn));
 
         settlementService.approve(requestId, parent);
 
@@ -136,14 +140,12 @@ class SettlementServiceUnitTests {
         pending.setRequestedAmount(5.0);
         pending.setStatus(SettlementRequestStatus.PENDING);
 
-        Reward earn = new Reward();
-        earn.setType(RewardType.EARN);
-        earn.setAmount(10.0);
+        stubAuthorizedChild();
+        stubBalance(10.0);
 
         when(settlementRepo.findById(requestId)).thenReturn(Optional.of(pending));
         when(settlementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(rewardRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(rewardRepo.findByUserId(child.getId())).thenReturn(List.of(earn));
 
         settlementService.approve(requestId, parent);
 
@@ -157,7 +159,10 @@ class SettlementServiceUnitTests {
         UUID requestId = UUID.randomUUID();
         RewardSettlementRequest pending = new RewardSettlementRequest();
         pending.setId(requestId);
+        pending.setChildUserId(child.getId());
         pending.setStatus(SettlementRequestStatus.PENDING);
+
+        stubAuthorizedChild();
 
         when(settlementRepo.findById(requestId)).thenReturn(Optional.of(pending));
         when(settlementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -219,6 +224,7 @@ class SettlementServiceUnitTests {
         otherParent.setId(UUID.randomUUID());
         otherParent.setRole(User.UserRole.PARENT);
 
+        stubAuthorizedChild();
         when(settlementRepo.findById(requestId)).thenReturn(Optional.of(pending));
 
         assertThrows(ResponseStatusException.class,
@@ -228,10 +234,7 @@ class SettlementServiceUnitTests {
 
     @Test
     void createRequest_throwsBadRequest_whenInsufficientBalance() {
-        Reward earn = new Reward();
-        earn.setType(RewardType.EARN);
-        earn.setAmount(2.0);
-        when(rewardRepo.findByUserId(child.getId())).thenReturn(List.of(earn));
+        stubBalance(2.0);
 
         assertThrows(ResponseStatusException.class,
                 () -> settlementService.createRequest(child, SettlementRequestType.PAYOUT, 5.0, null, null));

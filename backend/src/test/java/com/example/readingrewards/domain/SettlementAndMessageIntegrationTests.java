@@ -168,11 +168,12 @@ class SettlementAndMessageIntegrationTests {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("APPROVED"));
 
-        // Should create a PAYOUT reward ledger entry
-        List<Reward> rewards = rewardRepo.findAll();
-        assertThat(rewards).hasSize(1);
-        assertThat(rewards.get(0).getType()).isEqualTo(RewardType.PAYOUT);
-        assertThat(rewards.get(0).getAmount()).isEqualTo(3.00);
+        // Should create a PAYOUT reward ledger entry (seeded EARN balance remains)
+        List<Reward> payoutRewards = rewardRepo.findAll().stream()
+                .filter(r -> r.getType() == RewardType.PAYOUT)
+                .toList();
+        assertThat(payoutRewards).hasSize(1);
+        assertThat(payoutRewards.get(0).getAmount()).isEqualTo(3.00);
     }
 
     @Test
@@ -184,8 +185,11 @@ class SettlementAndMessageIntegrationTests {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("REJECTED"));
 
-        // Rejection should NOT create a ledger entry
-        assertThat(rewardRepo.findAll()).isEmpty();
+        // Rejection should NOT create a payout/spend ledger entry
+        List<Reward> settlementRewards = rewardRepo.findAll().stream()
+                .filter(r -> r.getType() == RewardType.PAYOUT || r.getType() == RewardType.SPEND)
+                .toList();
+        assertThat(settlementRewards).isEmpty();
     }
 
     @Test
@@ -204,7 +208,6 @@ class SettlementAndMessageIntegrationTests {
 
     @Test
     void parentCannotApproveUnrelatedChildRequest() throws Exception {
-        seedEarnedBalance(5.0);
         RewardSettlementRequest req = createPendingRequest();
 
         User otherParent = new User();
@@ -219,7 +222,10 @@ class SettlementAndMessageIntegrationTests {
                 .header("Authorization", "Bearer " + otherParentJwt))
             .andExpect(status().isForbidden());
 
-        assertThat(rewardRepo.findAll()).isEmpty();
+        List<Reward> settlementRewards = rewardRepo.findAll().stream()
+                .filter(r -> r.getType() == RewardType.PAYOUT || r.getType() == RewardType.SPEND)
+                .toList();
+        assertThat(settlementRewards).isEmpty();
     }
 
     @Test
