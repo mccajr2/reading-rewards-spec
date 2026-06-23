@@ -16,7 +16,6 @@ import '../styles/global.css';
 import '../features/books/SearchPage.css';
 import '../features/books/ReadingListPage.css';
 import '../features/books/HistoryPage.css';
-import '../features/rewards/RewardsPage.css';
 import '../features/parent/ParentDashboard.css';
 import '../features/parent/ParentRewardsPage.css';
 
